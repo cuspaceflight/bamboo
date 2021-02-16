@@ -10,4 +10,4 @@ The intention is that the library uses as many analytical (as opposed to numeric
 - Estimate apogee using a simple 1D trajectory simulator.
 
 ## Incomplete:
-- Optimise nozzle area ratio based on a simple flight trajectory simulator.
+- Optimise nozzle area ratio based on the simple trajectory simulator.
