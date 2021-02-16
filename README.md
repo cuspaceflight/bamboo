@@ -5,7 +5,9 @@ The intention is that the library uses as many analytical (as opposed to numeric
 
 ## Currently includes
 - Nozzle shape calculator for Rao bell nozzles.
-- Get properties (temperature and pressure) as a function of position in the nozzle.
+- Get thrust and specific impulse.
+- Get gas properties (temperature and pressure) as a function of position in the nozzle.
+- Estimate apogee using a simple 1D trajectory simulator.
 
 ## Incomplete:
 - Optimise nozzle area ratio based on a simple flight trajectory simulator.
