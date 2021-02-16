@@ -3,7 +3,7 @@ Subscripts:
     0 - Stagnation condition
     c - Chamber condition (should be the same as stagnation conditions)
     t - At the throat
-    e - At the bam exit plane
+    e - At the nozzle exit plane
     amb - Atmopsheric/ambient condition
 '''
 import bamboo as bam
