@@ -1,2 +1,2 @@
 # bamboo
-Nozzle flow dynamics using perfect gas equations for 1D isentropic flo
+Nozzle flow dynamics using perfect gas equations for 1D isentropic flow
