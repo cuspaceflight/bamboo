@@ -5,7 +5,9 @@ Assumptions:
     - 1D flow.
     - Isentropic flow.
     - Perfect gases.
-    - Negligible velocity in the combustion chamber and pipes, relative to the throat (i.e. Mc ~= 0)
+
+Conventions:
+    - Position (x) along the nozzle is defined by: x = 0 at the throat, x < 0 in the combustion chamber, x > 0 in the diverging section of the nozzle.
 
 Known issues:
     - I'm not sure if the Engine.optimise_for_apogee() function is working correctly.
@@ -116,6 +118,7 @@ def p(p0, M, gamma):
     """
     return p0*(1 + (gamma-1)/2 * M**2)**(-gamma/(gamma-1))
 
+
 '''Rocket trajectory functions'''
 def estimate_apogee(dry_mass, propellant_mass, engine, cross_sectional_area, drag_coefficient = 0.75, dt = 0.2, show_plot = False):
     global g0
@@ -187,6 +190,7 @@ def estimate_apogee(dry_mass, propellant_mass, engine, cross_sectional_area, dra
         plt.show()
 
     return apogee
+
 
 '''Nozzle geometry functions'''
 def rao_theta_n(area_ratio, length_fraction = 0.8):
@@ -302,21 +306,6 @@ def show_conical_shape(A1, At, A2, div_half_angle = 15, conv_half_angle=45):
     plt.title("r1={:.5g} m, rt={:.5g} m, r2={:.5g} m".format(r1,rt,r2))
     plt.show()
 
-'''Heat transfer functions'''
-def h_gas_side():
-    raise ValueError("h_gas_side() has not yet been implemented")
-
-def black_body(T):
-    """Get the black body radiation emitted over a hemisphere, at a given temperature.
-
-    Args:
-        T (float): Temperature of the body (K)
-
-    Returns:
-        float: Radiative heat transfer rate, per unit emitting area on the body (W/m2)
-    """
-    return SIGMA*T**4
-
 
 '''Classes'''
 class Gas:
@@ -423,7 +412,7 @@ class Nozzle:
         if x < 0:
             raise ValueError(f"x must be greater than zero. You tried to input {x}.")
 
-        elif self.type == "rao":
+        elif self.type == "rao" and x <= self.length:
             #Circular throat section
             if x < self.Nx:
                 theta = -np.arccos(x/(0.382*self.Rt)) #Take the negative, because we want an answer in the range [-90 to 0 deg], but numpy gives us the one in the range [0 to 180 deg]
@@ -432,6 +421,9 @@ class Nozzle:
             #Parabolic section.
             else:
                 return ((4*self.a*(x-self.c) + self.b**2)**0.5 - self.b)/(2*self.a)   #Rearranging the quadratic on page 2 of Reference [3] to solve for y
+
+        else:
+            raise ValueError(f"x is beyond the end of the nozzle, which is only {self.length} m long. You tried to input {x}.")
 
     def A(self, x):
         """Returns the nozzle area given the axial distance 'x' downstream from the throat. Based on Reference [1] page 5.
@@ -457,6 +449,8 @@ class Nozzle:
             axs.plot(x, -y, color="blue")
             axs.grid()
             axs.set_aspect('equal')
+            plt.xlabel("x position (m)")
+            plt.ylabel("y position (m)")
             plt.show()
 
     @staticmethod
