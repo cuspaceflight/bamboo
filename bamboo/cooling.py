@@ -280,8 +280,10 @@ class EngineWithCooling:
         return q_dot, R_gas, R_wall, R_coolant
 
     def run_heating_analysis(self, number_of_points=1000):
-        discretised_x = np.linspace(self.geometry.x_min, self.geometry.x_max, number_of_points)
-        dx = discretised_x[1] - discretised_x[0]
+        boil_off_warning = False
+        
+        discretised_x = np.linspace(self.geometry.x_max, self.geometry.x_min, number_of_points) #Run from the back end (the nozzle exit) to the front (chamber)
+        dx = discretised_x[0] - discretised_x[1]
 
         T_wall_inner = np.zeros(len(discretised_x))
         T_wall_outer = np.zeros(len(discretised_x))
@@ -318,6 +320,10 @@ class EngineWithCooling:
 
                 coolant.calculate(T = T_coolant[i], P = self.cooling_jacket.inlet_p0)
                 exhaust_gas.calculate(T = T_gas[i], P = p_gas)
+
+                if boil_off_warning == False and coolant.phase=='g':
+                    print(f"WARNING: Coolant boiled off at x = {x} m")
+                    boil_off_warning = True
 
                 h_gas = self.h_gas(x, exhaust_gas.mu, exhaust_gas.k, exhaust_gas.Pr)
                 h_coolant = self.h_coolant(x, coolant.mu, coolant.k, coolant.Cp, coolant.rho)
