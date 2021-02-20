@@ -13,6 +13,7 @@ Known issues:
     - I'm not sure if the Engine.optimise_for_apogee() function is working correctly.
 
 Room for improvement:
+    - Rename the "Gas" object as "PerfectGas", to avoid confusion with thermo module objects or any real gas models we might use later.
     - Rao bell nozzle data is currently obtained rather crudely (by using an image-of-graph-to-data converter). Would be nicer to have more exact data values.
     - Cone nozzles are not currently implemented.
 

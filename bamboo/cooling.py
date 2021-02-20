@@ -314,7 +314,7 @@ class EngineWithCooling:
             else:    
                 T_gas[i] = self.T(x)
                 p_gas = self.p(x)
-                T_coolant[i] = T_coolant[i-1] + (q_dot[i-1]*dx)/self.cooling_jacket.coolant.Cp    #Increase in coolant temperature, q*dx = Cp*dT
+                T_coolant[i] = T_coolant[i-1] + (q_dot[i-1]*dx)/(self.cooling_jacket.mdot_coolant*self.cooling_jacket.coolant.Cp)    #Increase in coolant temperature, q*dx = mdot*Cp*dT
 
                 coolant.calculate(T = T_coolant[i], P = self.cooling_jacket.inlet_p0)
                 exhaust_gas.calculate(T = T_gas[i], P = p_gas)
