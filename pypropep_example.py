@@ -16,7 +16,7 @@ Ac = 0.0116666      #Chamber cross-sectional area (m^2)
 pc = 10e5           #Chamber pressure (Pa)
 mdot = 4.757        #Mass flow rate (kg/s)
 p_amb = 0.4e5       #Ambient pressure (Pa). 1.01325e5 is sea level atmospheric.
-OF_ratio = 3    #Mass ratio
+OF_ratio = 3        #Mass ratio
 
 '''Get combustion properties from pypropep'''
 ppp.init()

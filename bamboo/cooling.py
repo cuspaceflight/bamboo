@@ -39,10 +39,20 @@ class EngineGeometry:
         self.wall_thickness = wall_thickness
         self.geometry = geometry
 
+        if self.nozzle.At > self.combustion_chamber.A:
+            raise ValueError(f"The combustion chamber area {self.combustion_chamber.A} m^2 is smaller than the throat area {self.nozzle.At} m^2.")
 
         if self.geometry == "auto":
-            #Use the system defined in Reference [1]
-            self.theta_curved_converging_start = -3*np.pi/4
+            #Use the system defined in Reference [1] - mostly using Eqns (4)
+            #Make sure we cap the size of the converging section to the radius of the combustion chamber.
+            chamber_radius = (self.combustion_chamber.A/np.pi)**0.5
+            theta_min = -np.pi - np.arcsin((chamber_radius - self.nozzle.Rt - 1.5*self.nozzle.Rt) / (1.5*self.nozzle.Rt)) 
+            if theta_min > -3*np.pi/4:
+                self.theta_curved_converging_start = theta_min
+            else:
+                self.theta_curved_converging_start = -3*np.pi/4
+
+            #Find key properties for the converging section
             self.x_curved_converging_start = 1.5*self.nozzle.Rt*np.cos(self.theta_curved_converging_start)
             self.y_curved_converging_start = 1.5*self.nozzle.Rt*np.sin(self.theta_curved_converging_start) + 1.5*self.nozzle.Rt + self.nozzle.Rt
 
@@ -281,63 +291,88 @@ class EngineWithCooling:
         return q_dot, R_gas, R_wall, R_coolant
 
     def run_heating_analysis(self, number_of_points=1000):
+        #To keep track of any coolant boiling
         boil_off_position = None
         
+        #Discretisation of the nozzle
         discretised_x = np.linspace(self.geometry.x_max, self.geometry.x_min, number_of_points) #Run from the back end (the nozzle exit) to the front (chamber)
         dx = discretised_x[0] - discretised_x[1]
 
+        #Temperatures and heat transfer rates
         T_wall_inner = np.zeros(len(discretised_x))
         T_wall_outer = np.zeros(len(discretised_x))
         T_coolant = np.zeros(len(discretised_x))
         T_gas = np.zeros(len(discretised_x))
         q_dot = np.zeros(len(discretised_x))
 
+        #Fluid properties
+        coolant_k = np.zeros(len(discretised_x))
+        coolant_mu = np.zeros(len(discretised_x))
+        coolant_cp = np.zeros(len(discretised_x))
+        coolant_rho = np.zeros(len(discretised_x))
+
+        exhaust_gas_mu = np.zeros(len(discretised_x))
+        exhaust_gas_k = np.zeros(len(discretised_x))
+        exhaust_gas_Pr = np.zeros(len(discretised_x))
+
+        #Make copies of the thermo module Chemicals, so we can modify them
         coolant = self.cooling_jacket.thermo_coolant
         exhaust_gas = self.thermo_gas
 
         for i in range(len(discretised_x)):
             x = discretised_x[i]
-            
+
+            #Get known temperatures
+            T_gas[i] = self.T(x)
+            p_gas = self.p(x)
+
+            #First step
             if i == 0:
-                T_gas[i] = self.T(x)
-                p_gas = self.p(x)
                 T_coolant[i] = self.cooling_jacket.inlet_T
-
-                coolant.calculate(T = T_coolant[i], P = self.cooling_jacket.inlet_p0)
-                exhaust_gas.calculate(T = T_gas[i], P = p_gas)
-
-                h_gas = self.h_gas(x, exhaust_gas.mu, exhaust_gas.k, exhaust_gas.Pr)
-                h_coolant = self.h_coolant(x, coolant.mu, coolant.k, coolant.Cp, coolant.rho)
-
-                q_dot[i], R_gas, R_wall, R_coolant = self.thermal_circuit(x, h_gas, h_coolant, self.cooling_jacket.k_wall, T_gas[i], T_coolant[i])
-
-                T_wall_inner[i] = T_gas[i] - q_dot[i]*R_gas
-                T_wall_outer[i] = T_wall_inner[i] - q_dot[i]*R_wall
-
-            else:    
-                T_gas[i] = self.T(x)
-                p_gas = self.p(x)
+            else:
                 T_coolant[i] = T_coolant[i-1] + (q_dot[i-1]*dx)/(self.cooling_jacket.mdot_coolant*self.cooling_jacket.thermo_coolant.Cp)    #Increase in coolant temperature, q*dx = mdot*Cp*dT
 
-                coolant.calculate(T = T_coolant[i], P = self.cooling_jacket.inlet_p0)
-                exhaust_gas.calculate(T = T_gas[i], P = p_gas)
+            #Calculate coolant and exhaust gas properties
+            coolant.calculate(T = T_coolant[i], P = self.cooling_jacket.inlet_p0)
+            exhaust_gas.calculate(T = T_gas[i], P = p_gas)
 
-                if boil_off_position == None and coolant.phase=='g':
-                    print(f"WARNING: Coolant boiled off at x = {x} m")
-                    boil_off_position = x
+            #Check if the coolant boiled off
+            if boil_off_position == None and coolant.phase=='g':
+                print(f"WARNING: Coolant boiled off at x = {x} m")
+                boil_off_position = x
 
-                h_gas = self.h_gas(x, exhaust_gas.mu, exhaust_gas.k, exhaust_gas.Pr)
-                h_coolant = self.h_coolant(x, coolant.mu, coolant.k, coolant.Cp, coolant.rho)
+            #Store properties to use as an output later
+            coolant_mu[i] = coolant.mu
+            coolant_k[i] = coolant.k
+            coolant_cp[i] = coolant.Cp
+            coolant_rho[i] = coolant.rho
 
-                q_dot[i], R_gas, R_wall, R_coolant = self.thermal_circuit(x, h_gas, h_coolant, self.cooling_jacket.k_wall, T_gas[i], T_coolant[i])
+            exhaust_gas_mu[i] = exhaust_gas.mu
+            exhaust_gas_k[i] = exhaust_gas.k
+            exhaust_gas_Pr[i] = exhaust_gas.Pr
 
-                T_wall_inner[i] = T_gas[i] - q_dot[i]*R_gas
-                T_wall_outer[i] = T_wall_inner[i] - q_dot[i]*R_wall
-            
+            #Get convective heat transfer coefficients
+            h_gas = self.h_gas(x, exhaust_gas_mu[i], exhaust_gas_k[i], exhaust_gas_Pr[i])
+            h_coolant = self.h_coolant(x, coolant_mu[i], coolant_k[i], coolant_cp[i], coolant_rho[i])
+
+            #Get thermal circuit properties
+            q_dot[i], R_gas, R_wall, R_coolant = self.thermal_circuit(x, h_gas, h_coolant, self.cooling_jacket.k_wall, T_gas[i], T_coolant[i])
+
+            #Calculate unknown temperatures
+            T_wall_inner[i] = T_gas[i] - q_dot[i]*R_gas
+            T_wall_outer[i] = T_wall_inner[i] - q_dot[i]*R_wall
+
         return {"x" : discretised_x,
                 "T_wall_inner" : T_wall_inner,
                 "T_wall_outer" : T_wall_outer,
                 "T_coolant" : T_coolant,
                 "T_gas" : T_gas,
                 "q_dot" : q_dot,
+                "coolant_mu" : coolant_mu,
+                "coolant_k" : coolant_k,
+                "coolant_cp" : coolant_cp,
+                "coolant_rho" : coolant_rho,
+                "exhaust_gas_mu" : exhaust_gas_mu,
+                "exhaust_gas_k" : exhaust_gas_k,
+                "exhaust_gas_Pr" : exhaust_gas_Pr,
                 "boil_off_position" : boil_off_position}

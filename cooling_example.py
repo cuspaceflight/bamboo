@@ -7,19 +7,30 @@ import thermo
 import time
 
 '''Chamber conditions'''
-Ac = 0.0116666      #Chamber cross-sectional area (m^2)
-pc = 10e5           #Chamber pressure (Pa)
-mdot = 4.757        #Mass flow rate (kg/s)
-p_amb = 0.4e5       #Ambient pressure (Pa). 1.01325e5 is sea level atmospheric.
-OF_ratio = 3        #Mass ratio
+Ac = 116.6e-4           #Chamber cross-sectional area (m^2)
+pc = 10e5               #Chamber pressure (Pa)
+mdot = 4.757            #Mass flow rate (kg/s)
+p_amb = 1.01325e5       #Ambient pressure (Pa). 1.01325e5 is sea level atmospheric.
+OF_ratio = 5            #Mass ratio
+
+'''We want to investigate adding water to the isopropyl alcohol'''
+water_mass_fraction = 0  #Fraction of the fuel that is water, by mass
 
 '''Get combustion properties from pypropep'''
+#Initialise and get propellants
 ppp.init()
 e = ppp.Equilibrium()
 ipa = ppp.PROPELLANTS['ISOPROPYL ALCOHOL']
+water = ppp.PROPELLANTS['WATER']
 n2o = ppp.PROPELLANTS['NITROUS OXIDE']
-e.add_propellants_by_mass([(ipa, 1), (n2o, OF_ratio)])
-e.set_state(P = pc/1e5, type='HP')                      #Adiabatic combustion (enthalpy H is unchanged, P is given)
+
+#Add propellants by mass fractions (note the mass fractions can add up to more than 1)
+e.add_propellants_by_mass([(ipa, 1-water_mass_fraction), 
+                           (water, water_mass_fraction), 
+                           (n2o, OF_ratio)])
+
+#Adiabatic combustion using chamber pressure                      
+e.set_state(P = pc/1e5, type='HP')                      
 
 gamma = e.properties.Isex   #I don't know why they use 'Isex' for gamma. 
 cp = 1000*e.properties.Cp   #Cp is given in kJ/kg/K, we want J/kg/K
@@ -54,7 +65,7 @@ engine_geometry = cool.EngineGeometry(chamber, nozzle, chamber_length, wall_thic
 cooled_engine = cool.EngineWithCooling(engine_geometry, cooling_jacket, perfect_gas, thermo_gas)
 
 '''Plots'''
-#engine_geometry.plot_geometry()
+engine_geometry.plot_geometry()
 #cooled_engine.show_gas_temperature()
 
 '''Run the cooling system simulation'''

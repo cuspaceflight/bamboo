@@ -11,6 +11,7 @@ Conventions:
 
 Known issues:
     - I'm not sure if the Engine.optimise_for_apogee() function is working correctly.
+    - A hardcoded fix is in place for using area ratios outside the Rao angle data range (it tricks the code into making a 15 degree cone). A more robust fix would be better.
 
 Room for improvement:
     - Rename the "Gas" object as "PerfectGas", to avoid confusion with thermo module objects or any real gas models we might use later.
@@ -213,11 +214,14 @@ def rao_theta_n(area_ratio, length_fraction = 0.8):
         raise ValueError("The length percent given does not match any of the available data.")
     
     #Make sure we're not outside the bounds of our data
-    if area_ratio < data["area_ratio"][0] or area_ratio > data["area_ratio"][-1]:
-        raise ValueError(f"The area ratio provided ({area_ratio}) is outside of the range of available data. Maximum available is {data['area_ratio'][-1]}, minimum is {data['area_ratio'][0]}.")
-
-    #Linearly interpolate and return the result, after converting it to radians.
-    return np.interp(area_ratio, data["area_ratio"], data["theta_n"]) * np.pi/180
+    if area_ratio < 3.7 or area_ratio > 47:
+        print("WARNING: Area ratio is outside the range of the Rao inflection angle data, returning 15 deg instead.")
+        return 15.0*np.pi/180
+        #raise ValueError(f"The area ratio provided ({area_ratio}) is outside of the range of available data. Maximum available is {data['area_ratio'][-1]}, minimum is {data['area_ratio'][0]}.")
+    
+    else:
+        #Linearly interpolate and return the result, after converting it to radians.
+        return np.interp(area_ratio, data["area_ratio"], data["theta_n"]) * np.pi/180
 
 def rao_theta_e(area_ratio, length_fraction = 0.8):
     """Returns the contour angle at the exit of the bell nozzle, by interpolating data.  
@@ -239,12 +243,15 @@ def rao_theta_e(area_ratio, length_fraction = 0.8):
     else:
         raise ValueError("The length percent given does not match any of the available data.")
     
-    #Make sure we're not outside the bounds of our data
-    if area_ratio < data["area_ratio"][0] or area_ratio > data["area_ratio"][-1]:
-        raise ValueError(f"The area ratio provided ({area_ratio}) is outside of the range of available data. Maximum available is {data['area_ratio'][-1]}, minimum is {data['area_ratio'][0]}.")
-
-    #Linearly interpolate and return the result, after converting it to radians
-    return np.interp(area_ratio, data["area_ratio"], data["theta_e"]) * np.pi/180
+    #Check if we're outside the bounds of our data
+    if area_ratio < 3.7 or area_ratio > 47:
+        print("WARNING: Area ratio is outside the range of the Rao exit angle data, returning 14.999 deg instead.")
+        return 14.999*np.pi/180
+        #raise ValueError(f"The area ratio provided ({area_ratio}) is outside of the range of available data. Maximum available is {data['area_ratio'][-1]}, minimum is {data['area_ratio'][0]}.")
+    
+    else:
+        #Linearly interpolate and return the result, after converting it to radians
+        return np.interp(area_ratio, data["area_ratio"], data["theta_e"]) * np.pi/180
 
 def get_throat_area(gas, combustion_chamber):
     """Get the nozzle throat area, given the gas properties and combustion chamber conditions. Assumes perfect gas with isentropic flow.
@@ -465,11 +472,17 @@ class Nozzle:
             length_fraction (float, optional): Rao nozzle length fraction, as defined in Reference [1]. Defaults to 0.8.
 
         Returns:
-            [type]: [description]
+            [Nozzle]: The nozzle object.
         """
-        return Nozzle(At = get_throat_area(gas, combustion_chamber), 
-                      Ae = get_exit_area(gas, combustion_chamber, p_amb), 
-                      type = type, length_fraction = length_fraction)
+        At = get_throat_area(gas, combustion_chamber)
+        
+        if At > combustion_chamber.A:
+            raise ValueError(f"The required throat area {At} m^2 is larger than the combustion chamber area {combustion_chamber.A} m^2")
+
+        else:
+            return Nozzle(At, 
+                        Ae = get_exit_area(gas, combustion_chamber, p_amb), 
+                        type = type, length_fraction = length_fraction)
 
 class Engine:
     """Class for representing a liquid rocket engine.
