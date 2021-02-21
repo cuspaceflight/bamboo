@@ -11,10 +11,10 @@ Ac = 116.6e-4           #Chamber cross-sectional area (m^2)
 pc = 10e5               #Chamber pressure (Pa)
 mdot = 4.757            #Mass flow rate (kg/s)
 p_amb = 1.01325e5       #Ambient pressure (Pa). 1.01325e5 is sea level atmospheric.
-OF_ratio = 5            #Mass ratio
+OF_ratio = 4            #Mass ratio
 
 '''We want to investigate adding water to the isopropyl alcohol'''
-water_mass_fraction = 0  #Fraction of the fuel that is water, by mass
+water_mass_fraction = 0.0  #Fraction of the fuel that is water, by mass
 
 '''Get combustion properties from pypropep'''
 #Initialise and get propellants
@@ -55,13 +55,13 @@ thermo_coolant = thermo.chemical.Chemical('Isopropyl Alcohol')
 
 '''Create the engine object'''
 perfect_gas = bam.PerfectGas(gamma = gamma, cp = cp)    #Gas for frozen flow
-chamber = bam.CombustionChamber(pc, Tc, Ac, mdot)
+chamber = bam.ChamberConditions(pc, Tc, mdot)
 nozzle = bam.Nozzle.from_engine_components(perfect_gas, chamber, p_amb, type = "rao", length_fraction = 0.8)
 white_dwarf = bam.Engine(perfect_gas, chamber, nozzle)
 
 '''Cooling system setup'''
 cooling_jacket = cool.CoolingJacket(k_wall, channel_width, channel_height, inlet_T, pc, thermo_coolant, mdot_coolant)
-engine_geometry = cool.EngineGeometry(chamber, nozzle, chamber_length, wall_thickness)
+engine_geometry = cool.EngineGeometry(chamber, nozzle, chamber_length, Ac, wall_thickness)
 cooled_engine = cool.EngineWithCooling(engine_geometry, cooling_jacket, perfect_gas, thermo_gas)
 
 '''Plots'''
@@ -83,4 +83,12 @@ axs.set_xlabel("Position (m)")
 axs.set_ylabel("Temperature (deg C)")
 axs.legend()
 
+plt.show()
+
+h_figs, h_axs = plt.subplots()
+h_axs.plot(cooling_data["x"], cooling_data["h_gas"], label = "h_gas")
+h_axs.plot(cooling_data["x"], cooling_data["h_coolant"], label = "h_coolant", )
+h_axs.axvline(cooling_data["boil_off_position"], color = 'red', linestyle = '--', label = "Coolant boil-off")
+h_axs.grid()
+h_axs.legend()
 plt.show()

@@ -131,7 +131,7 @@ def estimate_apogee(dry_mass, propellant_mass, engine, cross_sectional_area, dra
     vels = [0.0]
 
     initial_mass = dry_mass + propellant_mass
-    burn_time = propellant_mass/engine.combustion_chamber.mdot
+    burn_time = propellant_mass/engine.chamber_conditions.mdot
     reached_apogee = False
 
     #Rate of change of the state array (f = [alt, vel])  
@@ -147,7 +147,7 @@ def estimate_apogee(dry_mass, propellant_mass, engine, cross_sectional_area, dra
         #Calculate acceleration
         if t < burn_time:
             #Engine still on
-            mass = initial_mass - engine.combustion_chamber.mdot*t
+            mass = initial_mass - engine.chamber_conditions.mdot*t
             try:
                 net_force = engine.thrust(p_amb) - 0.5*density_amb*fn[1]**2*drag_coefficient*cross_sectional_area - mass*g0
             except ValueError:
@@ -253,32 +253,32 @@ def rao_theta_e(area_ratio, length_fraction = 0.8):
         #Linearly interpolate and return the result, after converting it to radians
         return np.interp(area_ratio, data["area_ratio"], data["theta_e"]) * np.pi/180
 
-def get_throat_area(gas, combustion_chamber):
+def get_throat_area(gas, chamber_conditions):
     """Get the nozzle throat area, given the gas properties and combustion chamber conditions. Assumes perfect gas with isentropic flow.
 
     Args:
         gas (Gas): Exhaust gas leaving the combustion chamber.
-        combustion_chamber (CombustionChamber): Combustion chamber.
+        chamber_conditions (CombustionChamber): Combustion chamber.
 
     Returns:
         float: Throat area (m^2)
     """
-    return (combustion_chamber.mdot * (gas.cp*combustion_chamber.T0)**0.5 )/( m_bar(1, gas.gamma) * combustion_chamber.p0) 
+    return (chamber_conditions.mdot * (gas.cp*chamber_conditions.T0)**0.5 )/( m_bar(1, gas.gamma) * chamber_conditions.p0) 
 
-def get_exit_area(gas, combustion_chamber, p_amb):
+def get_exit_area(gas, chamber_conditions, p_amb):
     """Get the nozzle exit area, given the gas properties and combustion chamber conditions. Assumes perfect gas with isentropic flow.
 
     Args:
         gas (Gas): Gas object.
-        combustion_chamber (CombustionChamber): CombustionChamber object
+        chamber_conditions (CombustionChamber): CombustionChamber object
         p_amb (float): Ambient pressure (Pa)
 
     Returns:
         float: Optimum nozzle exit area (Pa)
     """
 
-    Me = M_from_p(p_amb, combustion_chamber.p0, gas.gamma)
-    return (combustion_chamber.mdot * (gas.cp*combustion_chamber.T0)**0.5 )/(m_bar(Me, gas.gamma) * combustion_chamber.p0)
+    Me = M_from_p(p_amb, chamber_conditions.p0, gas.gamma)
+    return (chamber_conditions.mdot * (gas.cp*chamber_conditions.T0)**0.5 )/(m_bar(Me, gas.gamma) * chamber_conditions.p0)
 
 def show_conical_shape(A1, At, A2, div_half_angle = 15, conv_half_angle=45):
     """Legacy function. Plots the shape of a conical nozzle with the specified half angle.
@@ -345,20 +345,17 @@ class PerfectGas:
     def __repr__(self):
         return f"<nozzle.perfect_gas object> with: \ngamma = {self.gamma} \ncp = {self.cp} \nmolecular_weight = {self.molecular_weight} \nR = {self.R}"
 
-class CombustionChamber:
-    """Object for storing combustion chamber properties.
+class ChamberConditions:
+    """Object for storing combustion chamber thermodynamic conditions.
 
     Args:
         p0 (float): Gas stagnation pressure (Pa).
         T0 (float): Gas stagnation temperature (K).
-        A (float): Cross sectional area (m^2)
         mdot (float): Propellant mass flow rate (kg/s)
     """
-    def __init__(self, p0, T0, A, mdot):
+    def __init__(self, p0, T0, mdot):
         self.p0 = p0
         self.T0 = T0
-        self.A = A
-        self.R = (A/np.pi)**0.5 #Radius (m)
         self.mdot = mdot
 
 class Nozzle:
@@ -461,12 +458,12 @@ class Nozzle:
             plt.show()
 
     @staticmethod
-    def from_engine_components(gas, combustion_chamber, p_amb, type = "rao", length_fraction = 0.8):
+    def from_engine_components(gas, chamber_conditions, p_amb, type = "rao", length_fraction = 0.8):
         """Generate nozzle based on given gas properties and combustion chamber conditions
 
         Args:
             gas (Gas): Gas object for the exhaust gases.
-            combustion_chamber (CombustionChamber): CombustionChamber object.
+            chamber_conditions (CombustionChamber): CombustionChamber object.
             p_amb (float): Ambient pressure (Pa). The nozzle will be designed to have this pressure at exit.
             type (str, optional): Nozzle type. Can be "rao" or "conical". Conical is not currently implemented. Defaults to "rao".
             length_fraction (float, optional): Rao nozzle length fraction, as defined in Reference [1]. Defaults to 0.8.
@@ -474,27 +471,21 @@ class Nozzle:
         Returns:
             [Nozzle]: The nozzle object.
         """
-        At = get_throat_area(gas, combustion_chamber)
-
-        if At > combustion_chamber.A:
-            raise ValueError(f"The required throat area ({At} m^2) is larger than the combustion chamber area ({combustion_chamber.A} m^2)")
-
-        else:
-            return Nozzle(At, 
-                        Ae = get_exit_area(gas, combustion_chamber, p_amb), 
-                        type = type, length_fraction = length_fraction)
+        return Nozzle(At = get_throat_area(gas, chamber_conditions), 
+                    Ae = get_exit_area(gas, chamber_conditions, p_amb), 
+                    type = type, length_fraction = length_fraction)
 
 class Engine:
     """Class for representing a liquid rocket engine.
 
     Args:
         gas (PerfectGas): Gas representing the exhaust gas for the engine.
-        combustion_chamber (CombustionChamber): CombustionChamber for the engine.
+        chamber_conditions (CombustionChamber): CombustionChamber for the engine.
         nozzle (Nozzle): Nozzle for the engine.
     """
-    def __init__(self, perfect_gas, combustion_chamber, nozzle):
+    def __init__(self, perfect_gas, chamber_conditions, nozzle):
         self.perfect_gas = perfect_gas
-        self.combustion_chamber = combustion_chamber
+        self.chamber_conditions = chamber_conditions
         self.nozzle = nozzle
 
     def M(self, x):
@@ -510,7 +501,7 @@ class Engine:
         #If we're not at the throat:
         else:
             def func_to_solve(Mach):
-                return self.combustion_chamber.mdot*(self.perfect_gas.cp*self.combustion_chamber.T0)**0.5 / (self.nozzle.A(x)*self.combustion_chamber.p0) - m_bar(Mach, self.perfect_gas.gamma)
+                return self.chamber_conditions.mdot*(self.perfect_gas.cp*self.chamber_conditions.T0)**0.5 / (self.nozzle.A(x)*self.chamber_conditions.p0) - m_bar(Mach, self.perfect_gas.gamma)
             
             Mach = scipy.optimize.root_scalar(func_to_solve, bracket = [1,25], x0 = 1).root
 
@@ -525,7 +516,7 @@ class Engine:
         Returns:
             float: Temperature (K)
         """
-        return T(self.combustion_chamber.T0, self.M(x), self.perfect_gas.gamma)
+        return T(self.chamber_conditions.T0, self.M(x), self.perfect_gas.gamma)
 
     def p(self, x):
         """Get pressure at a position along the nozzle.
@@ -536,7 +527,7 @@ class Engine:
         Returns:
             float: Pressure (Pa)
         """
-        return p(self.combustion_chamber.p0, self.M(x), self.perfect_gas.gamma)
+        return p(self.chamber_conditions.p0, self.M(x), self.perfect_gas.gamma)
 
     def check_seperation(self, p_amb):
         """Approximate check for nozzle seperation. Based off page 17 of Reference [2].  
@@ -550,7 +541,7 @@ class Engine:
         """
         
         #Get the value of P_wall/P_amb requried for seperation
-        seperation_pressure_ratio = 0.583 * (p_amb/self.combustion_chamber.p0)**0.195
+        seperation_pressure_ratio = 0.583 * (p_amb/self.chamber_conditions.p0)**0.195
 
         #Seperation can't occur if there's a vacuum outside:
         if p_amb == 0:
@@ -574,7 +565,7 @@ class Engine:
         Returns:
             float: Ambient pressure at which seperation first occurs (Pa)
         """
-        pc = self.combustion_chamber.p0
+        pc = self.chamber_conditions.p0
         pe = self.p(self.nozzle.length)
         return ((pe*pc**0.195)/0.583)**(1/1.195)
 
@@ -585,10 +576,10 @@ class Engine:
         Returns:
             float: Exit area at which seperation occurs for the given p_amb (m^2)
         """
-        seperation_wall_pressure = p_amb * 0.583 * (p_amb/self.combustion_chamber.p0)**0.195
+        seperation_wall_pressure = p_amb * 0.583 * (p_amb/self.chamber_conditions.p0)**0.195
 
         #Get the exit area that gives this wall pressure at the exit.
-        return get_exit_area(self.perfect_gas, self.combustion_chamber, seperation_wall_pressure)
+        return get_exit_area(self.perfect_gas, self.chamber_conditions, seperation_wall_pressure)
 
     def thrust(self, p_amb):
         """Returns the thrust of the engine for a given ambient pressure.
@@ -604,7 +595,7 @@ class Engine:
             Te = self.T(self.nozzle.length)
             pe = self.p(self.nozzle.length)
 
-            return self.combustion_chamber.mdot*Me*(self.perfect_gas.gamma*self.perfect_gas.R*Te)**0.5 + (pe - p_amb)*self.nozzle.Ae    #Generic equation for rocket thrust
+            return self.chamber_conditions.mdot*Me*(self.perfect_gas.gamma*self.perfect_gas.R*Te)**0.5 + (pe - p_amb)*self.nozzle.Ae    #Generic equation for rocket thrust
         
         else:
             raise ValueError(f"Seperation occured in the nozzle, at a postion {self.check_seperation(p_amb)} m downstream of the throat.")
@@ -619,7 +610,7 @@ class Engine:
             float: Specific impulse (s)
         """
         global g0
-        return self.thrust(p_amb)/(g0*self.combustion_chamber.mdot)
+        return self.thrust(p_amb)/(g0*self.chamber_conditions.mdot)
 
     def optimise_for_apogee(self, dry_mass, propellant_mass, cross_sectional_area, drag_coefficient = 0.75, dt = 0.2, debug=True):
         """Runs a 1D trajectory simulation, and varies the nozzle area ratio in an attempt to maximise apogee. Replaces the engine's nozzle with the optimised nozzle upon completion.

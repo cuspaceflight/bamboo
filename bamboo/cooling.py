@@ -32,20 +32,22 @@ def black_body(T):
 
 '''Classes'''
 class EngineGeometry:
-    def __init__(self, combustion_chamber, nozzle, chamber_length, wall_thickness, geometry="auto"):
-        self.combustion_chamber = combustion_chamber
+    def __init__(self, chamber_conditions, nozzle, chamber_length, chamber_area, wall_thickness, geometry="auto"):
+        self.chamber_conditions = chamber_conditions
         self.nozzle = nozzle
         self.chamber_length = chamber_length
+        self.chamber_area = chamber_area
+        self.chamber_radius = (chamber_area/np.pi)**0.5 
         self.wall_thickness = wall_thickness
         self.geometry = geometry
 
-        if self.nozzle.At > self.combustion_chamber.A:
-            raise ValueError(f"The combustion chamber area {self.combustion_chamber.A} m^2 is smaller than the throat area {self.nozzle.At} m^2.")
+        if self.nozzle.At > self.chamber_area:
+            raise ValueError(f"The combustion chamber area {self.chamber_area} m^2 is smaller than the throat area {self.nozzle.At} m^2.")
 
         if self.geometry == "auto":
             #Use the system defined in Reference [1] - mostly using Eqns (4)
             #Make sure we cap the size of the converging section to the radius of the combustion chamber.
-            chamber_radius = (self.combustion_chamber.A/np.pi)**0.5
+            chamber_radius = (self.chamber_area/np.pi)**0.5
             theta_min = -np.pi - np.arcsin((chamber_radius - self.nozzle.Rt - 1.5*self.nozzle.Rt) / (1.5*self.nozzle.Rt)) 
             if theta_min > -3*np.pi/4:
                 self.theta_curved_converging_start = theta_min
@@ -61,7 +63,7 @@ class EngineGeometry:
             self.dydx_curved_converging_start = -1.5*self.nozzle.Rt*np.cos(self.theta_curved_converging_start)/dxdtheta_curved_converging_start
 
             #Find the x-position where we reach the combustion chamber radius
-            self.x_chamber_end = self.x_curved_converging_start - (self.combustion_chamber.R - self.y_curved_converging_start)/self.dydx_curved_converging_start
+            self.x_chamber_end = self.x_curved_converging_start - (self.chamber_radius - self.y_curved_converging_start)/self.dydx_curved_converging_start
 
             #Start and end points of the engine
             self.x_min = self.x_chamber_end - self.chamber_length
@@ -78,11 +80,11 @@ class EngineGeometry:
             elif x <= self.x_curved_converging_start:
                 #Inside the chamber
                 if x < self.x_chamber_end and x >= self.x_min:
-                    return self.combustion_chamber.R
+                    return self.chamber_radius
 
                 #Inside the converging section
                 elif x >= self.x_chamber_end:
-                    return np.interp(x, [self.x_chamber_end, self.x_curved_converging_start], [self.combustion_chamber.R, self.y_curved_converging_start])
+                    return np.interp(x, [self.x_chamber_end, self.x_curved_converging_start], [self.chamber_radius, self.y_curved_converging_start])
 
                 #Outside of the engine
                 else:
@@ -137,11 +139,12 @@ class CoolingJacket:
         return self.equivelant_diameter
 
 class EngineWithCooling:
-    def __init__(self, engine_geometry, cooling_jacket, perfect_gas, thermo_gas):
-        self.geometry = engine_geometry
+    def __init__(self, geometry, cooling_jacket, perfect_gas, thermo_gas):
+        self.geometry = geometry
         self.cooling_jacket = cooling_jacket
         self.perfect_gas = perfect_gas
         self.thermo_gas = thermo_gas
+        self.c_star = self.geometry.chamber_conditions.p0 * self.geometry.nozzle.At / self.geometry.chamber_conditions.mdot
 
     def M(self, x):
         #Exhaust gas Mach number
@@ -152,7 +155,7 @@ class EngineWithCooling:
         #If we're not at the throat:
         else:
             def func_to_solve(Mach):
-                return self.geometry.combustion_chamber.mdot*(self.perfect_gas.cp*self.geometry.combustion_chamber.T0)**0.5 / (self.geometry.A(x)*self.geometry.combustion_chamber.p0) - bam.m_bar(Mach, self.perfect_gas.gamma)
+                return self.geometry.chamber_conditions.mdot*(self.perfect_gas.cp*self.geometry.chamber_conditions.T0)**0.5 / (self.geometry.A(x)*self.geometry.chamber_conditions.p0) - bam.m_bar(Mach, self.perfect_gas.gamma)
             
             if x > 0:
                 Mach = scipy.optimize.root_scalar(func_to_solve, bracket = [1,300], x0 = 1).root
@@ -163,10 +166,10 @@ class EngineWithCooling:
 
     def T(self, x):
         #Exhaust gas temperature
-        return bam.T(self.geometry.combustion_chamber.T0, self.M(x), self.perfect_gas.gamma)
+        return bam.T(self.geometry.chamber_conditions.T0, self.M(x), self.perfect_gas.gamma)
 
     def p(self, x):
-        return bam.p(self.geometry.combustion_chamber.p0, self.M(x), self.perfect_gas.gamma)
+        return bam.p(self.geometry.chamber_conditions.p0, self.M(x), self.perfect_gas.gamma)
 
     def rho(self, x):
         #Exhaust gas density
@@ -239,7 +242,28 @@ class EngineWithCooling:
         Returns:
             float: Gas side convective heat transfer coefficient
         """
-        return 0.026*(self.rho(x)*self.M(x)*(self.perfect_gas.gamma*self.perfect_gas.R*self.T(x))**0.5)**0.8 / (self.cooling_jacket.D(x))**0.2 * Pr**0.4 * k/(mu**0.8)
+        M = self.M(x)
+        T = self.T(x)
+        rho = self.rho(x)
+        gamma = self.perfect_gas.gamma
+        R = self.perfect_gas.R
+
+        v = M * (gamma*R*T)**0.5    #Gas velocity
+        D = 2*self.geometry.y(x)    #Flow diameter
+
+        return 0.026 * (rho*v)**0.8 / (D**0.2) * (Pr**0.4) * k/(mu**0.8)
+
+    def h_gas_bartz(self, x, mu, cp, Pr):
+        c_star = self.c_star
+        Tc = self.geometry.chamber_conditions.T0
+        T_gas = self.T(x)
+        pc = self.geometry.chamber_conditions.p0
+        M = self.M(x)
+        gamma = self.perfect_gas.gamma
+        At = self.geometry.nozzle.At
+
+        #Incomplete
+        raise ValueError("h_gas_bartz is not currently functional")
 
     def h_coolant(self, x, mu, k, c_bar, rho):
         """Get the convective heat transfer coefficient for the coolant side.
@@ -255,7 +279,13 @@ class EngineWithCooling:
         Returns:
             float: Coolant side convective heat transfer coefficient
         """
-        return 0.023*c_bar*(self.geometry.combustion_chamber.mdot/self.cooling_jacket.A(x))*(self.cooling_jacket.D(x)*self.coolant_velocity(x, rho)*rho/mu)**(-0.2)*(mu*c_bar/k)**(-2/3) 
+        mdot = self.cooling_jacket.mdot_coolant
+        A = self.cooling_jacket.A(x)
+        D = self.cooling_jacket.D(x)
+        v = self.coolant_velocity(x, rho)
+        
+        return 0.023*c_bar * (mdot/A) * (D*v*rho/mu)**(-0.2) * (mu*c_bar/k)**(-2/3)
+        #return 0.023*c_bar*(self.cooling_jacket.mdot_coolant/self.cooling_jacket.A(x))*(self.cooling_jacket.D(x)*self.coolant_velocity(x, rho)*rho/mu)**(-0.2)*(mu*c_bar/k)**(-2/3) 
 
     def thermal_circuit(self, x, h_gas, h_coolant, k_wall, T_gas, T_coolant):
         """
@@ -277,7 +307,7 @@ class EngineWithCooling:
         r = self.geometry.y(x)
         
         r_out = r + self.geometry.wall_thickness
-        r_in = r - self.geometry.wall_thickness
+        r_in = r 
 
         A_in = 2*np.pi*r_out    #Inner area per unit length (i.e. just the inner circumference)
         A_out = 2*np.pi*r_in    #Outer area per unit length (i.e. just the outer circumference)
@@ -314,6 +344,10 @@ class EngineWithCooling:
         exhaust_gas_mu = np.zeros(len(discretised_x))
         exhaust_gas_k = np.zeros(len(discretised_x))
         exhaust_gas_Pr = np.zeros(len(discretised_x))
+
+        #Heat transfer rates
+        h_gas = np.zeros(len(discretised_x))
+        h_coolant = np.zeros(len(discretised_x))
 
         #Make copies of the thermo module Chemicals, so we can modify them
         coolant = self.cooling_jacket.thermo_coolant
@@ -352,11 +386,11 @@ class EngineWithCooling:
             exhaust_gas_Pr[i] = exhaust_gas.Pr
 
             #Get convective heat transfer coefficients
-            h_gas = self.h_gas(x, exhaust_gas_mu[i], exhaust_gas_k[i], exhaust_gas_Pr[i])
-            h_coolant = self.h_coolant(x, coolant_mu[i], coolant_k[i], coolant_cp[i], coolant_rho[i])
+            h_gas[i] = self.h_gas(x, exhaust_gas_mu[i], exhaust_gas_k[i], exhaust_gas_Pr[i])
+            h_coolant[i] = self.h_coolant(x, coolant_mu[i], coolant_k[i], coolant_cp[i], coolant_rho[i])
 
             #Get thermal circuit properties
-            q_dot[i], R_gas, R_wall, R_coolant = self.thermal_circuit(x, h_gas, h_coolant, self.cooling_jacket.k_wall, T_gas[i], T_coolant[i])
+            q_dot[i], R_gas, R_wall, R_coolant = self.thermal_circuit(x, h_gas[i], h_coolant[i], self.cooling_jacket.k_wall, T_gas[i], T_coolant[i])
 
             #Calculate unknown temperatures
             T_wall_inner[i] = T_gas[i] - q_dot[i]*R_gas
@@ -375,4 +409,6 @@ class EngineWithCooling:
                 "exhaust_gas_mu" : exhaust_gas_mu,
                 "exhaust_gas_k" : exhaust_gas_k,
                 "exhaust_gas_Pr" : exhaust_gas_Pr,
+                "h_gas" : h_gas,
+                "h_coolant" : h_coolant,
                 "boil_off_position" : boil_off_position}

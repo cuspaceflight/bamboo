@@ -15,7 +15,6 @@ gamma = 1.264               #Ratio of specific heats cp/cv
 molecular_weight = 21.627   #Molecular weight of the exhaust gas (kg/kmol) (only used to calculate R, and hence cp)
 
 '''Chamber conditions'''
-Ac = 0.0116666      #Chamber cross-sectional area (m^2)
 pc = 10e5           #Chamber pressure (Pa)
 Tc = 2458.89        #Chamber temperature (K) - obtained from ProPEP 3
 mdot = 4.757        #Mass flow rate (kg/s)
@@ -23,7 +22,7 @@ p_amb = 1e5       #Ambient pressure (Pa). 1.01325e5 is sea level atmospheric.
 
 '''Create the engine object'''
 perfect_gas = bam.PerfectGas(gamma = gamma, molecular_weight = molecular_weight)
-chamber = bam.CombustionChamber(pc, Tc, Ac, mdot)
+chamber = bam.ChamberConditions(pc, Tc, mdot)
 nozzle = bam.Nozzle.from_engine_components(perfect_gas, chamber, p_amb, type = "rao", length_fraction = 0.8)
 white_dwarf = bam.Engine(perfect_gas, chamber, nozzle)
 
