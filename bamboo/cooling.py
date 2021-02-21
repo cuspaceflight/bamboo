@@ -15,6 +15,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy
 
+'''Constants'''
+SIGMA = 5.670374419e-8      #Stefan-Boltzmann constant (W/m^2/K^4)
+
 '''Functions'''
 def black_body(T):
     """Get the black body radiation emitted over a hemisphere, at a given temperature.
@@ -26,7 +29,6 @@ def black_body(T):
         float: Radiative heat transfer rate, per unit emitting area on the body (W/m2)
     """
     return SIGMA*T**4
-
 
 '''Classes'''
 class EngineGeometry:
@@ -98,7 +100,6 @@ class EngineGeometry:
             plt.xlabel("x position (m)")
             plt.ylabel("y position (m)")
             plt.show()
-
 
 class CoolingJacket:
     def __init__(self, k_wall, channel_width, channel_height, inlet_T, inlet_p0, thermo_coolant, mdot_coolant, channel_shape = "rectangle", configuration = "spiral"):

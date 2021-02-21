@@ -38,7 +38,6 @@ import ambiance
 '''Constants'''
 R_BAR = 8.3144621e3         #Universal gas constant (J/K/kmol)
 g0 = 9.80665                #Standard gravitational acceleration (m/s^2)
-SIGMA = 5.670374419e-8      #Stefan-Boltzmann constant (W/m^2/K^4)
 
 '''Compressible flow functions'''
 def m_bar(M, gamma):    
