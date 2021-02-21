@@ -15,7 +15,7 @@ gamma = 1.264               #Ratio of specific heats cp/cv
 molecular_weight = 21.627   #Molecular weight of the exhaust gas (kg/kmol) (only used to calculate R, and hence cp)
 
 '''Chamber conditions'''
-Ac = 0.04      #Chamber cross-sectional area (m^2)
+Ac = 0.0116666      #Chamber cross-sectional area (m^2)
 pc = 10e5           #Chamber pressure (Pa)
 Tc = 2458.89        #Chamber temperature (K) - obtained from ProPEP 3
 mdot = 4.757        #Mass flow rate (kg/s)

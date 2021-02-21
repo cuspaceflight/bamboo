@@ -475,9 +475,9 @@ class Nozzle:
             [Nozzle]: The nozzle object.
         """
         At = get_throat_area(gas, combustion_chamber)
-        
+
         if At > combustion_chamber.A:
-            raise ValueError(f"The required throat area {At} m^2 is larger than the combustion chamber area {combustion_chamber.A} m^2")
+            raise ValueError(f"The required throat area ({At} m^2) is larger than the combustion chamber area ({combustion_chamber.A} m^2)")
 
         else:
             return Nozzle(At, 
