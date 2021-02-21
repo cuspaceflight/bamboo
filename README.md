@@ -1,7 +1,5 @@
 # bamboo
-Nozzle flow and cooling dynamics using perfect gas equations for 1D isentropic flow  
-
-The intention is that the library uses as many analytical (as opposed to numerical) methods as possible, so the code can run quickly and can be used for optimisation and design studies.
+Nozzle flow and cooling dynamics using perfect gas equations for 1D isentropic flow.
 
 ## Installation
 `pip install git+https://github.com/cuspaceflight/bamboo.git`
