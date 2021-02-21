@@ -9,6 +9,6 @@ setup(
     name='bamboo',
     version='0.1',
     packages=find_packages(),
-    install_requires=['numpy', 'matplotlib', 'scipy', 'ambiance', 'thermo'],
+    install_requires=['numpy', 'matplotlib', 'scipy', 'ambiance', 'thermo', 'pypropep'],
     description='1D isentropic nozzle flow for perfect gases',
 )

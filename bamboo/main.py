@@ -309,7 +309,7 @@ def show_conical_shape(A1, At, A2, div_half_angle = 15, conv_half_angle=45):
 
 
 '''Classes'''
-class Gas:
+class PerfectGas:
     """Object to store exhaust gas properties. Assumes a perfect gas (ideal gas with constant cp, cv and gamma). Only two properties need to be specified.
 
     kwargs:
@@ -337,7 +337,7 @@ class Gas:
             raise ValueError(f"Not enough inputs provided to fully define the Gas. You must provide exactly 2, but you provided only {len(kwargs)}.")
 
     def __repr__(self):
-        return f"<nozzle.Gas object> with: \ngamma = {self.gamma} \ncp = {self.cp} \nmolecular_weight = {self.molecular_weight} \nR = {self.R}"
+        return f"<nozzle.perfect_gas object> with: \ngamma = {self.gamma} \ncp = {self.cp} \nmolecular_weight = {self.molecular_weight} \nR = {self.R}"
 
 class CombustionChamber:
     """Object for storing combustion chamber properties.
@@ -476,12 +476,12 @@ class Engine:
     """Class for representing a liquid rocket engine.
 
     Args:
-        gas (Gas): Gas representing the exhaust gas for the engine.
+        gas (PerfectGas): Gas representing the exhaust gas for the engine.
         combustion_chamber (CombustionChamber): CombustionChamber for the engine.
         nozzle (Nozzle): Nozzle for the engine.
     """
-    def __init__(self, gas, combustion_chamber, nozzle):
-        self.gas = gas
+    def __init__(self, perfect_gas, combustion_chamber, nozzle):
+        self.perfect_gas = perfect_gas
         self.combustion_chamber = combustion_chamber
         self.nozzle = nozzle
 
@@ -498,7 +498,7 @@ class Engine:
         #If we're not at the throat:
         else:
             def func_to_solve(Mach):
-                return self.combustion_chamber.mdot*(self.gas.cp*self.combustion_chamber.T0)**0.5 / (self.nozzle.A(x)*self.combustion_chamber.p0) - m_bar(Mach, self.gas.gamma)
+                return self.combustion_chamber.mdot*(self.perfect_gas.cp*self.combustion_chamber.T0)**0.5 / (self.nozzle.A(x)*self.combustion_chamber.p0) - m_bar(Mach, self.perfect_gas.gamma)
             
             Mach = scipy.optimize.root_scalar(func_to_solve, bracket = [1,25], x0 = 1).root
 
@@ -513,7 +513,7 @@ class Engine:
         Returns:
             float: Temperature (K)
         """
-        return T(self.combustion_chamber.T0, self.M(x), self.gas.gamma)
+        return T(self.combustion_chamber.T0, self.M(x), self.perfect_gas.gamma)
 
     def p(self, x):
         """Get pressure at a position along the nozzle.
@@ -524,7 +524,7 @@ class Engine:
         Returns:
             float: Pressure (Pa)
         """
-        return p(self.combustion_chamber.p0, self.M(x), self.gas.gamma)
+        return p(self.combustion_chamber.p0, self.M(x), self.perfect_gas.gamma)
 
     def check_seperation(self, p_amb):
         """Approximate check for nozzle seperation. Based off page 17 of Reference [2].  
@@ -576,7 +576,7 @@ class Engine:
         seperation_wall_pressure = p_amb * 0.583 * (p_amb/self.combustion_chamber.p0)**0.195
 
         #Get the exit area that gives this wall pressure at the exit.
-        return get_exit_area(self.gas, self.combustion_chamber, seperation_wall_pressure)
+        return get_exit_area(self.perfect_gas, self.combustion_chamber, seperation_wall_pressure)
 
     def thrust(self, p_amb):
         """Returns the thrust of the engine for a given ambient pressure.
@@ -592,7 +592,7 @@ class Engine:
             Te = self.T(self.nozzle.length)
             pe = self.p(self.nozzle.length)
 
-            return self.combustion_chamber.mdot*Me*(self.gas.gamma*self.gas.R*Te)**0.5 + (pe - p_amb)*self.nozzle.Ae    #Generic equation for rocket thrust
+            return self.combustion_chamber.mdot*Me*(self.perfect_gas.gamma*self.perfect_gas.R*Te)**0.5 + (pe - p_amb)*self.nozzle.Ae    #Generic equation for rocket thrust
         
         else:
             raise ValueError(f"Seperation occured in the nozzle, at a postion {self.check_seperation(p_amb)} m downstream of the throat.")

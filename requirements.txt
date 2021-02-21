@@ -3,3 +3,4 @@ scipy
 matplotlib
 ambiance
 thermo
+pypropep
