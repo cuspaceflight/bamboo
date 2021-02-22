@@ -8,13 +8,13 @@ import time
 
 '''Chamber conditions'''
 Ac = 116.6e-4           #Chamber cross-sectional area (m^2)
-pc = 10e5               #Chamber pressure (Pa)
+pc = 15e5               #Chamber pressure (Pa)
 mdot = 4.757            #Mass flow rate (kg/s)
 p_amb = 1.01325e5       #Ambient pressure (Pa). 1.01325e5 is sea level atmospheric.
 OF_ratio = 4            #Mass ratio
 
 '''We want to investigate adding water to the isopropyl alcohol'''
-water_mass_fraction = 0.0  #Fraction of the fuel that is water, by mass
+water_mass_fraction = 0.10  #Fraction of the fuel that is water, by mass
 
 '''Get combustion properties from pypropep'''
 #Initialise and get propellants
@@ -59,6 +59,9 @@ chamber = bam.ChamberConditions(pc, Tc, mdot)
 nozzle = bam.Nozzle.from_engine_components(perfect_gas, chamber, p_amb, type = "rao", length_fraction = 0.8)
 white_dwarf = bam.Engine(perfect_gas, chamber, nozzle)
 
+print(f"Sea level thrust = {white_dwarf.thrust(1e5)/1000} kN")
+print(f"Sea level Isp = {white_dwarf.isp(1e5)} s")
+
 '''Cooling system setup'''
 cooling_jacket = cool.CoolingJacket(k_wall, channel_width, channel_height, inlet_T, pc, thermo_coolant, mdot_coolant)
 engine_geometry = cool.EngineGeometry(chamber, nozzle, chamber_length, Ac, wall_thickness)
@@ -72,23 +75,38 @@ engine_geometry.plot_geometry()
 cooling_data = cooled_engine.run_heating_analysis(number_of_points = 1000)
 
 '''Plot the results'''
-fig, axs = plt.subplots()
-axs.plot(cooling_data["x"], cooling_data["T_wall_inner"] - 273.15, label = "Wall (Inner)")
-axs.plot(cooling_data["x"], cooling_data["T_wall_outer"]- 273.15, label = "Wall (Outer)")
-axs.plot(cooling_data["x"], cooling_data["T_coolant"]- 273.15, label = "Coolant")
-#axs.plot(cooling_data["x"], cooling_data["T_gas"], label = "Exhaust gas")
-axs.axvline(cooling_data["boil_off_position"], color = 'red', linestyle = '--', label = "Coolant boil-off")
-axs.grid()
-axs.set_xlabel("Position (m)")
-axs.set_ylabel("Temperature (deg C)")
-axs.legend()
+#Nozzle shape
+shape_x = np.linspace(engine_geometry.x_min, engine_geometry.x_max, 1000)
+shape_y = np.zeros(len(shape_x))
 
-plt.show()
+for i in range(len(shape_x)):
+    shape_y[i] = engine_geometry.y(shape_x[i])
 
+#Temperatures
+fig, ax_T = plt.subplots()
+ax_T.plot(cooling_data["x"], cooling_data["T_wall_inner"] - 273.15, label = "Wall (Inner)")
+ax_T.plot(cooling_data["x"], cooling_data["T_wall_outer"]- 273.15, label = "Wall (Outer)")
+ax_T.plot(cooling_data["x"], cooling_data["T_coolant"]- 273.15, label = "Coolant")
+#ax_T.plot(cooling_data["x"], cooling_data["T_gas"], label = "Exhaust gas")
+ax_T.axvline(cooling_data["boil_off_position"], color = 'red', linestyle = '--', label = "Coolant boil-off")
+
+ax_T.grid()
+ax_T.set_xlabel("Position (m)")
+ax_T.set_ylabel("Temperature (deg C)")
+ax_T.legend()
+
+ax_shape = ax_T.twinx()
+ax_shape.plot(shape_x, shape_y, color="blue", label = "Engine contour")
+ax_shape.plot(shape_x, -shape_y, color="blue")
+ax_shape.set_aspect('equal')
+ax_shape.legend()
+
+#Heat transfer coefficients
 h_figs, h_axs = plt.subplots()
 h_axs.plot(cooling_data["x"], cooling_data["h_gas"], label = "h_gas")
 h_axs.plot(cooling_data["x"], cooling_data["h_coolant"], label = "h_coolant", )
 h_axs.axvline(cooling_data["boil_off_position"], color = 'red', linestyle = '--', label = "Coolant boil-off")
 h_axs.grid()
 h_axs.legend()
+
 plt.show()
