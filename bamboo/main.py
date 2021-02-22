@@ -626,7 +626,7 @@ class Engine:
         """
         test_engine = self
         At = test_engine.nozzle.At
-        bounds = np.array([3.678, 54.623])*At        #Area ratio limits on our Rao angle data are [3.678, 54.623]
+        bounds = np.array([1, 100])*At        #Hardcoded area ratio limits
 
         #We need to calculate bounds to avoid causing flow seperation in the nozzle
         Ae_for_sepeation = self.seperation_Ae(ambiance.Atmosphere(0).pressure[0])    #Exit area that would cause seperation at sea level.
