@@ -32,8 +32,7 @@ def black_body(T):
 
 '''Classes'''
 class EngineGeometry:
-    def __init__(self, chamber_conditions, nozzle, chamber_length, chamber_area, wall_thickness, geometry="auto"):
-        self.chamber_conditions = chamber_conditions
+    def __init__(self, nozzle, chamber_length, chamber_area, wall_thickness, geometry="auto"):
         self.nozzle = nozzle
         self.chamber_length = chamber_length
         self.chamber_area = chamber_area
@@ -139,12 +138,13 @@ class CoolingJacket:
         return self.equivelant_diameter
 
 class EngineWithCooling:
-    def __init__(self, geometry, cooling_jacket, perfect_gas, thermo_gas):
+    def __init__(self, chamber_conditions, geometry, cooling_jacket, perfect_gas, thermo_gas):
+        self.chamber_conditions = chamber_conditions
         self.geometry = geometry
         self.cooling_jacket = cooling_jacket
         self.perfect_gas = perfect_gas
         self.thermo_gas = thermo_gas
-        self.c_star = self.geometry.chamber_conditions.p0 * self.geometry.nozzle.At / self.geometry.chamber_conditions.mdot
+        #self.c_star = self.geometry.chamber_conditions.p0 * self.geometry.nozzle.At / self.geometry.chamber_conditions.mdot
 
     def M(self, x):
         #Exhaust gas Mach number
@@ -155,7 +155,7 @@ class EngineWithCooling:
         #If we're not at the throat:
         else:
             def func_to_solve(Mach):
-                return self.geometry.chamber_conditions.mdot*(self.perfect_gas.cp*self.geometry.chamber_conditions.T0)**0.5 / (self.geometry.A(x)*self.geometry.chamber_conditions.p0) - bam.m_bar(Mach, self.perfect_gas.gamma)
+                return self.chamber_conditions.mdot*(self.perfect_gas.cp*self.chamber_conditions.T0)**0.5 / (self.geometry.A(x)*self.chamber_conditions.p0) - bam.m_bar(Mach, self.perfect_gas.gamma)
             
             if x > 0:
                 Mach = scipy.optimize.root_scalar(func_to_solve, bracket = [1,300], x0 = 1).root
@@ -166,10 +166,10 @@ class EngineWithCooling:
 
     def T(self, x):
         #Exhaust gas temperature
-        return bam.T(self.geometry.chamber_conditions.T0, self.M(x), self.perfect_gas.gamma)
+        return bam.T(self.chamber_conditions.T0, self.M(x), self.perfect_gas.gamma)
 
     def p(self, x):
-        return bam.p(self.geometry.chamber_conditions.p0, self.M(x), self.perfect_gas.gamma)
+        return bam.p(self.chamber_conditions.p0, self.M(x), self.perfect_gas.gamma)
 
     def rho(self, x):
         #Exhaust gas density
@@ -224,9 +224,8 @@ class EngineWithCooling:
 
             plt.show()
 
-    def coolant_velocity(self, x, rho):
-        #rho is the coolant density here!
-        return self.cooling_jacket.mdot_coolant/(rho * self.cooling_jacket.A(x))
+    def coolant_velocity(self, x, rho_coolant):
+        return self.cooling_jacket.mdot_coolant/(rho_coolant * self.cooling_jacket.A(x))
 
     def h_gas(self, x, mu, k, Pr):
         """Get the convective heat transfer coefficient on the gas side.
@@ -253,17 +252,22 @@ class EngineWithCooling:
 
         return 0.026 * (rho*v)**0.8 / (D**0.2) * (Pr**0.4) * k/(mu**0.8)
 
-    def h_gas_bartz(self, x, mu, cp, Pr):
-        c_star = self.c_star
-        Tc = self.geometry.chamber_conditions.T0
-        T_gas = self.T(x)
-        pc = self.geometry.chamber_conditions.p0
-        M = self.M(x)
-        gamma = self.perfect_gas.gamma
-        At = self.geometry.nozzle.At
+    def h_gas_bartz(self, D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0):
+        """Equation (8-23) from page 312 of RPE 7th edition. 'am' refers to the gas being at the 'arithmetic mean' of the wall and freestream temperatures.
 
-        #Incomplete
-        raise ValueError("h_gas_bartz is not currently functional")
+        Args:
+            D (float): Gas flow diameter (m)
+            cp_inf (float): Specific heat capacity at constant pressure for the gas, in the freestream
+            mu_inf (float): Absolute viscosity in the freestream
+            Pr_inf (float): Prandtl number in the freestream
+            rho_inf (float): Density of the gas in the freestream
+            v_inf (float): Velocity of the gas in in the freestream
+            rho_am (float): Density of the gas, at T = (T_wall + T_freestream)/2
+            mu_am (float): Absolute viscosity of the gas, at T = (T_wall + T_freestream)/2
+            mu0 (float): Absolute viscosity of the gas under stagnation conditions.
+        """
+
+        return (0.026/D**0.2) * (cp_inf*mu_inf**0.2)/(Pr_inf**0.6) * (rho_inf * v_inf)**0.8 * (rho_am/rho_inf) * (mu_am/mu0)**0.2
 
     def h_coolant(self, x, mu, k, c_bar, rho):
         """Get the convective heat transfer coefficient for the coolant side.
@@ -285,7 +289,6 @@ class EngineWithCooling:
         v = self.coolant_velocity(x, rho)
         
         return 0.023*c_bar * (mdot/A) * (D*v*rho/mu)**(-0.2) * (mu*c_bar/k)**(-2/3)
-        #return 0.023*c_bar*(self.cooling_jacket.mdot_coolant/self.cooling_jacket.A(x))*(self.cooling_jacket.D(x)*self.coolant_velocity(x, rho)*rho/mu)**(-0.2)*(mu*c_bar/k)**(-2/3) 
 
     def thermal_circuit(self, x, h_gas, h_coolant, k_wall, T_gas, T_coolant):
         """
@@ -320,7 +323,18 @@ class EngineWithCooling:
 
         return q_dot, R_gas, R_wall, R_coolant
 
-    def run_heating_analysis(self, number_of_points=1000):
+    def run_heating_analysis(self, number_of_points=1000, h_gas_model = "standard"):
+        """Run a simulation of the engine cooling system to get wall temperatures, coolant temperatures, etc.
+
+        Args:
+            number_of_points (int, optional): Number of discrete points to divide the engine into. Defaults to 1000.
+            h_gas_model (str, optional): Equation to use for the gas side convective heat transfer coefficients. Options are 'standard' and 'bartz'. Defaults to "standard".
+
+        Returns:
+            dict: Results of the simulation.
+        """
+
+        '''Initialise variables and arrays'''
         #To keep track of any coolant boiling
         boil_off_position = None
         
@@ -329,21 +343,11 @@ class EngineWithCooling:
         dx = discretised_x[0] - discretised_x[1]
 
         #Temperatures and heat transfer rates
-        T_wall_inner = np.zeros(len(discretised_x))
-        T_wall_outer = np.zeros(len(discretised_x))
-        T_coolant = np.zeros(len(discretised_x))
-        T_gas = np.zeros(len(discretised_x))
-        q_dot = np.zeros(len(discretised_x))
-
-        #Fluid properties
-        coolant_k = np.zeros(len(discretised_x))
-        coolant_mu = np.zeros(len(discretised_x))
-        coolant_cp = np.zeros(len(discretised_x))
-        coolant_rho = np.zeros(len(discretised_x))
-
-        exhaust_gas_mu = np.zeros(len(discretised_x))
-        exhaust_gas_k = np.zeros(len(discretised_x))
-        exhaust_gas_Pr = np.zeros(len(discretised_x))
+        T_wall_inner = np.zeros(len(discretised_x)) #Gas side wall temperature
+        T_wall_outer = np.zeros(len(discretised_x)) #Coolant side wall temperature
+        T_coolant = np.zeros(len(discretised_x))    #Coolant temperature
+        T_gas = np.zeros(len(discretised_x))        #Freestream gas temperature
+        q_dot = np.zeros(len(discretised_x))        #Heat transfer rate per unit length
 
         #Heat transfer rates
         h_gas = np.zeros(len(discretised_x))
@@ -353,46 +357,85 @@ class EngineWithCooling:
         coolant = self.cooling_jacket.thermo_coolant
         exhaust_gas = self.thermo_gas
 
+        '''Main loop'''
         for i in range(len(discretised_x)):
             x = discretised_x[i]
 
-            #Get known temperatures
-            T_gas[i] = self.T(x)
-            p_gas = self.p(x)
-
-            #First step
-            if i == 0:
-                T_coolant[i] = self.cooling_jacket.inlet_T
-            else:
-                T_coolant[i] = T_coolant[i-1] + (q_dot[i-1]*dx)/(self.cooling_jacket.mdot_coolant*self.cooling_jacket.thermo_coolant.Cp)    #Increase in coolant temperature, q*dx = mdot*Cp*dT
-
-            #Calculate coolant and exhaust gas properties
+            #Coolant side heat transfer coefficient
             coolant.calculate(T = T_coolant[i], P = self.cooling_jacket.inlet_p0)
-            exhaust_gas.calculate(T = T_gas[i], P = p_gas)
 
-            #Check if the coolant boiled off
+            mu_coolant = coolant.mu
+            k_coolant = coolant.k
+            cp_coolant = coolant.Cp
+            rho_coolant = coolant.rho
+
+            h_coolant[i] = self.h_coolant(x, mu_coolant, k_coolant, cp_coolant, rho_coolant)
+
+            #Check for coolant boil off
             if boil_off_position == None and coolant.phase=='g':
                 print(f"WARNING: Coolant boiled off at x = {x} m")
                 boil_off_position = x
 
-            #Store properties to use as an output later
-            coolant_mu[i] = coolant.mu
-            coolant_k[i] = coolant.k
-            coolant_cp[i] = coolant.Cp
-            coolant_rho[i] = coolant.rho
+            #Calculate coolant temperature
+            if i == 0:
+                T_coolant[i] = self.cooling_jacket.inlet_T
+            else:
+                T_coolant[i] = T_coolant[i-1] + (q_dot[i-1]*dx)/(self.cooling_jacket.mdot_coolant*cp_coolant)    #Increase in coolant temperature, q*dx = mdot*Cp*dT
 
-            exhaust_gas_mu[i] = exhaust_gas.mu
-            exhaust_gas_k[i] = exhaust_gas.k
-            exhaust_gas_Pr[i] = exhaust_gas.Pr
+            #Gas freestream temperatures
+            T_gas[i] = self.T(x)
+            p_gas = self.p(x)
 
-            #Get convective heat transfer coefficients
-            h_gas[i] = self.h_gas(x, exhaust_gas_mu[i], exhaust_gas_k[i], exhaust_gas_Pr[i])
-            h_coolant[i] = self.h_coolant(x, coolant_mu[i], coolant_k[i], coolant_cp[i], coolant_rho[i])
+            #Gas side heat transfer coefficient
+            if h_gas_model == "standard":
+                exhaust_gas.calculate(T = T_gas[i], P = p_gas)
 
+                mu = exhaust_gas.mu
+                k = exhaust_gas.k
+                Pr = exhaust_gas.Pr
+
+                h_gas[i] = self.h_gas(x, mu, k, Pr)
+
+            elif h_gas_model == "bartz":
+                gamma = self.perfect_gas.gamma
+                R = self.perfect_gas.R
+                D = 2*self.geometry.y(x)            #Flow diameter
+
+                #Freestream properties
+                p_inf = p_gas
+                T_inf = T_gas[i]
+                rho_inf = self.rho(x)
+                M_inf = self.M(x)
+                v_inf = M_inf * (gamma*R*T_inf)**0.5    #Gas velocity
+
+                exhaust_gas.calculate(T = T_gas[i], P = p_gas)
+                mu_inf = exhaust_gas.mu
+                Pr_inf = exhaust_gas.Pr
+                cp_inf = self.perfect_gas.cp
+
+                #Properties at arithmetic mean of T_wall and T_inf
+                T_am = (T_inf + T_wall_inner[i-1]) / 2
+
+                exhaust_gas.calculate(T = T_am, P = p_gas)
+                mu_am = exhaust_gas.mu
+                rho_am = p_inf/(R*T_am) #p = rho R T - pressure is roughly uniform across the boundary layer so p_inf ~= p_wall
+
+                #Stagnation properties
+                p0 = self.chamber_conditions.p0
+                T0 = self.chamber_conditions.T0
+
+                exhaust_gas.calculate(T = T0, P = p0)
+                mu0 = exhaust_gas.mu
+
+                h_gas[i] = self.h_gas_bartz(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0)
+
+            else:
+                raise AttributeError(f"Could not find the h_gas_model {h_gas_model}")
+            
             #Get thermal circuit properties
             q_dot[i], R_gas, R_wall, R_coolant = self.thermal_circuit(x, h_gas[i], h_coolant[i], self.cooling_jacket.k_wall, T_gas[i], T_coolant[i])
 
-            #Calculate unknown temperatures
+            #Calculate wall temperatures
             T_wall_inner[i] = T_gas[i] - q_dot[i]*R_gas
             T_wall_outer[i] = T_wall_inner[i] - q_dot[i]*R_wall
 
@@ -402,13 +445,6 @@ class EngineWithCooling:
                 "T_coolant" : T_coolant,
                 "T_gas" : T_gas,
                 "q_dot" : q_dot,
-                "coolant_mu" : coolant_mu,
-                "coolant_k" : coolant_k,
-                "coolant_cp" : coolant_cp,
-                "coolant_rho" : coolant_rho,
-                "exhaust_gas_mu" : exhaust_gas_mu,
-                "exhaust_gas_k" : exhaust_gas_k,
-                "exhaust_gas_Pr" : exhaust_gas_Pr,
                 "h_gas" : h_gas,
                 "h_coolant" : h_coolant,
                 "boil_off_position" : boil_off_position}

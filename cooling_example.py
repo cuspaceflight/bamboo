@@ -37,8 +37,10 @@ cp = 1000*e.properties.Cp   #Cp is given in kJ/kg/K, we want J/kg/K
 Tc = e.properties.T
 
 '''Get physical properties of the gas using thermo - use the mole fractions given by pypropep'''
-thermo_gas = thermo.mixture.Mixture(['N2', 'H2', 'CO', 'H2O', 'CO2'], 
-                                    zs = [e.composition['N2'], e.composition['H2'], e.composition['CO'], e.composition['H2O'], e.composition['CO2']])   
+#Exclude H2 and CO- it has very weird Prandtl number effects - it jumps around massively and I'm not sure why.
+#Note that if you want carbon monoxide included you must type 'carbon monoxide', not 'CO' - the latter seems to make thermo use methanol (I don't know why)
+thermo_gas = thermo.mixture.Mixture(['N2', 'H2O', 'CO2'], 
+                                    zs = [e.composition['N2'], e.composition['H2O'], e.composition['CO2']])   
 
 '''Engine dimensions'''
 chamber_length = 75e-2
@@ -64,15 +66,15 @@ print(f"Sea level Isp = {white_dwarf.isp(1e5)} s")
 
 '''Cooling system setup'''
 cooling_jacket = cool.CoolingJacket(k_wall, channel_width, channel_height, inlet_T, pc, thermo_coolant, mdot_coolant)
-engine_geometry = cool.EngineGeometry(chamber, nozzle, chamber_length, Ac, wall_thickness)
-cooled_engine = cool.EngineWithCooling(engine_geometry, cooling_jacket, perfect_gas, thermo_gas)
+engine_geometry = cool.EngineGeometry(nozzle, chamber_length, Ac, wall_thickness)
+cooled_engine = cool.EngineWithCooling(chamber, engine_geometry, cooling_jacket, perfect_gas, thermo_gas)
 
 '''Plots'''
 engine_geometry.plot_geometry()
 #cooled_engine.show_gas_temperature()
 
 '''Run the cooling system simulation'''
-cooling_data = cooled_engine.run_heating_analysis(number_of_points = 1000)
+cooling_data = cooled_engine.run_heating_analysis(number_of_points = 1000, h_gas_model = "standard")
 
 '''Plot the results'''
 #Nozzle shape
@@ -88,7 +90,8 @@ ax_T.plot(cooling_data["x"], cooling_data["T_wall_inner"] - 273.15, label = "Wal
 ax_T.plot(cooling_data["x"], cooling_data["T_wall_outer"]- 273.15, label = "Wall (Outer)")
 ax_T.plot(cooling_data["x"], cooling_data["T_coolant"]- 273.15, label = "Coolant")
 #ax_T.plot(cooling_data["x"], cooling_data["T_gas"], label = "Exhaust gas")
-ax_T.axvline(cooling_data["boil_off_position"], color = 'red', linestyle = '--', label = "Coolant boil-off")
+if cooling_data["boil_off_position"] != None:
+    ax_T.axvline(cooling_data["boil_off_position"], color = 'red', linestyle = '--', label = "Coolant boil-off")
 
 ax_T.grid()
 ax_T.set_xlabel("Position (m)")
@@ -99,13 +102,14 @@ ax_shape = ax_T.twinx()
 ax_shape.plot(shape_x, shape_y, color="blue", label = "Engine contour")
 ax_shape.plot(shape_x, -shape_y, color="blue")
 ax_shape.set_aspect('equal')
-ax_shape.legend()
+ax_shape.legend(loc = "lower left")
 
 #Heat transfer coefficients
 h_figs, h_axs = plt.subplots()
 h_axs.plot(cooling_data["x"], cooling_data["h_gas"], label = "h_gas")
 h_axs.plot(cooling_data["x"], cooling_data["h_coolant"], label = "h_coolant", )
-h_axs.axvline(cooling_data["boil_off_position"], color = 'red', linestyle = '--', label = "Coolant boil-off")
+if cooling_data["boil_off_position"] != None:
+    h_axs.axvline(cooling_data["boil_off_position"], color = 'red', linestyle = '--', label = "Coolant boil-off")
 h_axs.grid()
 h_axs.legend()
 
