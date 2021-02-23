@@ -113,10 +113,28 @@ class EngineGeometry:
             plt.show()
 
 class CoolingJacket:
-    def __init__(self, k_wall, channel_width, channel_height, inlet_T, inlet_p0, thermo_coolant, mdot_coolant, channel_shape = "rectangle", configuration = "spiral"):
+    """Cooling jacket parameters.
+
+    Args:
+        k_wall (float): Wall conductivity
+        inlet_T (float): Inlet coolant temperature (K)
+        inlet_p0 (float): Inlet coolant stagnation pressure (Pa)
+        thermo_coolant (thermo.chemical.Chemical or thermo.mixture.Mixture): Used to get physical properties of the coolant.
+        mdot_coolant (float): Coolant mass flow rate (kg/s)
+        channel_shape (str, optional): Options include 'rectangle', 'semi-circle', and 'custom'. Defaults to "rectangle".
+        configuration (str, optional): Options include 'spiral'. Defaults to "spiral".
+        rectangle_width (float, optional): If using channel_shape = 'rectangle', this is the height of the rectangles (in the radial direction). Defaults to None.
+        rectangle_height (float, optional): If using channel_shape = 'rectangle, this is the width of the rectangles (in the hoopwise direction). Defaults to None.
+        circle_diameter (float, optional): If using channel_shape = 'semi-circle', this is the diameter of the semi circle. Defaults to None.
+        custom_hydraulic_diameter (float, optional) : If using channel_shape = 'custom', this is the hydraulic diameter you want to use. Defautls to None.
+        custom_flow_area (float, optional) : If using channel_shape = 'custom', this is the flow you want to use. Defaults to None.
+    """
+    def __init__(self, k_wall, inlet_T, inlet_p0, thermo_coolant, mdot_coolant, channel_shape = "rectangle", configuration = "spiral", 
+                 rectangle_width = None, rectangle_height = None,
+                 circle_diameter = None,
+                 custom_hydraulic_diameter = None, custom_flow_area = None):
         self.k_wall = k_wall
-        self.channel_width = channel_width
-        self.channel_height = channel_height
+
         self.thermo_coolant = thermo_coolant          #thermo library Chemical
         self.mdot_coolant = mdot_coolant
         self.inlet_T = inlet_T
@@ -126,16 +144,30 @@ class CoolingJacket:
         
         if self.channel_shape == "rectangle":
             #Page 317 of RPE 7th Edition
-            self.perimeter = 2*channel_width + 2*channel_height
-            self.flow_area = channel_width*channel_height
+            self.rectangle_width = rectangle_width
+            self.rectangle_height = rectangle_height
+            self.perimeter = 2*rectangle_width + 2*rectangle_height
+            self.flow_area = rectangle_width*rectangle_height
             self.hydraulic_radius = self.flow_area/self.perimeter
-            self.equivelant_diameter = 4*self.hydraulic_radius
+            self.hydraulic_diameter = 4*self.hydraulic_radius
+
+        if self.channel_shape == "semi-circle":
+            self.circle_diameter = circle_diameter
+            self.perimeter = circle_diameter + np.pi*circle_diameter/2
+            self.flow_area = np.pi*circle_diameter**2/8
+            self.hydraulic_radius = self.flow_area/self.perimeter
+            self.hydraulic_diameter = 4*self.hydraulic_radius
+
+        if self.channel_shape == "custom":
+            self.flow_area = custom_flow_area
+            self.hydraulic_diameter = custom_hydraulic_diameter
+
 
     def A(self, x=None):
         return self.flow_area
     
     def D(self, x=None):
-        return self.equivelant_diameter
+        return self.hydraulic_diameter
 
 class EngineWithCooling:
     def __init__(self, chamber_conditions, geometry, cooling_jacket, perfect_gas, thermo_gas):
@@ -252,7 +284,7 @@ class EngineWithCooling:
 
         return 0.026 * (rho*v)**0.8 / (D**0.2) * (Pr**0.4) * k/(mu**0.8)
 
-    def h_gas_bartz(self, D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0):
+    def h_gas_bartz_1(self, D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0):
         """Equation (8-23) from page 312 of RPE 7th edition. 'am' refers to the gas being at the 'arithmetic mean' of the wall and freestream temperatures.
 
         Args:
@@ -268,6 +300,29 @@ class EngineWithCooling:
         """
 
         return (0.026/D**0.2) * (cp_inf*mu_inf**0.2)/(Pr_inf**0.6) * (rho_inf * v_inf)**0.8 * (rho_am/rho_inf) * (mu_am/mu0)**0.2
+
+    def h_gas_bartz_2(self, mu, cp, Pr, M, A, Tw):
+        """Altnerative equation for Bartz.
+
+        Args:
+            mu (float): Absolute viscosity of the gas freestream.
+            cp (float): Specific heat at constant pressure for the gas freestream.
+            Pr (float): Prandtl number for the gas freestream.
+            M (float): Mach number in the gas freestream.
+            A (float): Flow area of the gas.
+            Tw (float): Gas temperature at the wall.
+        """
+        c_star = self.chamber_conditions.p0 * self.geometry.nozzle.At / self.chamber_conditions.mdot
+        Dt = 2*self.geometry.nozzle.Rt
+        At = self.geometry.nozzle.At
+        pc = self.chamber_conditions.p0
+        Tc = self.chamber_conditions.T0
+
+        gamma = self.perfect_gas.gamma
+
+        sigma = (0.5 * (Tw/Tc) * (1 + (gamma-1)/2 * M**2) + 0.5)**0.68 * (1 + (gamma-1)/2 * M**2)**(-0.12)
+        
+        return (0.026)/(Dt**0.2) * (mu**0.2*cp/Pr**0.6) * (pc/c_star)**0.8 * (At/A)**0.9 * sigma
 
     def h_coolant(self, x, mu, k, c_bar, rho):
         """Get the convective heat transfer coefficient for the coolant side.
@@ -328,7 +383,7 @@ class EngineWithCooling:
 
         Args:
             number_of_points (int, optional): Number of discrete points to divide the engine into. Defaults to 1000.
-            h_gas_model (str, optional): Equation to use for the gas side convective heat transfer coefficients. Options are 'standard' and 'bartz'. Defaults to "standard".
+            h_gas_model (str, optional): Equation to use for the gas side convective heat transfer coefficients. Options are 'standard' and 'bartz 1', 'bartz 2'. Defaults to "standard".
 
         Returns:
             dict: Results of the simulation.
@@ -396,7 +451,7 @@ class EngineWithCooling:
 
                 h_gas[i] = self.h_gas(x, mu, k, Pr)
 
-            elif h_gas_model == "bartz":
+            elif h_gas_model == "bartz 1":
                 gamma = self.perfect_gas.gamma
                 R = self.perfect_gas.R
                 D = 2*self.geometry.y(x)            #Flow diameter
@@ -427,7 +482,18 @@ class EngineWithCooling:
                 exhaust_gas.calculate(T = T0, P = p0)
                 mu0 = exhaust_gas.mu
 
-                h_gas[i] = self.h_gas_bartz(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0)
+                h_gas[i] = self.h_gas_bartz_1(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0)
+
+            elif h_gas_model == "bartz 2":
+                M = self.M(x) 
+                A = self.geometry.A(x)
+                Tw = T_wall_inner[i-1]
+
+                exhaust_gas.calculate(T = T_gas[i], P = p_gas)
+                mu = exhaust_gas.mu
+                cp = self.perfect_gas.cp
+                Pr = exhaust_gas.Pr
+                h_gas[i] = self.h_gas_bartz_2(mu, cp, Pr, M, A, Tw)
 
             else:
                 raise AttributeError(f"Could not find the h_gas_model {h_gas_model}")

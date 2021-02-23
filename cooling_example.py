@@ -14,7 +14,7 @@ p_amb = 1.01325e5       #Ambient pressure (Pa). 1.01325e5 is sea level atmospher
 OF_ratio = 4            #Mass ratio
 
 '''We want to investigate adding water to the isopropyl alcohol'''
-water_mass_fraction = 0.10  #Fraction of the fuel that is water, by mass
+water_mass_fraction = 0.25  #Fraction of the fuel that is water, by mass
 
 '''Get combustion properties from pypropep'''
 #Initialise and get propellants
@@ -43,14 +43,13 @@ thermo_gas = thermo.mixture.Mixture(['N2', 'H2O', 'CO2'],
                                     zs = [e.composition['N2'], e.composition['H2O'], e.composition['CO2']])   
 
 '''Engine dimensions'''
-chamber_length = 75e-2
+chamber_length = 0.170 #75e-2
 wall_thickness = 2e-3
 
 '''Coolant jacket'''
 OF_mass_ratio = 3
 mdot_coolant = mdot/(OF_mass_ratio + 1)
-channel_width = 1e-3
-channel_height = 1e-3
+semi_circle_diameter = 4e-3
 k_wall = 300
 inlet_T = 298.15    #Coolant inlet temperature
 thermo_coolant = thermo.chemical.Chemical('Isopropyl Alcohol')
@@ -65,16 +64,16 @@ print(f"Sea level thrust = {white_dwarf.thrust(1e5)/1000} kN")
 print(f"Sea level Isp = {white_dwarf.isp(1e5)} s")
 
 '''Cooling system setup'''
-cooling_jacket = cool.CoolingJacket(k_wall, channel_width, channel_height, inlet_T, pc, thermo_coolant, mdot_coolant)
+cooling_jacket = cool.CoolingJacket(k_wall, inlet_T, pc, thermo_coolant, mdot_coolant, channel_shape = "semi-circle", circle_diameter = semi_circle_diameter)
 engine_geometry = cool.EngineGeometry(nozzle, chamber_length, Ac, wall_thickness)
 cooled_engine = cool.EngineWithCooling(chamber, engine_geometry, cooling_jacket, perfect_gas, thermo_gas)
 
 '''Plots'''
-engine_geometry.plot_geometry()
-#cooled_engine.show_gas_temperature()
+#engine_geometry.plot_geometry()
+cooled_engine.show_gas_mach()
 
 '''Run the cooling system simulation'''
-cooling_data = cooled_engine.run_heating_analysis(number_of_points = 1000, h_gas_model = "standard")
+cooling_data = cooled_engine.run_heating_analysis(number_of_points = 1000, h_gas_model = "bartz 2")
 
 '''Plot the results'''
 #Nozzle shape
@@ -98,19 +97,23 @@ ax_T.set_xlabel("Position (m)")
 ax_T.set_ylabel("Temperature (deg C)")
 ax_T.legend()
 
-ax_shape = ax_T.twinx()
-ax_shape.plot(shape_x, shape_y, color="blue", label = "Engine contour")
-ax_shape.plot(shape_x, -shape_y, color="blue")
-ax_shape.set_aspect('equal')
-ax_shape.legend(loc = "lower left")
+#ax_shape = ax_T.twinx()
+#ax_shape.plot(shape_x, shape_y, color="blue", label = "Engine contour")
+#ax_shape.plot(shape_x, -shape_y, color="blue")
+#ax_shape.set_aspect('equal')
+#ax_shape.legend(loc = "lower left")
 
-#Heat transfer coefficients
+#Heat transfer coefficients and heat transfer rates
 h_figs, h_axs = plt.subplots()
 h_axs.plot(cooling_data["x"], cooling_data["h_gas"], label = "h_gas")
 h_axs.plot(cooling_data["x"], cooling_data["h_coolant"], label = "h_coolant", )
 if cooling_data["boil_off_position"] != None:
     h_axs.axvline(cooling_data["boil_off_position"], color = 'red', linestyle = '--', label = "Coolant boil-off")
-h_axs.grid()
+
+q_axs = h_axs.twinx() 
+q_axs.plot(cooling_data["x"], cooling_data["q_dot"], label = "Heat transfer rate (W/m)", color = 'red')
+q_axs.grid()
+q_axs.legend(loc = "lower left")
 h_axs.legend()
 
 plt.show()
