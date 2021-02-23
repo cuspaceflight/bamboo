@@ -116,7 +116,7 @@ class CoolingJacket:
     """Cooling jacket parameters.
 
     Args:
-        k_wall (float): Wall conductivity
+        inner_wall (material): Inner wall material
         inlet_T (float): Inlet coolant temperature (K)
         inlet_p0 (float): Inlet coolant stagnation pressure (Pa)
         thermo_coolant (thermo.chemical.Chemical or thermo.mixture.Mixture): Used to get physical properties of the coolant.
@@ -129,12 +129,11 @@ class CoolingJacket:
         custom_hydraulic_diameter (float, optional) : If using channel_shape = 'custom', this is the hydraulic diameter you want to use. Defautls to None.
         custom_flow_area (float, optional) : If using channel_shape = 'custom', this is the flow you want to use. Defaults to None.
     """
-    def __init__(self, k_wall, inlet_T, inlet_p0, thermo_coolant, mdot_coolant, channel_shape = "rectangle", configuration = "spiral", 
+    def __init__(self, inner_wall, inlet_T, inlet_p0, thermo_coolant, mdot_coolant, channel_shape = "rectangle", configuration = "spiral", 
                  rectangle_width = None, rectangle_height = None,
                  circle_diameter = None,
                  custom_hydraulic_diameter = None, custom_flow_area = None):
-        self.k_wall = k_wall
-
+        self.inner_wall = inner_wall
         self.thermo_coolant = thermo_coolant          #thermo library Chemical
         self.mdot_coolant = mdot_coolant
         self.inlet_T = inlet_T
@@ -168,6 +167,18 @@ class CoolingJacket:
     
     def D(self, x=None):
         return self.hydraulic_diameter
+
+class Material:
+    def __init__(self, E, sigma_y, poisson, alpha, k):
+        self.E = E # Young's modulus
+        self.sigma_y = sigma_y # 0.2% yield stress
+        self.poisson = poisson
+        self.alpha = alpha # Thermal expansion coeff
+        self.k = k # Thermal conductivity
+
+    def performance_thermal(self, poisson, alpha, k):
+        # Performance coefficient for thermal stress, higher is better
+        return (1 - poisson)*k/alpha
 
 class EngineWithCooling:
     def __init__(self, chamber_conditions, geometry, cooling_jacket, perfect_gas, thermo_gas):
@@ -345,7 +356,7 @@ class EngineWithCooling:
         
         return 0.023*c_bar * (mdot/A) * (D*v*rho/mu)**(-0.2) * (mu*c_bar/k)**(-2/3)
 
-    def thermal_circuit(self, x, h_gas, h_coolant, k_wall, T_gas, T_coolant):
+    def thermal_circuit(self, x, h_gas, h_coolant, inner_wall, T_gas, T_coolant):
         """
         q is per unit length along the nozzle wall (axially) - positive when heat is flowing to the coolant.
         Uses the idea of thermal circuits and resistances - we have three resistors in series.
@@ -354,7 +365,7 @@ class EngineWithCooling:
             x (float): x position (m)
             h_gas (float): Gas side convective heat transfer coefficient
             h_coolant (float): Coolant side convective heat transfer coefficient
-            k_wall (float): Wall thermal conductivity
+            inner_wall (material): Inner wall material, needed for thermal conductivity
             T_gas (float): Free stream gas temperature (K)
             T_coolant (float): Coolant temperature (K)
 
@@ -371,7 +382,7 @@ class EngineWithCooling:
         A_out = 2*np.pi*r_in    #Outer area per unit length (i.e. just the outer circumference)
 
         R_gas = 1/(h_gas*A_in)
-        R_wall = np.log(r_out/r_in)/(2*np.pi*k_wall)
+        R_wall = np.log(r_out/r_in)/(2*np.pi*inner_wall.k)
         R_coolant = 1/(h_coolant*A_out)
 
         q_dot = (T_gas - T_coolant)/(R_gas + R_wall + R_coolant)
@@ -499,7 +510,7 @@ class EngineWithCooling:
                 raise AttributeError(f"Could not find the h_gas_model {h_gas_model}")
             
             #Get thermal circuit properties
-            q_dot[i], R_gas, R_wall, R_coolant = self.thermal_circuit(x, h_gas[i], h_coolant[i], self.cooling_jacket.k_wall, T_gas[i], T_coolant[i])
+            q_dot[i], R_gas, R_wall, R_coolant = self.thermal_circuit(x, h_gas[i], h_coolant[i], self.cooling_jacket.inner_wall, T_gas[i], T_coolant[i])
 
             #Calculate wall temperatures
             T_wall_inner[i] = T_gas[i] - q_dot[i]*R_gas

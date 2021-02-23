@@ -13,6 +13,13 @@ mdot = 4.757            #Mass flow rate (kg/s)
 p_amb = 1.01325e5       #Ambient pressure (Pa). 1.01325e5 is sea level atmospheric.
 OF_ratio = 4            #Mass ratio
 
+'''Wall material properties'''
+wall_modulus = 140E9 # Young's modulus (Pa)
+wall_yield = 600E6 # Yield stress (Pa), 600 MPa is C700 copper alloy, 0.2% plastic
+wall_poisson = 0.355 # Poisson's ratio, copper is 0.355
+wall_expansion = 17.5E-6 # Thermal expansion coefficient (strain/K), C700 alloy is 17.5E6
+wall_conductivity = 211 # Thermal conductivity (W/mK), C700 alloy is 211
+
 '''We want to investigate adding water to the isopropyl alcohol'''
 water_mass_fraction = 0.25  #Fraction of the fuel that is water, by mass
 
@@ -50,7 +57,6 @@ wall_thickness = 2e-3
 OF_mass_ratio = 3
 mdot_coolant = mdot/(OF_mass_ratio + 1)
 semi_circle_diameter = 4e-3
-k_wall = 300
 inlet_T = 298.15    #Coolant inlet temperature
 thermo_coolant = thermo.chemical.Chemical('Isopropyl Alcohol')
 
@@ -64,7 +70,8 @@ print(f"Sea level thrust = {white_dwarf.thrust(1e5)/1000} kN")
 print(f"Sea level Isp = {white_dwarf.isp(1e5)} s")
 
 '''Cooling system setup'''
-cooling_jacket = cool.CoolingJacket(k_wall, inlet_T, pc, thermo_coolant, mdot_coolant, channel_shape = "semi-circle", circle_diameter = semi_circle_diameter)
+wall_material = cool.Material(wall_modulus, wall_yield, wall_poisson, wall_expansion, wall_conductivity)
+cooling_jacket = cool.CoolingJacket(wall_material, inlet_T, pc, thermo_coolant, mdot_coolant, channel_shape = "semi-circle", circle_diameter = semi_circle_diameter)
 engine_geometry = cool.EngineGeometry(nozzle, chamber_length, Ac, wall_thickness)
 cooled_engine = cool.EngineWithCooling(chamber, engine_geometry, cooling_jacket, perfect_gas, thermo_gas)
 
