@@ -21,7 +21,7 @@ wall_expansion = 17.5E-6 # Thermal expansion coefficient (strain/K), C700 alloy 
 wall_conductivity = 211 # Thermal conductivity (W/mK), C700 alloy is 211
 
 '''We want to investigate adding water to the isopropyl alcohol'''
-water_mass_fraction = 0.25  #Fraction of the fuel that is water, by mass
+water_mass_fraction = 0.10  #Fraction of the fuel that is water, by mass
 
 '''Get combustion properties from pypropep'''
 #Initialise and get propellants
