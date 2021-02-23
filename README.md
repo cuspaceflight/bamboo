@@ -1,4 +1,4 @@
-# bamboo
+# Bamboo
 Nozzle flow and cooling dynamics using perfect gas equations for 1D isentropic flow.
 
 ## Installation
