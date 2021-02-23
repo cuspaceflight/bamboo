@@ -26,13 +26,25 @@ def black_body(T):
         T (float): Temperature of the body (K)
 
     Returns:
-        float: Radiative heat transfer rate, per unit emitting area on the body (W/m2)
+        float: Radiative heat transfer rate, per unit emitting area on the body (W/m^2)
     """
     return SIGMA*T**4
 
 '''Classes'''
 class EngineGeometry:
     def __init__(self, nozzle, chamber_length, chamber_area, wall_thickness, geometry="auto"):
+        """Class for storing and calculating features of the engine's geometry.
+
+        Args:
+            nozzle (float): Nozzle of the engine.
+            chamber_length (float): Length of the combustion chamber (m)
+            chamber_area (float): Cross sectional area of the combustion chamber (m^2)
+            wall_thickness (float): Thickness of the engine walls, for both the combustion chamber and the nozzle.
+            geometry (str, optional): Geometry system to use. Currently the only option is 'auto'. Defaults to "auto".
+
+        Raises:
+            ValueError: [description]
+        """
         self.nozzle = nozzle
         self.chamber_length = chamber_length
         self.chamber_area = chamber_area
@@ -126,13 +138,14 @@ class CoolingJacket:
         rectangle_width (float, optional): If using channel_shape = 'rectangle', this is the height of the rectangles (in the radial direction). Defaults to None.
         rectangle_height (float, optional): If using channel_shape = 'rectangle, this is the width of the rectangles (in the hoopwise direction). Defaults to None.
         circle_diameter (float, optional): If using channel_shape = 'semi-circle', this is the diameter of the semi circle. Defaults to None.
-        custom_hydraulic_diameter (float, optional) : If using channel_shape = 'custom', this is the hydraulic diameter you want to use. Defautls to None.
+        custom_effective_diameter (float, optional) : If using channel_shape = 'custom', this is the effective diameter you want to use. Defaults to None.
         custom_flow_area (float, optional) : If using channel_shape = 'custom', this is the flow you want to use. Defaults to None.
     """
     def __init__(self, inner_wall, inlet_T, inlet_p0, thermo_coolant, mdot_coolant, channel_shape = "rectangle", configuration = "spiral", 
                  rectangle_width = None, rectangle_height = None,
                  circle_diameter = None,
-                 custom_hydraulic_diameter = None, custom_flow_area = None):
+                 custom_effective_diameter = None, custom_flow_area = None):
+
         self.inner_wall = inner_wall
         self.thermo_coolant = thermo_coolant          #thermo library Chemical
         self.mdot_coolant = mdot_coolant
@@ -148,25 +161,40 @@ class CoolingJacket:
             self.perimeter = 2*rectangle_width + 2*rectangle_height
             self.flow_area = rectangle_width*rectangle_height
             self.hydraulic_radius = self.flow_area/self.perimeter
-            self.hydraulic_diameter = 4*self.hydraulic_radius
+            self.effective_diameter = 4*self.hydraulic_radius
 
         if self.channel_shape == "semi-circle":
             self.circle_diameter = circle_diameter
             self.perimeter = circle_diameter + np.pi*circle_diameter/2
             self.flow_area = np.pi*circle_diameter**2/8
             self.hydraulic_radius = self.flow_area/self.perimeter
-            self.hydraulic_diameter = 4*self.hydraulic_radius
+            self.effective_diameter = 4*self.hydraulic_radius
 
         if self.channel_shape == "custom":
             self.flow_area = custom_flow_area
-            self.hydraulic_diameter = custom_hydraulic_diameter
-
+            self.effective_diameter = custom_effective_diameter
 
     def A(self, x=None):
+        """Get coolant channel cross flow cross sectional area.
+
+        Args:
+            x (float, optional): Axial position along the engine. This parameter may have no effect on the output. Defaults to None.
+
+        Returns:
+            float: Cooling channel cross flow area (m^2)
+        """
         return self.flow_area
     
     def D(self, x=None):
-        return self.hydraulic_diameter
+        """Get the 'effective diameter' of the cooling channel. This is equal 4*hydraulic_radius, with hydraulic_radius = channel_area / channel_perimeter.
+
+        Args:
+            x (float, optional): Axial position along the engine. This parameter may have no effect on the output. Defaults to None.
+
+        Returns:
+            float: Effective diameter (m)
+        """
+        return self.effective_diameter
 
 class Material:
     def __init__(self, E, sigma_y, poisson, alpha, k):
@@ -181,6 +209,15 @@ class Material:
         return (1 - poisson)*k/alpha
 
 class EngineWithCooling:
+    """Used for running cooling system analyses.
+
+    Args:
+        chamber_conditions (ChamberConditions): Engine chamber conditions object.
+        geometry (EngineGeometry): Engine geometry.
+        cooling_jacket (CoolingJacket): Cooling jacket properties.
+        perfect_gas (PerfectGas): Properties of the exhaust gas.
+        thermo_gas (thermo.chemical.Chemical or thermo.mixture.Mixture): Object from the 'thermo' module, to use to get physical properties of the gas (e.g. viscosity).
+    """
     def __init__(self, chamber_conditions, geometry, cooling_jacket, perfect_gas, thermo_gas):
         self.chamber_conditions = chamber_conditions
         self.geometry = geometry
@@ -190,7 +227,14 @@ class EngineWithCooling:
         #self.c_star = self.geometry.chamber_conditions.p0 * self.geometry.nozzle.At / self.geometry.chamber_conditions.mdot
 
     def M(self, x):
-        #Exhaust gas Mach number
+        """Get exhaust gas Mach number.
+
+        Args:
+            x (float): Axial position along the engine (m). Throat is at x = 0.
+
+        Returns:
+            float: Mach number of the freestream.
+        """
         #If we're at the throat M=1 by default:
         if x==0:
             return 1.00
@@ -208,78 +252,118 @@ class EngineWithCooling:
             return Mach
 
     def T(self, x):
-        #Exhaust gas temperature
+        """Get exhaust gas temperature.
+
+        Args:
+            x (float): Axial position (m). Throat is at x = 0.
+
+        Returns:
+            float: Temperature (K)
+        """
         return bam.T(self.chamber_conditions.T0, self.M(x), self.perfect_gas.gamma)
 
     def p(self, x):
+        """Get exhaust gas pressure.
+
+        Args:
+            x (float): Axial position (m). Throat is at x = 0.
+
+        Returns:
+            float: Freestream pressure (Pa)
+        """
         return bam.p(self.chamber_conditions.p0, self.M(x), self.perfect_gas.gamma)
 
     def rho(self, x):
-        #Exhaust gas density
+        """Get exhaust gas density.
+
+        Args:
+            x (float): Axial position. Throat is at x = 0.
+
+        Returns:
+            float: Freestream gas density (kg/m^3)
+        """
         #p = rhoRT for an ideal gas, so rho = p/RT
         return self.p(x)/(self.T(x)*self.perfect_gas.R)
 
     def show_gas_temperature(self, number_of_points=1000):
-            x = np.linspace(self.geometry.x_min, self.geometry.x_max, number_of_points)
-            y = np.zeros(len(x))
-            T = np.zeros(len(x))
+        """Plot freestream gas temperature against position.
 
-            for i in range(len(x)):
-                y[i] = self.geometry.y(x[i])
-                T[i] = self.T(x[i])
+        Args:
+            number_of_points (int, optional): Number of points to discretise the plot into. Defaults to 1000.
+        """
+        x = np.linspace(self.geometry.x_min, self.geometry.x_max, number_of_points)
+        y = np.zeros(len(x))
+        T = np.zeros(len(x))
 
-            fig, ax_shape = plt.subplots()
+        for i in range(len(x)):
+            y[i] = self.geometry.y(x[i])
+            T[i] = self.T(x[i])
 
-            ax_shape.plot(x, y, color="blue")
-            ax_shape.plot(x, -y, color="blue")
-            ax_shape.set_aspect('equal')
-            ax_shape.set_xlabel("x position (m)")
-            ax_shape.set_ylabel("y position (m)")
+        fig, ax_shape = plt.subplots()
 
-            ax_temp = ax_shape.twinx()
-            ax_temp.plot(x, T, color="orange")
-            ax_temp.grid()
-            ax_temp.set_ylabel("Temperature (K)")
+        ax_shape.plot(x, y, color="blue")
+        ax_shape.plot(x, -y, color="blue")
+        ax_shape.set_aspect('equal')
+        ax_shape.set_xlabel("x position (m)")
+        ax_shape.set_ylabel("y position (m)")
 
-            plt.show()
+        ax_temp = ax_shape.twinx()
+        ax_temp.plot(x, T, color="orange")
+        ax_temp.grid()
+        ax_temp.set_ylabel("Temperature (K)")
+
+        plt.show()
 
     def show_gas_mach(self, number_of_points=1000):
-            x = np.linspace(self.geometry.x_min, self.geometry.x_max, number_of_points)
-            y = np.zeros(len(x))
-            M = np.zeros(len(x))
+        """Plot Mach number against position.
 
-            for i in range(len(x)):
-                y[i] = self.geometry.y(x[i])
-                M[i] = self.M(x[i])
+        Args:
+            number_of_points (int, optional): Number of points to discretise the plot into. Defaults to 1000.
+        """
+        x = np.linspace(self.geometry.x_min, self.geometry.x_max, number_of_points)
+        y = np.zeros(len(x))
+        M = np.zeros(len(x))
 
-            fig, ax_shape = plt.subplots()
+        for i in range(len(x)):
+            y[i] = self.geometry.y(x[i])
+            M[i] = self.M(x[i])
 
-            ax_shape.plot(x, y, color="blue")
-            ax_shape.plot(x, -y, color="blue")
-            ax_shape.set_aspect('equal')
-            ax_shape.set_xlabel("x position (m)")
-            ax_shape.set_ylabel("y position (m)")
+        fig, ax_shape = plt.subplots()
 
-            ax_temp = ax_shape.twinx()
-            ax_temp.plot(x, M, color="green")
-            ax_temp.grid()
-            ax_temp.set_ylabel("Mach number")
+        ax_shape.plot(x, y, color="blue")
+        ax_shape.plot(x, -y, color="blue")
+        ax_shape.set_aspect('equal')
+        ax_shape.set_xlabel("x position (m)")
+        ax_shape.set_ylabel("y position (m)")
 
-            plt.show()
+        ax_temp = ax_shape.twinx()
+        ax_temp.plot(x, M, color="green")
+        ax_temp.grid()
+        ax_temp.set_ylabel("Mach number")
+
+        plt.show()
 
     def coolant_velocity(self, x, rho_coolant):
+        """Get coolant velocity
+
+        Args:
+            x (float): Axial position
+            rho_coolant (float): Coolant density (kg/m3)
+
+        Returns:
+            float: Coolant velocity (m/s)
+        """
         return self.cooling_jacket.mdot_coolant/(rho_coolant * self.cooling_jacket.A(x))
 
     def h_gas(self, x, mu, k, Pr):
-        """Get the convective heat transfer coefficient on the gas side.
-        Uses Eqn (8-22) on page 312 or RPE 7th edition - would be better to use the Bartz version if possible (Eqn (8-23))
+        """Get the convective heat transfer coefficient on the gas side. 
+        Uses Eqn (8-22) on page 312 or RPE 7th edition.
 
         Args:
             x (float): x-position (m)
             mu (float): Absolute viscosity of the exhaust gas
             k (float): Thermal conductivity of the exhaust gas
             Pr (float): Prandtl number of the exhaust gas
-
 
         Returns:
             float: Gas side convective heat transfer coefficient
@@ -298,6 +382,9 @@ class EngineWithCooling:
     def h_gas_bartz_1(self, D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0):
         """Equation (8-23) from page 312 of RPE 7th edition. 'am' refers to the gas being at the 'arithmetic mean' of the wall and freestream temperatures.
 
+        Note:
+            Seems to provide questionable results - may have been implemented incorrectly.
+
         Args:
             D (float): Gas flow diameter (m)
             cp_inf (float): Specific heat capacity at constant pressure for the gas, in the freestream
@@ -313,7 +400,7 @@ class EngineWithCooling:
         return (0.026/D**0.2) * (cp_inf*mu_inf**0.2)/(Pr_inf**0.6) * (rho_inf * v_inf)**0.8 * (rho_am/rho_inf) * (mu_am/mu0)**0.2
 
     def h_gas_bartz_2(self, mu, cp, Pr, M, A, Tw):
-        """Altnerative equation for Bartz.
+        """Alternative equation for Bartz.
 
         Args:
             mu (float): Absolute viscosity of the gas freestream.

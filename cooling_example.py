@@ -7,7 +7,6 @@ import thermo
 import time
 
 '''Chamber conditions'''
-Ac = 116.6e-4           #Chamber cross-sectional area (m^2)
 pc = 15e5               #Chamber pressure (Pa)
 mdot = 4.757            #Mass flow rate (kg/s)
 p_amb = 1.01325e5       #Ambient pressure (Pa). 1.01325e5 is sea level atmospheric.
@@ -49,15 +48,10 @@ Tc = e.properties.T
 thermo_gas = thermo.mixture.Mixture(['N2', 'H2O', 'CO2'], 
                                     zs = [e.composition['N2'], e.composition['H2O'], e.composition['CO2']])   
 
-'''Engine dimensions'''
-chamber_length = 0.170 #75e-2
-wall_thickness = 2e-3
-
 '''Coolant jacket'''
-OF_mass_ratio = 3
-mdot_coolant = mdot/(OF_mass_ratio + 1)
-semi_circle_diameter = 4e-3
-inlet_T = 298.15    #Coolant inlet temperature
+mdot_coolant = mdot/(OF_ratio + 1) 
+semi_circle_diameter = 4e-3        
+inlet_T = 298.15                    #Coolant inlet temperature
 thermo_coolant = thermo.chemical.Chemical('Isopropyl Alcohol')
 
 '''Create the engine object'''
@@ -68,6 +62,12 @@ white_dwarf = bam.Engine(perfect_gas, chamber, nozzle)
 
 print(f"Sea level thrust = {white_dwarf.thrust(1e5)/1000} kN")
 print(f"Sea level Isp = {white_dwarf.isp(1e5)} s")
+
+'''Engine dimensions'''
+Ac = 116.6e-4                   #Chamber cross-sectional area (m^2)
+L_star = 1.5                    #L_star = Volume_c/Area_t
+chamber_length = L_star*nozzle.At/Ac
+wall_thickness = 2e-3
 
 '''Cooling system setup'''
 wall_material = cool.Material(wall_modulus, wall_yield, wall_poisson, wall_expansion, wall_conductivity)
