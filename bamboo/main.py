@@ -318,7 +318,7 @@ def show_conical_shape(A1, At, A2, div_half_angle = 15, conv_half_angle=45):
 class PerfectGas:
     """Object to store exhaust gas properties. Assumes a perfect gas (ideal gas with constant cp, cv and gamma). Only two properties need to be specified.
 
-    kwargs:
+    Keyword Args:
         gamma (float): Ratio of specific heats cp/cv.
         cp (float): Specific heat capacity at constant pressure (J/kg/K)
         molecular_weight (float): Molecular weight of the gas (kg/kmol)
