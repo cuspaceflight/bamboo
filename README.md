@@ -1,4 +1,4 @@
-# bamboo
+# Bamboo
 Nozzle flow and cooling dynamics using perfect gas equations for 1D isentropic flow.
 
 ## Installation
@@ -9,7 +9,7 @@ Nozzle flow and cooling dynamics using perfect gas equations for 1D isentropic f
 - Get thrust and specific impulse.
 - Get gas properties (temperature and pressure) as a function of position in the nozzle.
 - Estimate apogee using a simple 1D trajectory simulator.
-- Very simple model of an engine cooling jacket (results have not yet been checked thoroughly).
-
-## Incomplete:
 - Optimise nozzle area ratio based on the simple trajectory simulator.
+- Tools for modelling engine cooling systems.
+
+
