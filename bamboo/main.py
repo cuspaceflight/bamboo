@@ -1,5 +1,5 @@
 '''
-Simple script for calculating nozzle geometry from the chamber conditions. All units SI unless otherwise stated. All angles in radians unless otherwise stated.
+Module for calculating nozzle geometry from the chamber conditions. All units SI unless otherwise stated. All angles in radians unless otherwise stated.
 
 Assumptions:
     - 1D flow.
@@ -27,8 +27,8 @@ Subscripts:
 
 References:
     [1] - The Thrust Optimised Parabolic nozzle, AspireSpace, http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf  
-    [2] - Liquid rocket engine nozzles, NASA, https://ntrs.nasa.gov/api/citations/19770009165/downloads/19770009165.pdf  
-    [3] - Design and analysis of contour bell nozzle and comparison with dual bell nozzle https://core.ac.uk/download/pdf/154060575.pdf
+    [2] - Liquid rocket engine nozzles, NASA, https://ntrs.nasa.gov/api/citations/19770009165/downloads/19770009165.pdf   
+    [3] - Design and analysis of contour bell nozzle and comparison with dual bell nozzle https://core.ac.uk/download/pdf/154060575.pdf  
 '''
 
 import numpy as np
@@ -151,7 +151,7 @@ def estimate_apogee(dry_mass, propellant_mass, engine, cross_sectional_area, dra
             try:
                 net_force = engine.thrust(p_amb) - 0.5*density_amb*fn[1]**2*drag_coefficient*cross_sectional_area - mass*g0
             except ValueError:
-                raise ValueError(f"Flow seperation occured in the nozzle at an altitude of {fn[0]/1000} km")
+                raise ValueError(f"Flow separation occured in the nozzle at an altitude of {fn[0]/1000} km")
             acc = net_force/mass
 
         else:
@@ -529,57 +529,57 @@ class Engine:
         """
         return p(self.chamber_conditions.p0, self.M(x), self.perfect_gas.gamma)
 
-    def check_seperation(self, p_amb):
-        """Approximate check for nozzle seperation. Based off page 17 of Reference [2].  
-        Seperation occurs when P_wall/P_amb = 0.583 * (P_amb/P_chamber)^(0.195)
+    def check_separation(self, p_amb):
+        """Approximate check for nozzle separation. Based off page 17 of Reference [2].  
+        separation occurs when P_wall/P_amb = 0.583 * (P_amb/P_chamber)^(0.195)
 
         Args:
             p_amb (float): Ambient (atmospheric) pressure.
         
         Returns:
-            bool or float: Returns the position x (m) from the throat at which seperation occurs, if it does occur. If not, it returns False.
+            bool or float: Returns the position x (m) from the throat at which separation occurs, if it does occur. If not, it returns False.
         """
         
-        #Get the value of P_wall/P_amb requried for seperation
-        seperation_pressure_ratio = 0.583 * (p_amb/self.chamber_conditions.p0)**0.195
+        #Get the value of P_wall/P_amb requried for separation
+        separation_pressure_ratio = 0.583 * (p_amb/self.chamber_conditions.p0)**0.195
 
-        #Seperation can't occur if there's a vacuum outside:
+        #separation can't occur if there's a vacuum outside:
         if p_amb == 0:
             return False
 
-        #Check for seperation by comparing to the lowest pressure in the nozzle (which will be at exit):
-        elif self.p(self.nozzle.length)/p_amb < seperation_pressure_ratio:
+        #Check for separation by comparing to the lowest pressure in the nozzle (which will be at exit):
+        elif self.p(self.nozzle.length)/p_amb < separation_pressure_ratio:
             def func_to_solve(x):
-                return self.p(x)/p_amb - seperation_pressure_ratio  #Should equal zero at the seperation point
+                return self.p(x)/p_amb - separation_pressure_ratio  #Should equal zero at the separation point
             
-            return scipy.optimize.root_scalar(func_to_solve, bracket = [0, self.nozzle.length], x0 = 0).root    #Find the seperation position. 
+            return scipy.optimize.root_scalar(func_to_solve, bracket = [0, self.nozzle.length], x0 = 0).root    #Find the separation position. 
             
         else:
             return False
 
-    def seperation_p_amb(self):
-        """Approximate way of getting the ambient pressure at which nozzle wall seperation occurs. Based off page 17 of Reference [2].  
-        Seperation occurs when P_wall/P_amb = 0.583 * (P_amb/P_chamber)^(0.195). 
+    def separation_p_amb(self):
+        """Approximate way of getting the ambient pressure at which nozzle wall separation occurs. Based off page 17 of Reference [2].  
+        separation occurs when P_wall/P_amb = 0.583 * (P_amb/P_chamber)^(0.195). 
         It will first occur when P_e = P_wall satisfies this equation, since P_e is the lowest pressure in the nozzle.
 
         Returns:
-            float: Ambient pressure at which seperation first occurs (Pa)
+            float: Ambient pressure at which separation first occurs (Pa)
         """
         pc = self.chamber_conditions.p0
         pe = self.p(self.nozzle.length)
         return ((pe*pc**0.195)/0.583)**(1/1.195)
 
-    def seperation_Ae(self, p_amb):
-        """Approximate way of getting the exit area at which nozzle wall seperation occurs. Based off page 17 of Reference [2].  
-        Seperation occurs when P_wall/P_amb = 0.583 * (P_amb/P_chamber)^(0.195). 
+    def separation_Ae(self, p_amb):
+        """Approximate way of getting the exit area at which nozzle wall separation occurs. Based off page 17 of Reference [2].  
+        separation occurs when P_wall/P_amb = 0.583 * (P_amb/P_chamber)^(0.195). 
 
         Returns:
-            float: Exit area at which seperation occurs for the given p_amb (m^2)
+            float: Exit area at which separation occurs for the given p_amb (m^2)
         """
-        seperation_wall_pressure = p_amb * 0.583 * (p_amb/self.chamber_conditions.p0)**0.195
+        separation_wall_pressure = p_amb * 0.583 * (p_amb/self.chamber_conditions.p0)**0.195
 
         #Get the exit area that gives this wall pressure at the exit.
-        return get_exit_area(self.perfect_gas, self.chamber_conditions, seperation_wall_pressure)
+        return get_exit_area(self.perfect_gas, self.chamber_conditions, separation_wall_pressure)
 
     def thrust(self, p_amb):
         """Returns the thrust of the engine for a given ambient pressure.
@@ -590,7 +590,7 @@ class Engine:
         Returns:
             float: Thrust (N)
         """
-        if self.check_seperation(p_amb) ==  False:
+        if self.check_separation(p_amb) ==  False:
             Me = self.M(self.nozzle.length)
             Te = self.T(self.nozzle.length)
             pe = self.p(self.nozzle.length)
@@ -598,7 +598,7 @@ class Engine:
             return self.chamber_conditions.mdot*Me*(self.perfect_gas.gamma*self.perfect_gas.R*Te)**0.5 + (pe - p_amb)*self.nozzle.Ae    #Generic equation for rocket thrust
         
         else:
-            raise ValueError(f"Seperation occured in the nozzle, at a postion {self.check_seperation(p_amb)} m downstream of the throat.")
+            raise ValueError(f"separation occured in the nozzle, at a postion {self.check_separation(p_amb)} m downstream of the throat.")
 
     def isp(self, p_amb):
         """Returns the specific impulse for a given ambient pressure.
@@ -628,8 +628,8 @@ class Engine:
         At = test_engine.nozzle.At
         bounds = np.array([1, 100])*At        #Hardcoded area ratio limits
 
-        #We need to calculate bounds to avoid causing flow seperation in the nozzle
-        Ae_for_sepeation = self.seperation_Ae(ambiance.Atmosphere(0).pressure[0])    #Exit area that would cause seperation at sea level.
+        #We need to calculate bounds to avoid causing flow separation in the nozzle
+        Ae_for_sepeation = self.separation_Ae(ambiance.Atmosphere(0).pressure[0])    #Exit area that would cause separation at sea level.
         if Ae_for_sepeation < bounds[1]:
             bounds[1] = Ae_for_sepeation
 

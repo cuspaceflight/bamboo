@@ -6,8 +6,8 @@ Room for improvement:
     - The EngineWithCooling.rho() function calculates rho by doing p/RT, but it would probably be faster to just use isentropic compressible flow relations.
 
 References:
-    [1] - The Thrust Optimised Parabolic nozzle, AspireSpace, http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf  
-    [2] - Rocket Propulsion Elements, 7th Edition
+    [1] - The Thrust Optimised Parabolic nozzle, AspireSpace, http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf   
+    [2] - Rocket Propulsion Elements, 7th Edition 
 '''
 
 import bamboo as bam
@@ -32,19 +32,19 @@ def black_body(T):
 
 '''Classes'''
 class EngineGeometry:
+    """Class for storing and calculating features of the engine's geometry.
+
+    Args:
+        nozzle (float): Nozzle of the engine.
+        chamber_length (float): Length of the combustion chamber (m)
+        chamber_area (float): Cross sectional area of the combustion chamber (m^2)
+        wall_thickness (float): Thickness of the engine walls, for both the combustion chamber and the nozzle.
+        geometry (str, optional): Geometry system to use. Currently the only option is 'auto'. Defaults to "auto".
+
+    Raises:
+        ValueError: [description]
+    """
     def __init__(self, nozzle, chamber_length, chamber_area, wall_thickness, geometry="auto"):
-        """Class for storing and calculating features of the engine's geometry.
-
-        Args:
-            nozzle (float): Nozzle of the engine.
-            chamber_length (float): Length of the combustion chamber (m)
-            chamber_area (float): Cross sectional area of the combustion chamber (m^2)
-            wall_thickness (float): Thickness of the engine walls, for both the combustion chamber and the nozzle.
-            geometry (str, optional): Geometry system to use. Currently the only option is 'auto'. Defaults to "auto".
-
-        Raises:
-            ValueError: [description]
-        """
         self.nozzle = nozzle
         self.chamber_length = chamber_length
         self.chamber_area = chamber_area
