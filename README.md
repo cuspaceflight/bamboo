@@ -12,4 +12,6 @@ Nozzle flow and cooling dynamics using perfect gas equations for 1D isentropic f
 - Optimise nozzle area ratio based on the simple trajectory simulator.
 - Tools for modelling engine cooling systems.
 
-
+## Documentation
+Made using Sphinx, available at: 
+https://cuspaceflight.github.io/bamboo/
