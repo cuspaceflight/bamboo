@@ -441,6 +441,11 @@ class Nozzle:
         return np.pi*self.y(x)**2   #pi*R^2
 
     def plot_nozzle(self, number_of_points = 1000):
+        """Plots the nozzle geometry. Note that to see the plot, you will need to run matplotlib.pyplot.show().
+
+        Args:
+            number_of_points (int, optional): Numbers of discrete points to plot. Defaults to 1000.
+        """
         if self.type == "rao":
             x = np.linspace(0, self.Ex, number_of_points)
             y = np.zeros(len(x))
@@ -455,7 +460,6 @@ class Nozzle:
             axs.set_aspect('equal')
             plt.xlabel("x position (m)")
             plt.ylabel("y position (m)")
-            plt.show()
 
     @staticmethod
     def from_engine_components(gas, chamber_conditions, p_amb, type = "rao", length_fraction = 0.8):

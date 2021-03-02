@@ -14,6 +14,7 @@ import bamboo as bam
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy
+import json
 
 '''Constants'''
 SIGMA = 5.670374419e-8      #Stefan-Boltzmann constant (W/m^2/K^4)
@@ -29,6 +30,97 @@ def black_body(T):
         float: Radiative heat transfer rate, per unit emitting area on the body (W/m^2)
     """
     return SIGMA*T**4
+
+def h_gas_1(D, M, T, rho, gamma, R, mu, k, Pr):
+    """Get the convective heat transfer coefficient on the gas side. 
+    Uses Eqn (8-22) on page 312 or RPE 7th edition.
+
+    Args:
+        D (float): Flow diameter (m)
+        M (float): Freestream Mach number
+        T (float): Freestream temperature (K)
+        rho (float): Freestream density (kg/m^3)
+        gamma (float): Ratio of specific heats (cp/cv)
+        R (float): Specific gas constant (J/kg/K)
+        mu (float): Freestream absolute viscosity (Pa s)
+        k (float): Freestream thermal conductivity (W/m/K)
+        Pr (float): Freestream Prandtl number
+
+    Returns:
+        float: Convective heat transfer coefficient, h, for the exhaust gas side (where q = h(T - T_inf)).
+    """
+
+    v = M * (gamma*R*T)**0.5    #Gas velocity
+
+    return 0.026 * (rho*v)**0.8 / (D**0.2) * (Pr**0.4) * k/(mu**0.8)
+
+def h_gas_bartz_1(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0):
+    """Equation (8-23) from page 312 of RPE 7th edition. 'am' refers to the gas being at the 'arithmetic mean' of the wall and freestream temperatures.
+
+    Note:
+        Seems to provide questionable results - may have been implemented incorrectly.
+
+    Args:
+        D (float): Gas flow diameter (m)
+        cp_inf (float): Specific heat capacity at constant pressure for the gas, in the freestream
+        mu_inf (float): Absolute viscosity in the freestream
+        Pr_inf (float): Prandtl number in the freestream
+        rho_inf (float): Density of the gas in the freestream
+        v_inf (float): Velocity of the gas in in the freestream
+        rho_am (float): Density of the gas, at T = (T_wall + T_freestream)/2
+        mu_am (float): Absolute viscosity of the gas, at T = (T_wall + T_freestream)/2
+        mu0 (float): Absolute viscosity of the gas under stagnation conditions.
+
+    Returns:
+        float: Convective heat transfer coefficient, h, for the exhaust gas side (where q = h(T - T_inf)).
+    """
+
+    return (0.026/D**0.2) * (cp_inf*mu_inf**0.2)/(Pr_inf**0.6) * (rho_inf * v_inf)**0.8 * (rho_am/rho_inf) * (mu_am/mu0)**0.2
+
+def h_gas_bartz_2(c_star, At, A, pc, Tc, M, Tw, mu, cp, gamma, Pr):
+    """Alternative equation for Bartz heat transfer coefficient.
+
+    Args:
+        c_star (float): C* efficiency ( = pc * At / mdot)
+        At (float): Throat area (m^2)
+        A (float): Flow area (m^2)
+        pc (float): Chamber pressure (Pa)
+        Tc (float): Chamber temperature (K)
+        M (float): Freestream Mach number
+        Tw (float): Wall temperature (K)
+        mu (float): Freestream absolute viscosity (Pa s).
+        cp (float): Gas specific heat capacity (J/kg/K)
+        gamma (float): Gas ratio of specific heats (cp/cv)
+        Pr (float): Freestream Prandtl number
+
+    Returns:
+        float: Convective heat transfer coefficient, h, for the exhaust gas side (where q = h(T - T_inf)).
+    """
+
+    Dt = (At *4/np.pi)**0.5
+    sigma = (0.5 * (Tw/Tc) * (1 + (gamma-1)/2 * M**2) + 0.5)**0.68 * (1 + (gamma-1)/2 * M**2)**(-0.12)
+    
+    return (0.026)/(Dt**0.2) * (mu**0.2*cp/Pr**0.6) * (pc/c_star)**0.8 * (At/A)**0.9 * sigma
+
+def h_coolant(A, D, mdot, mu, k, c_bar, rho):
+    """Get the convective heat transfer coefficient for the coolant side.
+    Uses the equation from page 317 of RPE 7th edition.
+
+    Args:
+        A (float): Coolant flow area (m^2)
+        D (float): Coolant channel effective diameter (m)
+        mdot (float): Coolant mass flow rate (kg/s)
+        mu (float): Coolant absolute viscosity (Pa s)
+        k (float): Coolant thermal conductivity (W/m/K)
+        c_bar (float): Average specific heat capacity of the coolant (J/kg/K)
+        rho (float): Coolant density (kg/m^3)
+
+    Returns:
+        float: Convective heat transfer coefficient, h, for the coolant side (where q = h(T - T_inf)).
+    """
+    v = mdot / (rho*A)
+    return 0.023*c_bar * (mdot/A) * (D*v*rho/mu)**(-0.2) * (mu*c_bar/k)**(-2/3)
+
 
 '''Classes'''
 class EngineGeometry:
@@ -109,20 +201,24 @@ class EngineGeometry:
         return np.pi*self.y(x)**2
 
     def plot_geometry(self, number_of_points = 1000):
-            x = np.linspace(self.x_min, self.x_max, number_of_points)
-            y = np.zeros(len(x))
+        """Plots the engine geometry. Note that to see the plot, you will need to run matplotlib.pyplot.show().
 
-            for i in range(len(x)):
-                y[i] = self.y(x[i])
+        Args:
+            number_of_points (int, optional): Numbers of discrete points to plot. Defaults to 1000.
+        """
+        x = np.linspace(self.x_min, self.x_max, number_of_points)
+        y = np.zeros(len(x))
 
-            fig, axs = plt.subplots()
-            axs.plot(x, y, color="blue")
-            axs.plot(x, -y, color="blue")
-            axs.grid()
-            axs.set_aspect('equal')
-            plt.xlabel("x position (m)")
-            plt.ylabel("y position (m)")
-            plt.show()
+        for i in range(len(x)):
+            y[i] = self.y(x[i])
+
+        fig, axs = plt.subplots()
+        axs.plot(x, y, color="blue")
+        axs.plot(x, -y, color="blue")
+        axs.grid()
+        axs.set_aspect('equal')
+        plt.xlabel("x position (m)")
+        plt.ylabel("y position (m)")
 
 class CoolingJacket:
     """Cooling jacket parameters.
@@ -135,16 +231,15 @@ class CoolingJacket:
         mdot_coolant (float): Coolant mass flow rate (kg/s)
         channel_shape (str, optional): Options include 'rectangle', 'semi-circle', and 'custom'. Defaults to "rectangle".
         configuration (str, optional): Options include 'spiral'. Defaults to "spiral".
-        rectangle_width (float, optional): If using channel_shape = 'rectangle', this is the height of the rectangles (in the radial direction). Defaults to None.
-        rectangle_height (float, optional): If using channel_shape = 'rectangle, this is the width of the rectangles (in the hoopwise direction). Defaults to None.
-        circle_diameter (float, optional): If using channel_shape = 'semi-circle', this is the diameter of the semi circle. Defaults to None.
-        custom_effective_diameter (float, optional) : If using channel_shape = 'custom', this is the effective diameter you want to use. Defaults to None.
-        custom_flow_area (float, optional) : If using channel_shape = 'custom', this is the flow you want to use. Defaults to None.
+    
+    Keyword Args:
+        rectangle_width (float, optional): If using channel_shape = 'rectangle', this is the height of the rectangles (in the radial direction).
+        rectangle_height (float, optional): If using channel_shape = 'rectangle, this is the width of the rectangles (in the hoopwise direction). 
+        circle_diameter (float, optional): If using channel_shape = 'semi-circle', this is the diameter of the semi circle.
+        custom_effective_diameter (float, optional) : If using channel_shape = 'custom', this is the effective diameter you want to use. 
+        custom_flow_area (float, optional) : If using channel_shape = 'custom', this is the flow you want to use. 
     """
-    def __init__(self, inner_wall, inlet_T, inlet_p0, thermo_coolant, mdot_coolant, channel_shape = "rectangle", configuration = "spiral", 
-                 rectangle_width = None, rectangle_height = None,
-                 circle_diameter = None,
-                 custom_effective_diameter = None, custom_flow_area = None):
+    def __init__(self, inner_wall, inlet_T, inlet_p0, thermo_coolant, mdot_coolant, channel_shape = "rectangle", configuration = "spiral", **kwargs):
 
         self.inner_wall = inner_wall
         self.thermo_coolant = thermo_coolant          #thermo library Chemical
@@ -156,23 +251,23 @@ class CoolingJacket:
         
         if self.channel_shape == "rectangle":
             #Page 317 of RPE 7th Edition
-            self.rectangle_width = rectangle_width
-            self.rectangle_height = rectangle_height
-            self.perimeter = 2*rectangle_width + 2*rectangle_height
-            self.flow_area = rectangle_width*rectangle_height
+            self.rectangle_width = kwargs["rectangle_width"]
+            self.rectangle_height = kwargs["rectangle_height"]
+            self.perimeter = 2*self.rectangle_width + 2*self.rectangle_height
+            self.flow_area = self.rectangle_width*self.rectangle_height
             self.hydraulic_radius = self.flow_area/self.perimeter
             self.effective_diameter = 4*self.hydraulic_radius
 
         if self.channel_shape == "semi-circle":
-            self.circle_diameter = circle_diameter
-            self.perimeter = circle_diameter + np.pi*circle_diameter/2
-            self.flow_area = np.pi*circle_diameter**2/8
+            self.circle_diameter = kwargs["circle_diameter"]
+            self.perimeter = self.circle_diameter + np.pi*self.circle_diameter/2
+            self.flow_area = np.pi*self.circle_diameter**2/8
             self.hydraulic_radius = self.flow_area/self.perimeter
             self.effective_diameter = 4*self.hydraulic_radius
 
         if self.channel_shape == "custom":
-            self.flow_area = custom_flow_area
-            self.effective_diameter = custom_effective_diameter
+            self.flow_area = kwargs["custom_flow_area"]
+            self.effective_diameter = kwargs["custom_effective_diameter"]
 
     def A(self, x=None):
         """Get coolant channel cross flow cross sectional area.
@@ -286,7 +381,7 @@ class EngineWithCooling:
         return self.p(x)/(self.T(x)*self.perfect_gas.R)
 
     def show_gas_temperature(self, number_of_points=1000):
-        """Plot freestream gas temperature against position.
+        """Plot freestream gas temperature against position. Note that to see the plot, you will need to run matplotlib.pyplot.show().
 
         Args:
             number_of_points (int, optional): Number of points to discretise the plot into. Defaults to 1000.
@@ -312,10 +407,8 @@ class EngineWithCooling:
         ax_temp.grid()
         ax_temp.set_ylabel("Temperature (K)")
 
-        plt.show()
-
     def show_gas_mach(self, number_of_points=1000):
-        """Plot Mach number against position.
+        """Plot Mach number against position. Note that to see the plot, you will need to run matplotlib.pyplot.show().
 
         Args:
             number_of_points (int, optional): Number of points to discretise the plot into. Defaults to 1000.
@@ -340,8 +433,6 @@ class EngineWithCooling:
         ax_temp.plot(x, M, color="green")
         ax_temp.grid()
         ax_temp.set_ylabel("Mach number")
-
-        plt.show()
 
     def coolant_velocity(self, x, rho_coolant):
         """Get coolant velocity
@@ -476,15 +567,16 @@ class EngineWithCooling:
 
         return q_dot, R_gas, R_wall, R_coolant
 
-    def run_heating_analysis(self, number_of_points=1000, h_gas_model = "standard"):
+    def run_heating_analysis(self, number_of_points=1000, h_gas_model = "standard", to_json = "heating_output.json"):
         """Run a simulation of the engine cooling system to get wall temperatures, coolant temperatures, etc.
 
         Args:
             number_of_points (int, optional): Number of discrete points to divide the engine into. Defaults to 1000.
             h_gas_model (str, optional): Equation to use for the gas side convective heat transfer coefficients. Options are 'standard' and 'bartz 1', 'bartz 2'. Defaults to "standard".
+            to_json (str or bool, optional): Directory to export a .JSON file to, containing simulation results. If False, no .JSON file is saved. Defaults to 'heating_output.json'.
 
         Returns:
-            dict: Results of the simulation.
+            dict: Results of the simulation. 
         """
 
         '''Initialise variables and arrays'''
@@ -535,7 +627,7 @@ class EngineWithCooling:
             else:
                 T_coolant[i] = T_coolant[i-1] + (q_dot[i-1]*dx)/(self.cooling_jacket.mdot_coolant*cp_coolant)    #Increase in coolant temperature, q*dx = mdot*Cp*dT
 
-            #Gas freestream temperatures
+            #Gas freestream properties
             T_gas[i] = self.T(x)
             p_gas = self.p(x)
 
@@ -603,12 +695,21 @@ class EngineWithCooling:
             T_wall_inner[i] = T_gas[i] - q_dot[i]*R_gas
             T_wall_outer[i] = T_wall_inner[i] - q_dot[i]*R_wall
 
-        return {"x" : discretised_x,
-                "T_wall_inner" : T_wall_inner,
-                "T_wall_outer" : T_wall_outer,
-                "T_coolant" : T_coolant,
-                "T_gas" : T_gas,
-                "q_dot" : q_dot,
-                "h_gas" : h_gas,
-                "h_coolant" : h_coolant,
+        #Dictionary containing results
+        output_dict = {"x" : list(discretised_x),
+                "T_wall_inner" : list(T_wall_inner),
+                "T_wall_outer" : list(T_wall_outer),
+                "T_coolant" : list(T_coolant),
+                "T_gas" : list(T_gas),
+                "q_dot" : list(q_dot),
+                "h_gas" : list(h_gas),
+                "h_coolant" : list(h_coolant),
                 "boil_off_position" : boil_off_position}
+
+        #Export a .JSON file if required
+        if to_json != False:
+            with open(to_json, "w+") as write_file:
+                json.dump(output_dict, write_file)
+                print("Exported JSON data to '{}'".format(to_json))
+
+        return output_dict
