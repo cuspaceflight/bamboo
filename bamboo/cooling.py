@@ -8,6 +8,7 @@ Room for improvement:
 References:
     [1] - The Thrust Optimised Parabolic nozzle, AspireSpace, http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf   
     [2] - Rocket Propulsion Elements, 7th Edition 
+    [3] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf
 '''
 
 import bamboo as bam
@@ -16,10 +17,10 @@ import matplotlib.pyplot as plt
 import scipy
 import json
 
-'''Constants'''
+
 SIGMA = 5.670374419e-8      #Stefan-Boltzmann constant (W/m^2/K^4)
 
-'''Functions'''
+
 def black_body(T):
     """Get the black body radiation emitted over a hemisphere, at a given temperature.
 
@@ -122,7 +123,7 @@ def h_coolant(A, D, mdot, mu, k, c_bar, rho):
     return 0.023*c_bar * (mdot/A) * (D*v*rho/mu)**(-0.2) * (mu*c_bar/k)**(-2/3)
 
 
-'''Classes'''
+
 class EngineGeometry:
     """Class for storing and calculating features of the engine's geometry.
 
@@ -130,7 +131,7 @@ class EngineGeometry:
         nozzle (float): Nozzle of the engine.
         chamber_length (float): Length of the combustion chamber (m)
         chamber_area (float): Cross sectional area of the combustion chamber (m^2)
-        wall_thickness (float): Thickness of the engine walls, for both the combustion chamber and the nozzle.
+        wall_thickness (float or array): Thickness of the inner liner wall (m). Can be constant (float), or variable (array).
         geometry (str, optional): Geometry system to use. Currently the only option is 'auto'. Defaults to "auto".
 
     Raises:
@@ -141,7 +142,10 @@ class EngineGeometry:
         self.chamber_length = chamber_length
         self.chamber_area = chamber_area
         self.chamber_radius = (chamber_area/np.pi)**0.5 
-        self.wall_thickness = wall_thickness
+        if type(wall_thickness) is (float or int):
+            self.wall_thickness = [wall_thickness]  #Convert into a list so the interpolation works
+        else:
+            self.wall_thickness = wall_thickness
         self.geometry = geometry
 
         if self.nozzle.At > self.chamber_area:
@@ -224,7 +228,7 @@ class CoolingJacket:
     """Cooling jacket parameters.
 
     Args:
-        inner_wall (material): Inner wall material
+        inner_wall (Material): Inner wall material
         inlet_T (float): Inlet coolant temperature (K)
         inlet_p0 (float): Inlet coolant stagnation pressure (Pa)
         thermo_coolant (thermo.chemical.Chemical or thermo.mixture.Mixture): Used to get physical properties of the coolant.
@@ -292,17 +296,26 @@ class CoolingJacket:
         return self.effective_diameter
 
 class Material:
+    """Class used to specify a material and its properties. 
+    Used specifically for defining the inner liner of an engine.
+
+    Args:
+        E (float): Young's modulus (Pa)
+        sigma_y (float): 0.2% yield stress (Pa)
+        poisson (float): Poisson's ratio
+        alpha (float): Thermal expansion coefficient
+        k (float): Thermal conductivity
+
+    """
     def __init__(self, E, sigma_y, poisson, alpha, k):
-        self.E = E # Young's modulus
-        self.sigma_y = sigma_y # 0.2% yield stress
-        self.poisson = poisson
-        self.alpha = alpha # Thermal expansion coeff
-        self.k = k # Thermal conductivity
+        self.E = E                  # Young's modulus
+        self.sigma_y = sigma_y      # 0.2% yield stress
+        self.poisson = poisson      # Poisson ratio
+        self.alpha = alpha          # Thermal expansion coeff
+        self.k = k                  # Thermal conductivity
 
-    def performance_thermal(self, poisson, alpha, k):
-        # Performance coefficient for thermal stress, higher is better
-        return (1 - poisson)*k/alpha
-
+        self.perf_therm = (1 - self.poisson) * self.k / (self.alpha * self.E)   # Performance coefficient for thermal stress, higher is better
+        
 class EngineWithCooling:
     """Used for running cooling system analyses.
 
@@ -534,26 +547,45 @@ class EngineWithCooling:
         
         return 0.023*c_bar * (mdot/A) * (D*v*rho/mu)**(-0.2) * (mu*c_bar/k)**(-2/3)
 
-    def thermal_circuit(self, x, h_gas, h_coolant, inner_wall, T_gas, T_coolant):
+    def map_liner_profile(self, number_of_points=1000):
+        """Maps the provided liner thickness profile to the engine geometry,
+           so each element in cooling analysis has a thickness value.
+           
+           Args:
+                number_of_points (int): Number of discrete liner positions
+           Returns:
+                liner (array): Interpolated liner thickness profile
+           """
+        liner = np.zeros(number_of_points)
+        for i in range(number_of_points):
+            x_pos = i*self.geometry.chamber_length/number_of_points
+            # How far along the engine is the current point
+            liner_index = x_pos * len(self.geometry.wall_thickness)
+            liner[i] = np.interp(liner_index, range(len(self.geometry.wall_thickness)), self.geometry.wall_thickness)
+        return liner
+
+    def thermal_circuit(self, x, h_gas, h_coolant, inner_wall, wall_thickness, T_gas, T_coolant):
         """
-        q is per unit length along the nozzle wall (axially) - positive when heat is flowing to the coolant.
+        q is per unit length along the nozzle wall (axially) - positive when heat is flowing to the coolant.  
+        q_Adot is the heat flux per unit area along the nozzle wall.  
         Uses the idea of thermal circuits and resistances - we have three resistors in series.
 
         Args:
             x (float): x position (m)
             h_gas (float): Gas side convective heat transfer coefficient
             h_coolant (float): Coolant side convective heat transfer coefficient
-            inner_wall (material): Inner wall material, needed for thermal conductivity
+            inner_wall (Material): Inner wall material, needed for thermal conductivity
+            wall_thickness (float): Thickness of the inner wall at x position (m)
             T_gas (float): Free stream gas temperature (K)
             T_coolant (float): Coolant temperature (K)
 
         Returns:
-            float, float, float, float: q_dot, R_gas, R_wall, R_coolant
+            float, float, float, float, float: q_dot, R_gas, R_wall, R_coolant, q_Adot
         """
 
         r = self.geometry.y(x)
         
-        r_out = r + self.geometry.wall_thickness
+        r_out = r + wall_thickness
         r_in = r 
 
         A_in = 2*np.pi*r_out    #Inner area per unit length (i.e. just the inner circumference)
@@ -563,9 +595,10 @@ class EngineWithCooling:
         R_wall = np.log(r_out/r_in)/(2*np.pi*inner_wall.k)
         R_coolant = 1/(h_coolant*A_out)
 
-        q_dot = (T_gas - T_coolant)/(R_gas + R_wall + R_coolant)
+        q_dot = (T_gas - T_coolant)/(R_gas + R_wall + R_coolant)    #Heat flux per unit length
+        q_Adot = q_dot / A_in                                       #Heat flux per unit area
 
-        return q_dot, R_gas, R_wall, R_coolant
+        return q_dot, R_gas, R_wall, R_coolant, q_Adot
 
     def run_heating_analysis(self, number_of_points=1000, h_gas_model = "standard", to_json = "heating_output.json"):
         """Run a simulation of the engine cooling system to get wall temperatures, coolant temperatures, etc.
@@ -587,12 +620,16 @@ class EngineWithCooling:
         discretised_x = np.linspace(self.geometry.x_max, self.geometry.x_min, number_of_points) #Run from the back end (the nozzle exit) to the front (chamber)
         dx = discretised_x[0] - discretised_x[1]
 
+        #Discretised liner thickness
+        liner = self.map_liner_profile(number_of_points)
+
         #Temperatures and heat transfer rates
         T_wall_inner = np.zeros(len(discretised_x)) #Gas side wall temperature
         T_wall_outer = np.zeros(len(discretised_x)) #Coolant side wall temperature
         T_coolant = np.zeros(len(discretised_x))    #Coolant temperature
         T_gas = np.zeros(len(discretised_x))        #Freestream gas temperature
         q_dot = np.zeros(len(discretised_x))        #Heat transfer rate per unit length
+        q_Adot = np.zeros(len(discretised_x))       #Heat transfer rate per unit area
 
         #Heat transfer rates
         h_gas = np.zeros(len(discretised_x))
@@ -617,7 +654,7 @@ class EngineWithCooling:
             h_coolant[i] = self.h_coolant(x, mu_coolant, k_coolant, cp_coolant, rho_coolant)
 
             #Check for coolant boil off
-            if boil_off_position == None and coolant.phase=='g':
+            if boil_off_position is None and coolant.phase=='g':
                 print(f"WARNING: Coolant boiled off at x = {x} m")
                 boil_off_position = x
 
@@ -689,7 +726,7 @@ class EngineWithCooling:
                 raise AttributeError(f"Could not find the h_gas_model {h_gas_model}")
             
             #Get thermal circuit properties
-            q_dot[i], R_gas, R_wall, R_coolant = self.thermal_circuit(x, h_gas[i], h_coolant[i], self.cooling_jacket.inner_wall, T_gas[i], T_coolant[i])
+            q_dot[i], R_gas, R_wall, R_coolant, q_Adot[i] = self.thermal_circuit(x, h_gas[i], h_coolant[i], self.cooling_jacket.inner_wall, liner[i], T_gas[i], T_coolant[i])
 
             #Calculate wall temperatures
             T_wall_inner[i] = T_gas[i] - q_dot[i]*R_gas
@@ -702,6 +739,7 @@ class EngineWithCooling:
                 "T_coolant" : list(T_coolant),
                 "T_gas" : list(T_gas),
                 "q_dot" : list(q_dot),
+                "q_Adot": list(q_Adot),
                 "h_gas" : list(h_gas),
                 "h_coolant" : list(h_coolant),
                 "boil_off_position" : boil_off_position}
@@ -713,3 +751,40 @@ class EngineWithCooling:
                 print("Exported JSON data to '{}'".format(to_json))
 
         return output_dict
+
+    def run_stress_analysis(self, heating_result, type="thermal", condition="steady"):
+        """Perform stress analysis on the liner, using a cooling result.
+        Args:
+            heating_result (dict): Requires a heating analysis result to compute stress.
+            type (str, optional): Options are "pressure",  "thermal" and "combined". Defaults to "thermal". (ONLY DEFAULT WORKS)
+            condition (str, optional): Engine state for analysis. Options are "steady", "startup", or "shutdown". Defaults to "steady". (ONLY DEFAULT WORKS)
+
+        Returns:
+            dict: Analysis result, thermal_stress is the heat induced stress, deltaT_wall is the wall temperature difference, hot side - cold side
+        """
+        length = len(heating_result["x"])
+        wall_stress = np.zeros(length)
+        wall_deltaT = np.zeros(length)
+
+        material = self.cooling_jacket.inner_wall
+
+        for i in range(length):
+            wall_deltaT[i] = heating_result["T_wall_inner"][i] - \
+                heating_result["T_wall_outer"][i]
+
+        # Compute wall temperature gradient
+        wall_deltaT = wall_deltaT[::-1]
+        # Makes the data order match with the coolant flow direction, i.e. nozzle exit to injector face
+        # Spent an hour wondering why the throat was cooler than the chamber wall...
+
+        for i in range(length):
+            cur_stress = material.k * \
+                wall_deltaT[i] / (2 * material.perf_therm)
+        # Determine thermal stress using Ref [3], P53:
+        # sigma_thermal = E*alpha*q_w*deltaL/(2*(1-v)k_w) =
+        # E*alpha*deltaT/2(1-v)
+
+            wall_stress[i] = cur_stress
+
+        return {"thermal_stress": wall_stress,
+                "deltaT_wall": wall_deltaT}

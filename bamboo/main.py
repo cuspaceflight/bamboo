@@ -36,11 +36,11 @@ import matplotlib.pyplot as plt
 import scipy.optimize
 import ambiance
 
-'''Constants'''
+
 R_BAR = 8.3144621e3         #Universal gas constant (J/K/kmol)
 g0 = 9.80665                #Standard gravitational acceleration (m/s^2)
 
-'''Compressible flow functions'''
+
 def m_bar(M, gamma):    
     """Non-dimensional mass flow rate, defined as mdot * sqrt(cp*T0)/(A*p0). A is the local cross sectional area that the flow is moving through.
 
@@ -120,7 +120,7 @@ def p(p0, M, gamma):
     return p0*(1 + (gamma-1)/2 * M**2)**(-gamma/(gamma-1))
 
 
-'''Rocket trajectory functions'''
+
 def estimate_apogee(dry_mass, propellant_mass, engine, cross_sectional_area, drag_coefficient = 0.75, dt = 0.2, show_plot = False):
     global g0
 
@@ -193,7 +193,7 @@ def estimate_apogee(dry_mass, propellant_mass, engine, cross_sectional_area, dra
     return apogee
 
 
-'''Nozzle geometry functions'''
+
 def rao_theta_n(area_ratio, length_fraction = 0.8):
     """Returns the contour angle at the inflection point of the bell nozzle, by interpolating data.   
     Data obtained by using http://www.graphreader.com/ on the graph in Reference [1].
@@ -314,7 +314,7 @@ def show_conical_shape(A1, At, A2, div_half_angle = 15, conv_half_angle=45):
     plt.show()
 
 
-'''Classes'''
+
 class PerfectGas:
     """Object to store exhaust gas properties. Assumes a perfect gas (ideal gas with constant cp, cv and gamma). Only two properties need to be specified.
 
