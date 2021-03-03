@@ -15,6 +15,7 @@ bamboo
     :members:
     :undoc-members:
     :show-inheritance:
+    :member-order: bysource
 
 bamboo.cooling module
 ---------------------
@@ -22,6 +23,7 @@ bamboo.cooling module
     :members:
     :undoc-members:
     :show-inheritance:
+    :member-order: bysource
 
 
 Indices and tables
