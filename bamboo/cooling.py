@@ -6,9 +6,9 @@ Room for improvement:
     - The EngineWithCooling.rho() function calculates rho by doing p/RT, but it would probably be faster to just use isentropic compressible flow relations.
 
 References:
-    [1] - The Thrust Optimised Parabolic nozzle, AspireSpace, http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf   
-    [2] - Rocket Propulsion Elements, 7th Edition 
-    [3] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf
+    - [1] - The Thrust Optimised Parabolic nozzle, AspireSpace, http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf   \n
+    - [2] - Rocket Propulsion Elements, 7th Edition  \n
+    - [3] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf  \n
 '''
 
 import bamboo as bam
@@ -134,8 +134,6 @@ class EngineGeometry:
         wall_thickness (float or array): Thickness of the inner liner wall (m). Can be constant (float), or variable (array).
         geometry (str, optional): Geometry system to use. Currently the only option is 'auto'. Defaults to "auto".
 
-    Raises:
-        ValueError: [description]
     """
     def __init__(self, nozzle, chamber_length, chamber_area, wall_thickness, geometry="auto"):
         self.nozzle = nozzle
@@ -177,6 +175,14 @@ class EngineGeometry:
             self.x_max = self.nozzle.length
 
     def y(self, x):
+        """Get the radius of the engine contour for a given x position.
+
+        Args:
+            x (float): x position (m). x = 0 is the throat, x > 0 is the nozzle diverging section.
+
+        Returns:
+            float: Radius of the engine contour (m).
+        """
         if self.geometry == "auto":
             #Curved converging section
             if x < 0 and x > self.x_curved_converging_start:
@@ -202,6 +208,14 @@ class EngineGeometry:
                 return self.nozzle.y(x)
 
     def A(self, x):
+        """Get the engine cross sectional area at a given x position.
+
+        Args:
+            x (float): x position (m). x = 0 is the throat, x > 0 is the nozzle diverging section.
+
+        Returns:
+            float: Cross sectional area (m^2)
+        """
         return np.pi*self.y(x)**2
 
     def plot_geometry(self, number_of_points = 1000):
@@ -303,18 +317,18 @@ class Material:
         E (float): Young's modulus (Pa)
         sigma_y (float): 0.2% yield stress (Pa)
         poisson (float): Poisson's ratio
-        alpha (float): Thermal expansion coefficient
-        k (float): Thermal conductivity
+        alpha (float): Thermal expansion coefficient (strain/K)
+        k (float): Thermal conductivity (W/m/K)
 
     """
     def __init__(self, E, sigma_y, poisson, alpha, k):
-        self.E = E                  # Young's modulus
-        self.sigma_y = sigma_y      # 0.2% yield stress
-        self.poisson = poisson      # Poisson ratio
-        self.alpha = alpha          # Thermal expansion coeff
-        self.k = k                  # Thermal conductivity
+        self.E = E                  
+        self.sigma_y = sigma_y      
+        self.poisson = poisson      
+        self.alpha = alpha          
+        self.k = k                  
 
-        self.perf_therm = (1 - self.poisson) * self.k / (self.alpha * self.E)   # Performance coefficient for thermal stress, higher is better
+        self.perf_therm = (1 - self.poisson) * self.k / (self.alpha * self.E)   #Performance coefficient for thermal stress, higher is better
         
 class EngineWithCooling:
     """Used for running cooling system analyses.
@@ -470,7 +484,7 @@ class EngineWithCooling:
             Pr (float): Prandtl number of the exhaust gas
 
         Returns:
-            float: Gas side convective heat transfer coefficient
+            float: Convective heat transfer coefficient, h, for the exhaust gas side (where q = h(T - T_inf)).
         """
         M = self.M(x)
         T = self.T(x)
@@ -499,6 +513,9 @@ class EngineWithCooling:
             rho_am (float): Density of the gas, at T = (T_wall + T_freestream)/2
             mu_am (float): Absolute viscosity of the gas, at T = (T_wall + T_freestream)/2
             mu0 (float): Absolute viscosity of the gas under stagnation conditions.
+
+        Returns:
+            float: Convective heat transfer coefficient, h, for the exhaust gas side (where q = h(T - T_inf)).
         """
 
         return (0.026/D**0.2) * (cp_inf*mu_inf**0.2)/(Pr_inf**0.6) * (rho_inf * v_inf)**0.8 * (rho_am/rho_inf) * (mu_am/mu0)**0.2
@@ -513,6 +530,9 @@ class EngineWithCooling:
             M (float): Mach number in the gas freestream.
             A (float): Flow area of the gas.
             Tw (float): Gas temperature at the wall.
+
+        Returns:
+            float: Convective heat transfer coefficient, h, for the exhaust gas side (where q = h(T - T_inf)).
         """
         c_star = self.chamber_conditions.p0 * self.geometry.nozzle.At / self.chamber_conditions.mdot
         Dt = 2*self.geometry.nozzle.Rt
@@ -553,6 +573,7 @@ class EngineWithCooling:
            
            Args:
                 number_of_points (int): Number of discrete liner positions
+
            Returns:
                 liner (array): Interpolated liner thickness profile
            """
@@ -574,7 +595,7 @@ class EngineWithCooling:
             x (float): x position (m)
             h_gas (float): Gas side convective heat transfer coefficient
             h_coolant (float): Coolant side convective heat transfer coefficient
-            inner_wall (Material): Inner wall material, needed for thermal conductivity
+            inner_wall (Material): Material object for the inner wall, needed for thermal conductivity
             wall_thickness (float): Thickness of the inner wall at x position (m)
             T_gas (float): Free stream gas temperature (K)
             T_coolant (float): Coolant temperature (K)
@@ -609,7 +630,17 @@ class EngineWithCooling:
             to_json (str or bool, optional): Directory to export a .JSON file to, containing simulation results. If False, no .JSON file is saved. Defaults to 'heating_output.json'.
 
         Returns:
-            dict: Results of the simulation. 
+            dict: Results of the simulation. Contains the following dictionary keys: 
+                - "x" : x positions corresponding to the rest of the data (m)
+                - "T_wall_inner" : Exhaust gas side wall temperature (K)
+                - "T_wall_outer" : Coolant side wall temperature (K)
+                - "T_coolant" : Coolant temperature (K)
+                - "T_gas" : Exhaust gas freestream temperature (K)
+                - "q_dot" : Heat transfer rate per unit length (axially along the engine) (W/m)
+                - "q_Adot": Heat transfer rate per unit area (W/m^2)
+                - "h_gas" : Convective heat transfer rate for the exhaust gas side
+                - "h_coolant" : Convective heat transfer rate for the coolant side
+                - "boil_off_position" : x position of any coolant boil off. Equal to None if the coolant does not boil.
         """
 
         '''Initialise variables and arrays'''
@@ -760,7 +791,7 @@ class EngineWithCooling:
             condition (str, optional): Engine state for analysis. Options are "steady", "startup", or "shutdown". Defaults to "steady". (ONLY DEFAULT WORKS)
 
         Returns:
-            dict: Analysis result, thermal_stress is the heat induced stress, deltaT_wall is the wall temperature difference, hot side - cold side
+            dict: Analysis result. 'thermal_stress' is the heat induced stress, 'deltaT_wall' is the wall temperature difference, hot side - cold side
         """
         length = len(heating_result["x"])
         wall_stress = np.zeros(length)

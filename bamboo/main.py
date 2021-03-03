@@ -10,25 +10,23 @@ Conventions:
     - Position (x) along the nozzle is defined by: x = 0 at the throat, x < 0 in the combustion chamber, x > 0 in the diverging section of the nozzle.
 
 Known issues:
-    - I'm not sure if the Engine.optimise_for_apogee() function is working correctly.
     - A hardcoded fix is in place for using area ratios outside the Rao angle data range (it tricks the code into making a 15 degree cone). A more robust fix would be better.
 
 Room for improvement:
-    - Rename the "Gas" object as "PerfectGas", to avoid confusion with thermo module objects or any real gas models we might use later.
     - Rao bell nozzle data is currently obtained rather crudely (by using an image-of-graph-to-data converter). Would be nicer to have more exact data values.
     - Cone nozzles are not currently implemented.
 
 Subscripts:
-    0 - Stagnation condition
-    c - Chamber condition (should be the same as stagnation conditions)
-    t - At the throat
-    e - At the nozzle exit plane
-    amb - Atmopsheric/ambient condition
+    - 0 - Stagnation condition
+    - c - Chamber condition (should be the same as stagnation conditions)
+    - t - At the throat
+    - e - At the nozzle exit plane
+    - amb - Atmopsheric/ambient condition
 
 References:
-    [1] - The Thrust Optimised Parabolic nozzle, AspireSpace, http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf  
-    [2] - Liquid rocket engine nozzles, NASA, https://ntrs.nasa.gov/api/citations/19770009165/downloads/19770009165.pdf   
-    [3] - Design and analysis of contour bell nozzle and comparison with dual bell nozzle https://core.ac.uk/download/pdf/154060575.pdf  
+    - [1] - The Thrust Optimised Parabolic nozzle, AspireSpace, http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf 
+    - [2] - Liquid rocket engine nozzles, NASA, https://ntrs.nasa.gov/api/citations/19770009165/downloads/19770009165.pdf   
+    - [3] - Design and analysis of contour bell nozzle and comparison with dual bell nozzle https://core.ac.uk/download/pdf/154060575.pdf 
 '''
 
 import numpy as np
