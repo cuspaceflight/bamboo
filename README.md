@@ -11,6 +11,7 @@ Nozzle flow and cooling dynamics using perfect gas equations for 1D isentropic f
 - Estimate apogee using a simple 1D trajectory simulator.
 - Optimise nozzle area ratio based on the simple trajectory simulator.
 - Tools for modelling engine cooling systems.
+- Tools for modelling stress in the engine walls.
 
 ## Documentation
 Made using Sphinx, available at: 
