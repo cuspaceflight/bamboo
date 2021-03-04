@@ -1,0 +1,312 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>bamboo.main &mdash; Bamboo 0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="bamboo.cooling" href="bamboo.cooling.html" />
+    <link rel="prev" title="Welcome to Bamboo’s documentation!" href="../index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Bamboo
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">bamboo.main</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bamboo.cooling.html">bamboo.cooling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bamboo.plot.html">bamboo.plot</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Bamboo</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>bamboo.main</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/_autosummary/bamboo.main.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-bamboo.main">
+<span id="bamboo-main"></span><h1>bamboo.main<a class="headerlink" href="#module-bamboo.main" title="Permalink to this headline">¶</a></h1>
+<p>Module for calculating nozzle geometry from the chamber conditions. All units SI unless otherwise stated. All angles in radians unless otherwise stated.</p>
+<dl class="simple">
+<dt>Assumptions:</dt><dd><ul class="simple">
+<li><p>1D flow.</p></li>
+<li><p>Isentropic flow.</p></li>
+<li><p>Perfect gases.</p></li>
+</ul>
+</dd>
+<dt>Conventions:</dt><dd><ul class="simple">
+<li><p>Position (x) along the nozzle is defined by: x = 0 at the throat, x &lt; 0 in the combustion chamber, x &gt; 0 in the diverging section of the nozzle.</p></li>
+</ul>
+</dd>
+<dt>Known issues:</dt><dd><ul class="simple">
+<li><p>A hardcoded fix is in place for using area ratios outside the Rao angle data range (it tricks the code into making a 15 degree cone). A more robust fix would be better.</p></li>
+</ul>
+</dd>
+<dt>Room for improvement:</dt><dd><ul class="simple">
+<li><p>Rao bell nozzle data is currently obtained rather crudely (by using an image-of-graph-to-data converter). Would be nicer to have more exact data values.</p></li>
+<li><p>Cone nozzles are not currently implemented.</p></li>
+</ul>
+</dd>
+<dt>Subscripts:</dt><dd><ul class="simple">
+<li><p>0 - Stagnation condition</p></li>
+<li><p>c - Chamber condition (should be the same as stagnation conditions)</p></li>
+<li><p>t - At the throat</p></li>
+<li><p>e - At the nozzle exit plane</p></li>
+<li><p>amb - Atmopsheric/ambient condition</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<ul class="simple">
+<li><p>[1] - The Thrust Optimised Parabolic nozzle, AspireSpace, <a class="reference external" href="http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf">http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf</a></p></li>
+<li><p>[2] - Liquid rocket engine nozzles, NASA, <a class="reference external" href="https://ntrs.nasa.gov/api/citations/19770009165/downloads/19770009165.pdf">https://ntrs.nasa.gov/api/citations/19770009165/downloads/19770009165.pdf</a></p></li>
+<li><p>[3] - Design and analysis of contour bell nozzle and comparison with dual bell nozzle <a class="reference external" href="https://core.ac.uk/download/pdf/154060575.pdf">https://core.ac.uk/download/pdf/154060575.pdf</a></p></li>
+</ul>
+<p class="rubric">Functions</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.main.M_from_p" title="bamboo.main.M_from_p"><code class="xref py py-obj docutils literal notranslate"><span class="pre">M_from_p</span></code></a>(p, p0, gamma)</p></td>
+<td><p>Mach number from static pressure and stagnation pressure.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.main.T" title="bamboo.main.T"><code class="xref py py-obj docutils literal notranslate"><span class="pre">T</span></code></a>(T0, M, gamma)</p></td>
+<td><p>Get local temperature from the Mach number and stagnation temperature.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.main.T0" title="bamboo.main.T0"><code class="xref py py-obj docutils literal notranslate"><span class="pre">T0</span></code></a>(T, M, gamma)</p></td>
+<td><p>Get the stangation temperature from the static temperature and Mach number</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.main.estimate_apogee" title="bamboo.main.estimate_apogee"><code class="xref py py-obj docutils literal notranslate"><span class="pre">estimate_apogee</span></code></a>(dry_mass, propellant_mass, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.main.get_exit_area" title="bamboo.main.get_exit_area"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_exit_area</span></code></a>(gas, chamber_conditions, p_amb)</p></td>
+<td><p>Get the nozzle exit area, given the gas properties and combustion chamber conditions.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.main.get_throat_area" title="bamboo.main.get_throat_area"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_throat_area</span></code></a>(gas, chamber_conditions)</p></td>
+<td><p>Get the nozzle throat area, given the gas properties and combustion chamber conditions.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.main.m_bar" title="bamboo.main.m_bar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">m_bar</span></code></a>(M, gamma)</p></td>
+<td><p>Non-dimensional mass flow rate, defined as mdot * sqrt(cp*T0)/(A*p0).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.main.p" title="bamboo.main.p"><code class="xref py py-obj docutils literal notranslate"><span class="pre">p</span></code></a>(p0, M, gamma)</p></td>
+<td><p>Get local pressure from the Mach number and stagnation pressure.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.main.p0" title="bamboo.main.p0"><code class="xref py py-obj docutils literal notranslate"><span class="pre">p0</span></code></a>(p, M, gamma)</p></td>
+<td><p>Get stagnation pressure from static pressure and Mach number</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.main.rao_theta_e" title="bamboo.main.rao_theta_e"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rao_theta_e</span></code></a>(area_ratio[, length_fraction])</p></td>
+<td><p>Returns the contour angle at the exit of the bell nozzle, by interpolating data.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.main.rao_theta_n" title="bamboo.main.rao_theta_n"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rao_theta_n</span></code></a>(area_ratio[, length_fraction])</p></td>
+<td><p>Returns the contour angle at the inflection point of the bell nozzle, by interpolating data.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.main.show_conical_shape" title="bamboo.main.show_conical_shape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">show_conical_shape</span></code></a>(A1, At, A2[, …])</p></td>
+<td><p>Legacy function.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Classes</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.main.ChamberConditions" title="bamboo.main.ChamberConditions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ChamberConditions</span></code></a>(p0, T0, mdot)</p></td>
+<td><p>Object for storing combustion chamber thermodynamic conditions.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.main.Engine" title="bamboo.main.Engine"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Engine</span></code></a>(perfect_gas, chamber_conditions, nozzle)</p></td>
+<td><p>Class for representing a liquid rocket engine.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.main.Nozzle" title="bamboo.main.Nozzle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Nozzle</span></code></a>(At, Ae[, type, length_fraction])</p></td>
+<td><p>Object for calculating and storing nozzle geometry.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.main.PerfectGas" title="bamboo.main.PerfectGas"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PerfectGas</span></code></a>(**kwargs)</p></td>
+<td><p>Object to store exhaust gas properties.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="bamboo.cooling.html" class="btn btn-neutral float-right" title="bamboo.cooling" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../index.html" class="btn btn-neutral float-left" title="Welcome to Bamboo’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Cambridge University Spaceflight.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

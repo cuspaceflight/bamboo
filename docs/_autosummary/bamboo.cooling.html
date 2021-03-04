@@ -1,0 +1,269 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>bamboo.cooling &mdash; Bamboo 0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="bamboo.plot" href="bamboo.plot.html" />
+    <link rel="prev" title="bamboo.main" href="bamboo.main.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Bamboo
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="bamboo.main.html">bamboo.main</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">bamboo.cooling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bamboo.plot.html">bamboo.plot</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Bamboo</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>bamboo.cooling</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/_autosummary/bamboo.cooling.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-bamboo.cooling">
+<span id="bamboo-cooling"></span><h1>bamboo.cooling<a class="headerlink" href="#module-bamboo.cooling" title="Permalink to this headline">¶</a></h1>
+<p>Extra tools for modelling the cooling system of a liquid rocket engine.</p>
+<dl class="simple">
+<dt>Room for improvement:</dt><dd><ul class="simple">
+<li><p>My equation for h_gas is the less accurate version, with the Bartz correction factors (this was just to avoid needing the extra parameters for the Bartz equation)</p></li>
+<li><p>The EngineWithCooling.rho() function calculates rho by doing p/RT, but it would probably be faster to just use isentropic compressible flow relations.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<ul class="simple">
+<li><p>[1] - The Thrust Optimised Parabolic nozzle, AspireSpace, <a class="reference external" href="http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf">http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf</a></p></li>
+<li><p>[2] - Rocket Propulsion Elements, 7th Edition</p></li>
+<li><p>[3] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, <a class="reference external" href="https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf">https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf</a></p></li>
+</ul>
+<p class="rubric">Functions</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.black_body" title="bamboo.cooling.black_body"><code class="xref py py-obj docutils literal notranslate"><span class="pre">black_body</span></code></a>(T)</p></td>
+<td><p>Get the black body radiation emitted over a hemisphere, at a given temperature.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_coolant" title="bamboo.cooling.h_coolant"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_coolant</span></code></a>(A, D, mdot, mu, k, c_bar, rho)</p></td>
+<td><p>Get the convective heat transfer coefficient for the coolant side.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_gas_1" title="bamboo.cooling.h_gas_1"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_gas_1</span></code></a>(D, M, T, rho, gamma, R, mu, k, Pr)</p></td>
+<td><p>Get the convective heat transfer coefficient on the gas side.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_gas_bartz_1" title="bamboo.cooling.h_gas_bartz_1"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_gas_bartz_1</span></code></a>(D, cp_inf, mu_inf, Pr_inf, …)</p></td>
+<td><p>Equation (8-23) from page 312 of RPE 7th edition.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_gas_bartz_2" title="bamboo.cooling.h_gas_bartz_2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_gas_bartz_2</span></code></a>(c_star, At, A, pc, Tc, M, Tw, …)</p></td>
+<td><p>Alternative equation for Bartz heat transfer coefficient.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Classes</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.CoolingJacket" title="bamboo.cooling.CoolingJacket"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CoolingJacket</span></code></a>(inner_wall, inlet_T, inlet_p0, …)</p></td>
+<td><p>Cooling jacket parameters.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.EngineGeometry" title="bamboo.cooling.EngineGeometry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EngineGeometry</span></code></a>(nozzle, chamber_length, …)</p></td>
+<td><p>Class for storing and calculating features of the engine’s geometry.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.EngineWithCooling" title="bamboo.cooling.EngineWithCooling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EngineWithCooling</span></code></a>(chamber_conditions, …)</p></td>
+<td><p>Used for running cooling system analyses.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.Material" title="bamboo.cooling.Material"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Material</span></code></a>(E, sigma_y, poisson, alpha, k)</p></td>
+<td><p>Class used to specify a material and its properties.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="bamboo.plot.html" class="btn btn-neutral float-right" title="bamboo.plot" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="bamboo.main.html" class="btn btn-neutral float-left" title="bamboo.main" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Cambridge University Spaceflight.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

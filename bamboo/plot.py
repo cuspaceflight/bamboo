@@ -1,3 +1,6 @@
+"""Module that provides plotting tools, to streamline the creation of plots.
+"""
+
 import matplotlib.pyplot as plt
 import numpy as np
 

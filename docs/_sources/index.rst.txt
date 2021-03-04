@@ -5,12 +5,16 @@
 
 Welcome to Bamboo's documentation!
 ==================================
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+.. autosummary:: 
+   :toctree: _autosummary
+   :recursive:
+    
+    bamboo.main
+    bamboo.cooling
+    bamboo.plot
 
-bamboo
-------
+bamboo.main module
+------------------
 .. automodule:: bamboo.main
     :members:
     :undoc-members:
@@ -25,6 +29,13 @@ bamboo.cooling module
     :show-inheritance:
     :member-order: bysource
 
+bamboo.plot module
+------------------
+.. automodule:: bamboo.plot
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :member-order: bysource
 
 Indices and tables
 ==================
