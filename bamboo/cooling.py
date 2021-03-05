@@ -725,13 +725,16 @@ class EngineWithCooling:
 
     def run_stress_analysis(self, heating_result, type="thermal", condition="steady"):
         """Perform stress analysis on the liner, using a cooling result.
+
         Args:
             heating_result (dict): Requires a heating analysis result to compute stress.
             type (str, optional): Options are "pressure",  "thermal" and "combined". Defaults to "thermal". (ONLY DEFAULT WORKS)
             condition (str, optional): Engine state for analysis. Options are "steady", "startup", or "shutdown". Defaults to "steady". (ONLY DEFAULT WORKS)
 
         Returns:
-            dict: Analysis result. 'thermal_stress' is the heat induced stress, 'deltaT_wall' is the wall temperature difference, hot side - cold side
+            dict: Analysis result.
+                - "thermal_stress" : Heat induced stress
+                - "deltaT_wall" : Wall temperature difference, hot side - cold side
         """
         length = len(heating_result["x"])
         wall_stress = np.zeros(length)

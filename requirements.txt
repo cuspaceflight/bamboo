@@ -5,3 +5,6 @@ ambiance
 thermo
 pypropep
 CoolProp
+future
+kiwisolver
+pillow
