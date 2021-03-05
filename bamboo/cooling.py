@@ -55,8 +55,9 @@ def h_gas_1(D, M, T, rho, gamma, R, mu, k, Pr):
 
     return 0.026 * (rho*v)**0.8 / (D**0.2) * (Pr**0.4) * k/(mu**0.8)
 
-def h_gas_bartz_1(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0):
-    """Equation (8-23) from page 312 of RPE 7th edition. 'am' refers to the gas being at the 'arithmetic mean' of the wall and freestream temperatures.
+def h_gas_2(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0):
+    """Bartz equation, 
+    usingEquation (8-23) from page 312 of RPE 7th edition. 'am' refers to the gas being at the 'arithmetic mean' of the wall and freestream temperatures.
 
     Note:
         Seems to provide questionable results - may have been implemented incorrectly.
@@ -78,7 +79,7 @@ def h_gas_bartz_1(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0)
 
     return (0.026/D**0.2) * (cp_inf*mu_inf**0.2)/(Pr_inf**0.6) * (rho_inf * v_inf)**0.8 * (rho_am/rho_inf) * (mu_am/mu0)**0.2
 
-def h_gas_bartz_2(c_star, At, A, pc, Tc, M, Tw, mu, cp, gamma, Pr):
+def h_gas_3(c_star, At, A, pc, Tc, M, Tw, mu, cp, gamma, Pr):
     """Alternative equation for Bartz heat transfer coefficient.
 
     Args:
@@ -103,7 +104,7 @@ def h_gas_bartz_2(c_star, At, A, pc, Tc, M, Tw, mu, cp, gamma, Pr):
     
     return (0.026)/(Dt**0.2) * (mu**0.2*cp/Pr**0.6) * (pc/c_star)**0.8 * (At/A)**0.9 * sigma
 
-def h_coolant(A, D, mdot, mu, k, c_bar, rho):
+def h_coolant_1(A, D, mdot, mu, k, c_bar, rho):
     """Get the convective heat transfer coefficient for the coolant side.
     Uses the equation from page 317 of RPE 7th edition.
 
@@ -309,6 +310,17 @@ class CoolingJacket:
         """
         return self.effective_diameter
 
+    def p0(self, x=None):
+        """Get coolant stagnation pressure as a function of position (currently implemented as constant)
+
+        Args:
+            x (float, optional): x position, throat at x = 0, nozzle at x > 0. Defaults to None.
+
+        Returns:
+            float: Coolant stagnation pressure
+        """
+        return self.inlet_p0
+
 class Material:
     """Class used to specify a material and its properties. 
     Used specifically for defining the inner liner of an engine.
@@ -346,7 +358,7 @@ class EngineWithCooling:
         self.cooling_jacket = cooling_jacket
         self.perfect_gas = perfect_gas
         self.thermo_gas = thermo_gas
-        #self.c_star = self.geometry.chamber_conditions.p0 * self.geometry.nozzle.At / self.geometry.chamber_conditions.mdot
+        self.c_star = self.chamber_conditions.p0 * self.geometry.nozzle.At / self.chamber_conditions.mdot
 
     def M(self, x):
         """Get exhaust gas Mach number.
@@ -473,100 +485,6 @@ class EngineWithCooling:
         """
         return self.cooling_jacket.mdot_coolant/(rho_coolant * self.cooling_jacket.A(x))
 
-    def h_gas(self, x, mu, k, Pr):
-        """Get the convective heat transfer coefficient on the gas side. 
-        Uses Eqn (8-22) on page 312 or RPE 7th edition.
-
-        Args:
-            x (float): x-position (m)
-            mu (float): Absolute viscosity of the exhaust gas
-            k (float): Thermal conductivity of the exhaust gas
-            Pr (float): Prandtl number of the exhaust gas
-
-        Returns:
-            float: Convective heat transfer coefficient, h, for the exhaust gas side (where q = h(T - T_inf)).
-        """
-        M = self.M(x)
-        T = self.T(x)
-        rho = self.rho(x)
-        gamma = self.perfect_gas.gamma
-        R = self.perfect_gas.R
-
-        v = M * (gamma*R*T)**0.5    #Gas velocity
-        D = 2*self.geometry.y(x)    #Flow diameter
-
-        return 0.026 * (rho*v)**0.8 / (D**0.2) * (Pr**0.4) * k/(mu**0.8)
-
-    def h_gas_bartz_1(self, D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0):
-        """Equation (8-23) from page 312 of RPE 7th edition. 'am' refers to the gas being at the 'arithmetic mean' of the wall and freestream temperatures.
-
-        Note:
-            Seems to provide questionable results - may have been implemented incorrectly.
-
-        Args:
-            D (float): Gas flow diameter (m)
-            cp_inf (float): Specific heat capacity at constant pressure for the gas, in the freestream
-            mu_inf (float): Absolute viscosity in the freestream
-            Pr_inf (float): Prandtl number in the freestream
-            rho_inf (float): Density of the gas in the freestream
-            v_inf (float): Velocity of the gas in in the freestream
-            rho_am (float): Density of the gas, at T = (T_wall + T_freestream)/2
-            mu_am (float): Absolute viscosity of the gas, at T = (T_wall + T_freestream)/2
-            mu0 (float): Absolute viscosity of the gas under stagnation conditions.
-
-        Returns:
-            float: Convective heat transfer coefficient, h, for the exhaust gas side (where q = h(T - T_inf)).
-        """
-
-        return (0.026/D**0.2) * (cp_inf*mu_inf**0.2)/(Pr_inf**0.6) * (rho_inf * v_inf)**0.8 * (rho_am/rho_inf) * (mu_am/mu0)**0.2
-
-    def h_gas_bartz_2(self, mu, cp, Pr, M, A, Tw):
-        """Alternative equation for Bartz.
-
-        Args:
-            mu (float): Absolute viscosity of the gas freestream.
-            cp (float): Specific heat at constant pressure for the gas freestream.
-            Pr (float): Prandtl number for the gas freestream.
-            M (float): Mach number in the gas freestream.
-            A (float): Flow area of the gas.
-            Tw (float): Gas temperature at the wall.
-
-        Returns:
-            float: Convective heat transfer coefficient, h, for the exhaust gas side (where q = h(T - T_inf)).
-        """
-        c_star = self.chamber_conditions.p0 * self.geometry.nozzle.At / self.chamber_conditions.mdot
-        Dt = 2*self.geometry.nozzle.Rt
-        At = self.geometry.nozzle.At
-        pc = self.chamber_conditions.p0
-        Tc = self.chamber_conditions.T0
-
-        gamma = self.perfect_gas.gamma
-
-        sigma = (0.5 * (Tw/Tc) * (1 + (gamma-1)/2 * M**2) + 0.5)**0.68 * (1 + (gamma-1)/2 * M**2)**(-0.12)
-        
-        return (0.026)/(Dt**0.2) * (mu**0.2*cp/Pr**0.6) * (pc/c_star)**0.8 * (At/A)**0.9 * sigma
-
-    def h_coolant(self, x, mu, k, c_bar, rho):
-        """Get the convective heat transfer coefficient for the coolant side.
-        Uses the equation from page 317 of RPE 7th edition.
-
-        Args:
-            x (float): x-position (m)
-            mu (float): Absolute viscosity of coolant 
-            k (float): Thermal conductivity of coolant
-            c_bar(float): Average specific heat capacity of coolant
-            rho (float): Density of coolant (kg/m3)
-
-        Returns:
-            float: Coolant side convective heat transfer coefficient
-        """
-        mdot = self.cooling_jacket.mdot_coolant
-        A = self.cooling_jacket.A(x)
-        D = self.cooling_jacket.D(x)
-        v = self.coolant_velocity(x, rho)
-        
-        return 0.023*c_bar * (mdot/A) * (D*v*rho/mu)**(-0.2) * (mu*c_bar/k)**(-2/3)
-
     def map_liner_profile(self, number_of_points=1000):
         """Maps the provided liner thickness profile to the engine geometry,
            so each element in cooling analysis has a thickness value.
@@ -621,12 +539,13 @@ class EngineWithCooling:
 
         return q_dot, R_gas, R_wall, R_coolant, q_Adot
 
-    def run_heating_analysis(self, number_of_points=1000, h_gas_model = "standard", to_json = "heating_output.json"):
+    def run_heating_analysis(self, number_of_points=1000, h_gas_model = "1", h_coolant_model = "1", to_json = "heating_output.json"):
         """Run a simulation of the engine cooling system to get wall temperatures, coolant temperatures, etc.
 
         Args:
             number_of_points (int, optional): Number of discrete points to divide the engine into. Defaults to 1000.
-            h_gas_model (str, optional): Equation to use for the gas side convective heat transfer coefficients. Options are 'standard' and 'bartz 1', 'bartz 2'. Defaults to "standard".
+            h_gas_model (str, optional): Equation to use for the gas side convective heat transfer coefficients. Options are '1', '2' and '3'. Defaults to "1".
+            h_coolant_model (str, optional): Equation to use for the coolant side convective heat transfer coefficients, currently the only option is '1'. Defaults to "1".
             to_json (str or bool, optional): Directory to export a .JSON file to, containing simulation results. If False, no .JSON file is saved. Defaults to 'heating_output.json'.
 
         Returns:
@@ -661,8 +580,6 @@ class EngineWithCooling:
         T_gas = np.zeros(len(discretised_x))        #Freestream gas temperature
         q_dot = np.zeros(len(discretised_x))        #Heat transfer rate per unit length
         q_Adot = np.zeros(len(discretised_x))       #Heat transfer rate per unit area
-
-        #Heat transfer rates
         h_gas = np.zeros(len(discretised_x))
         h_coolant = np.zeros(len(discretised_x))
 
@@ -673,55 +590,50 @@ class EngineWithCooling:
         '''Main loop'''
         for i in range(len(discretised_x)):
             x = discretised_x[i]
+            T_gas[i] = self.T(x)
 
-            #Coolant side heat transfer coefficient
-            coolant.calculate(T = T_coolant[i], P = self.cooling_jacket.inlet_p0)
-
-            mu_coolant = coolant.mu
-            k_coolant = coolant.k
-            cp_coolant = coolant.Cp
-            rho_coolant = coolant.rho
-
-            h_coolant[i] = self.h_coolant(x, mu_coolant, k_coolant, cp_coolant, rho_coolant)
-
-            #Check for coolant boil off
-            if boil_off_position is None and coolant.phase=='g':
-                print(f"WARNING: Coolant boiled off at x = {x} m")
-                boil_off_position = x
-
-            #Calculate coolant temperature
+            #Calculate the current coolant temperature
             if i == 0:
                 T_coolant[i] = self.cooling_jacket.inlet_T
-            else:
-                T_coolant[i] = T_coolant[i-1] + (q_dot[i-1]*dx)/(self.cooling_jacket.mdot_coolant*cp_coolant)    #Increase in coolant temperature, q*dx = mdot*Cp*dT
 
-            #Gas freestream properties
-            T_gas[i] = self.T(x)
-            p_gas = self.p(x)
+            else:
+                #Increase in coolant temperature, q*dx = mdot*Cp*dT
+                T_coolant[i] = T_coolant[i-1] + (q_dot[i-1]*dx)/(self.cooling_jacket.mdot_coolant*cp_coolant)   
+
+            #Update coolant conditions
+            coolant.calculate(T = T_coolant[i], P = self.cooling_jacket.p0(x))
+            cp_coolant = coolant.Cp
 
             #Gas side heat transfer coefficient
-            if h_gas_model == "standard":
-                exhaust_gas.calculate(T = T_gas[i], P = p_gas)
+            if h_gas_model == "1":
 
-                mu = exhaust_gas.mu
-                k = exhaust_gas.k
-                Pr = exhaust_gas.Pr
+                #Get physical properties using thermo
+                exhaust_gas.calculate(T = T_gas[i], P = self.p(x)) 
 
-                h_gas[i] = self.h_gas(x, mu, k, Pr)
+                #Calculate the heat transfer coefficient
+                h_gas[i] = h_gas_1(2*self.geometry.y(x),
+                                   self.M(x),
+                                   T_gas[i],
+                                   self.rho(x),
+                                   self.perfect_gas.gamma,
+                                   self.perfect_gas.R,
+                                   exhaust_gas.mu,
+                                   exhaust_gas.k,
+                                   exhaust_gas.Pr)
 
-            elif h_gas_model == "bartz 1":
+            elif h_gas_model == "2":
                 gamma = self.perfect_gas.gamma
                 R = self.perfect_gas.R
                 D = 2*self.geometry.y(x)            #Flow diameter
 
                 #Freestream properties
-                p_inf = p_gas
+                p_inf = self.p(x)
                 T_inf = T_gas[i]
                 rho_inf = self.rho(x)
                 M_inf = self.M(x)
                 v_inf = M_inf * (gamma*R*T_inf)**0.5    #Gas velocity
 
-                exhaust_gas.calculate(T = T_gas[i], P = p_gas)
+                exhaust_gas.calculate(T = T_gas[i], P = p_inf)
                 mu_inf = exhaust_gas.mu
                 Pr_inf = exhaust_gas.Pr
                 cp_inf = self.perfect_gas.cp
@@ -729,7 +641,7 @@ class EngineWithCooling:
                 #Properties at arithmetic mean of T_wall and T_inf
                 T_am = (T_inf + T_wall_inner[i-1]) / 2
 
-                exhaust_gas.calculate(T = T_am, P = p_gas)
+                exhaust_gas.calculate(T = T_am, P = p_inf)
                 mu_am = exhaust_gas.mu
                 rho_am = p_inf/(R*T_am) #p = rho R T - pressure is roughly uniform across the boundary layer so p_inf ~= p_wall
 
@@ -740,22 +652,46 @@ class EngineWithCooling:
                 exhaust_gas.calculate(T = T0, P = p0)
                 mu0 = exhaust_gas.mu
 
-                h_gas[i] = self.h_gas_bartz_1(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0)
+                h_gas[i] = h_gas_2(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0)
 
-            elif h_gas_model == "bartz 2":
-                M = self.M(x) 
-                A = self.geometry.A(x)
-                Tw = T_wall_inner[i-1]
+            elif h_gas_model == "3":
 
-                exhaust_gas.calculate(T = T_gas[i], P = p_gas)
-                mu = exhaust_gas.mu
-                cp = self.perfect_gas.cp
-                Pr = exhaust_gas.Pr
-                h_gas[i] = self.h_gas_bartz_2(mu, cp, Pr, M, A, Tw)
+                #Get physical properties using thermo
+                exhaust_gas.calculate(T = T_gas[i], P = self.p(x))
+
+                #Calculate the heat transfer coefficient
+                h_gas[i] = h_gas_3(self.c_star,
+                                   self.geometry.nozzle.At, 
+                                   self.geometry.A(x), 
+                                   self.chamber_conditions.p0, 
+                                   self.chamber_conditions.T0, 
+                                   self.M(x), 
+                                   T_wall_inner[i-1], 
+                                   exhaust_gas.mu, 
+                                   self.perfect_gas.cp, 
+                                   self.perfect_gas.gamma, exhaust_gas.Pr)
 
             else:
-                raise AttributeError(f"Could not find the h_gas_model {h_gas_model}")
+                raise AttributeError(f"Could not find the h_gas_model '{h_gas_model}'")
             
+            #Coolant side heat transfer coefficient
+            if h_coolant_model == "1":
+                h_coolant[i] = h_coolant_1(self.cooling_jacket.A(x), 
+                                           self.cooling_jacket.D(x), 
+                                           self.cooling_jacket.mdot_coolant, 
+                                           coolant.mu, 
+                                           coolant.k, 
+                                           cp_coolant, 
+                                           coolant.rho)
+
+            else:
+                raise AttributeError(f"Could not find the h_coolant_model '{h_coolant_model}'")
+            
+            #Check for coolant boil off
+            if boil_off_position == None and coolant.phase=='g':
+                print(f"WARNING: Coolant boiled off at x = {x} m")
+                boil_off_position = x
+
             #Get thermal circuit properties
             q_dot[i], R_gas, R_wall, R_coolant, q_Adot[i] = self.thermal_circuit(x, h_gas[i], h_coolant[i], self.cooling_jacket.inner_wall, liner[i], T_gas[i], T_coolant[i])
 
