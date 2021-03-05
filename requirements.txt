@@ -4,7 +4,10 @@ matplotlib
 ambiance
 thermo
 pypropep
+<<<<<<< HEAD
 CoolProp
+=======
+>>>>>>> 9c4e13bfa186bb1c1a038580e3cc110b5d2dcd2d
 future
 kiwisolver
 pillow
