@@ -5,6 +5,8 @@ Room for improvement:
     - My equation for h_gas is the less accurate version, with the Bartz correction factors (this was just to avoid needing the extra parameters for the Bartz equation)
     - The EngineWithCooling.rho() function calculates rho by doing p/RT, but it would probably be faster to just use isentropic compressible flow relations.
 
+Useful:
+    - List of CoolProp properties: http://www.coolprop.org/coolprop/HighLevelAPI.html#table-of-string-inputs-to-propssi-function
 References:
     - [1] - The Thrust Optimised Parabolic nozzle, AspireSpace, http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf   \n
     - [2] - Rocket Propulsion Elements, 7th Edition  \n
@@ -14,6 +16,7 @@ References:
 import bamboo as bam
 import numpy as np
 import matplotlib.pyplot as plt
+from CoolProp.CoolProp import PropsSI
 import scipy
 import json
 
@@ -246,7 +249,7 @@ class CoolingJacket:
         inner_wall (Material): Inner wall material
         inlet_T (float): Inlet coolant temperature (K)
         inlet_p0 (float): Inlet coolant stagnation pressure (Pa)
-        thermo_coolant (thermo.chemical.Chemical or thermo.mixture.Mixture): Used to get physical properties of the coolant.
+        coolprop_coolant_name (str): Used with CoolProp to get coolant physical properties. See http://www.coolprop.org/fluid_properties/PurePseudoPure.html for a list of fluids.
         mdot_coolant (float): Coolant mass flow rate (kg/s)
         channel_shape (str, optional): Options include 'rectangle', 'semi-circle', and 'custom'. Defaults to "rectangle".
         configuration (str, optional): Options include 'spiral'. Defaults to "spiral".
@@ -258,10 +261,10 @@ class CoolingJacket:
         custom_effective_diameter (float, optional) : If using channel_shape = 'custom', this is the effective diameter you want to use. 
         custom_flow_area (float, optional) : If using channel_shape = 'custom', this is the flow you want to use. 
     """
-    def __init__(self, inner_wall, inlet_T, inlet_p0, thermo_coolant, mdot_coolant, channel_shape = "rectangle", configuration = "spiral", **kwargs):
+    def __init__(self, inner_wall, inlet_T, inlet_p0, coolprop_coolant_name, mdot_coolant, channel_shape = "rectangle", configuration = "spiral", **kwargs):
 
         self.inner_wall = inner_wall
-        self.thermo_coolant = thermo_coolant          #thermo library Chemical
+        self.coolprop_coolant_name = coolprop_coolant_name          #thermo library Chemical
         self.mdot_coolant = mdot_coolant
         self.inlet_T = inlet_T
         self.inlet_p0 = inlet_p0
@@ -584,7 +587,7 @@ class EngineWithCooling:
         h_coolant = np.zeros(len(discretised_x))
 
         #Make copies of the thermo module Chemicals, so we can modify them
-        coolant = self.cooling_jacket.thermo_coolant
+        coolant = self.cooling_jacket.coolprop_coolant_name
         exhaust_gas = self.thermo_gas
 
         '''Main loop'''
@@ -601,8 +604,7 @@ class EngineWithCooling:
                 T_coolant[i] = T_coolant[i-1] + (q_dot[i-1]*dx)/(self.cooling_jacket.mdot_coolant*cp_coolant)   
 
             #Update coolant conditions
-            coolant.calculate(T = T_coolant[i], P = self.cooling_jacket.p0(x))
-            cp_coolant = coolant.Cp
+            cp_coolant = PropsSI("CPMASS", "T", T_coolant[i], "P", self.cooling_jacket.p0(x), self.cooling_jacket.coolprop_coolant_name)
 
             #Gas side heat transfer coefficient
             if h_gas_model == "1":
@@ -679,16 +681,18 @@ class EngineWithCooling:
                 h_coolant[i] = h_coolant_1(self.cooling_jacket.A(x), 
                                            self.cooling_jacket.D(x), 
                                            self.cooling_jacket.mdot_coolant, 
-                                           coolant.mu, 
-                                           coolant.k, 
+                                           PropsSI("VISCOSITY", "T", T_coolant[i], "P", self.cooling_jacket.p0(x), self.cooling_jacket.coolprop_coolant_name), 
+                                           PropsSI("CONDUCTIVITY", "T", T_coolant[i], "P", self.cooling_jacket.p0(x), self.cooling_jacket.coolprop_coolant_name), 
                                            cp_coolant, 
-                                           coolant.rho)
+                                           PropsSI("DMASS", "T", T_coolant[i], "P", self.cooling_jacket.p0(x), self.cooling_jacket.coolprop_coolant_name))
 
             else:
                 raise AttributeError(f"Could not find the h_coolant_model '{h_coolant_model}'")
             
-            #Check for coolant boil off
-            if boil_off_position == None and coolant.phase=='g':
+            #Check for coolant boil off - a CoolProp uses a phase index of '0' to refer to the liquid state (see http://www.coolprop.org/coolprop/HighLevelAPI.html)
+            phase_index = PropsSI("PHASE", "T", T_coolant[i], "P", self.cooling_jacket.p0(x), self.cooling_jacket.coolprop_coolant_name)
+
+            if boil_off_position == None and phase_index != 0:
                 print(f"WARNING: Coolant boiled off at x = {x} m")
                 boil_off_position = x
 

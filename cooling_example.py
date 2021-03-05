@@ -66,7 +66,7 @@ print(f"Sea level thrust = {white_dwarf.thrust(1e5)/1000} kN")
 print(f"Sea level Isp = {white_dwarf.isp(1e5)} s")
 
 '''Cooling system setup'''
-cooling_jacket = cool.CoolingJacket(wall_material, inlet_T, pc, thermo_coolant, mdot_coolant, channel_shape = "semi-circle", circle_diameter = semi_circle_diameter)
+cooling_jacket = cool.CoolingJacket(wall_material, inlet_T, pc, "ETHANOL", mdot_coolant, channel_shape = "semi-circle", circle_diameter = semi_circle_diameter)
 engine_geometry = cool.EngineGeometry(nozzle, chamber_length, Ac, wall_thickness)
 cooled_engine = cool.EngineWithCooling(chamber, engine_geometry, cooling_jacket, perfect_gas, thermo_gas)
 

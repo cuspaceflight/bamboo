@@ -4,3 +4,4 @@ matplotlib
 ambiance
 thermo
 pypropep
+CoolProp
