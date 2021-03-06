@@ -57,33 +57,27 @@ thermo_gas = thermo.mixture.Mixture(['N2', 'H2O', 'CO2'], zs = [e.composition['N
 
 gas_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_gas)
 coolant_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_coolant)
-coolant_transport = cool.TransportProperties(model = "CoolProp", coolprop_name = f"ETHANOL[{1 - water_mass_fraction}]&WATER[{water_mass_fraction}]")
+#coolant_transport = cool.TransportProperties(model = "CoolProp", coolprop_name = f"ETHANOL[{1 - water_mass_fraction}]&WATER[{water_mass_fraction}]")
 
 '''Create the engine object'''
 perfect_gas = bam.PerfectGas(gamma = gamma, cp = cp)    #Gas for frozen flow
-chamber = bam.ChamberConditions(pc, Tc, mdot)
-nozzle = bam.Nozzle.from_engine_components(perfect_gas, chamber, p_amb, type = "rao", length_fraction = 0.8)
-white_dwarf = bam.Engine(perfect_gas, chamber, nozzle)
+chamber_conditions = bam.ChamberConditions(pc, Tc, mdot)
+nozzle = bam.Nozzle.from_engine_components(perfect_gas, chamber_conditions, p_amb, type = "rao", length_fraction = 0.8)
+white_dwarf = bam.Engine(perfect_gas, chamber_conditions, nozzle)
 chamber_length = L_star*nozzle.At/Ac
 
 print(f"Sea level thrust = {white_dwarf.thrust(1e5)/1000} kN")
 print(f"Sea level Isp = {white_dwarf.isp(1e5)} s")
 
-'''Cooling system setup'''
-cooling_jacket = cool.CoolingJacket(wall_material, inlet_T, pc, coolant_transport, mdot_coolant, channel_shape = "semi-circle", circle_diameter = semi_circle_diameter)
-engine_geometry = cool.EngineGeometry(nozzle, chamber_length, Ac, wall_thickness)
-cooled_engine = cool.EngineWithCooling(chamber, engine_geometry, cooling_jacket, perfect_gas, gas_transport)
+'''Add the cooling system to the engine'''
+white_dwarf.add_geometry(chamber_length, Ac, wall_thickness)
+white_dwarf.add_cooling_jacket(wall_material, inlet_T, pc, coolant_transport, mdot_coolant, channel_shape = "semi-circle", circle_diameter = semi_circle_diameter)
+white_dwarf.add_exhaust_transport(gas_transport)
 
-'''Run the cooling system simulation'''
-t = time.time()
-cooling_data = cooled_engine.run_heating_analysis(number_of_points = 1000, h_gas_model = "3", to_json = "data/heating_output.json")
-print(f"Simulation run time: {time.time()-t:.2f} s")
+'''Run the heating analysis'''
+cooling_data = white_dwarf.run_heating_analysis(to_json = "data/heating_output.json")
 
-'''Plot the results'''
-engine_geometry.plot_geometry()
-#cooled_engine.show_gas_mach()
-bam.plot.plot_temperatures(cooling_data, gas_temperature = False)
-#bam.plot.plot_qdot(cooling_data)
-bam.plot.plot_h(cooling_data, qdot = True)
+white_dwarf.plot_geometry()
+bamboo.plot.plot_temperatures(cooling_data, gas_temperature=False)
 
 plt.show()
