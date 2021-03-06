@@ -1,5 +1,10 @@
-# Bamboo
-Nozzle flow and cooling dynamics using perfect gas equations for 1D isentropic flow.
+<p align="center">
+	<img width="600px" src="img/logo.png">
+	<h1 align="center">BAMBOO</h1>
+	<h3 align="center">Cambridge University Spaceflight</h3>
+</p>
+
+Liquid rocket engine modelling package, using 1D compressible flow relations and assuming perfect gases where possible.
 
 ## Installation
 `pip install git+https://github.com/cuspaceflight/bamboo.git`
