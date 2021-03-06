@@ -534,14 +534,8 @@ class Engine:
         gas (PerfectGas): Gas representing the exhaust gas for the engine.
         chamber_conditions (CombustionChamber): CombustionChamber for the engine.
         nozzle (Nozzle): Nozzle for the engine.
-
-    Keyword Args:
-        chamber_length (float): Length of the combustion chamber (m)
-        chamber_area (float): Cross sectional area of the combustion chamber (m^2)
-        wall_thickness (float or array): Thickness of the inner liner wall (m). Can be constant (float), or variable (array).
-        geometry (str, optional): Geometry system to use. Currently the only option is 'auto'. Defaults to "auto".
     """
-    def __init__(self, perfect_gas, chamber_conditions, nozzle, **kwargs):
+    def __init__(self, perfect_gas, chamber_conditions, nozzle):
         self.perfect_gas = perfect_gas
         self.chamber_conditions = chamber_conditions
         self.nozzle = nozzle
@@ -890,8 +884,8 @@ class Engine:
         """
         self.geometry = EngineGeometry(self.nozzle, chamber_length, chamber_area, wall_thickness, style)
 
-    def add_cooling_jacket(self, inner_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], channel_shape = "rectangle", configuration = "spiral", **kwargs):
-        """Adds a cooling jacket to the engine, so you can run cooling system analyses.
+    def add_cooling_jacket(self, inner_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
+        """Container for cooling jacket information - e.g. for regenerative cooling.
 
         Args:
             inner_wall (Material): Inner wall material
@@ -900,25 +894,24 @@ class Engine:
             coolant_transport (TransportProperties): Container for the coolant transport properties.
             mdot_coolant (float): Coolant mass flow rate (kg/s)
             xs (list): x position that the cooling jacket starts and ends at in the form [x_start, x_end]. Defaults to [-1000, 1000].
-            channel_shape (str, optional): Options include 'rectangle', 'semi-circle', and 'custom'. Defaults to "rectangle".
-            configuration (str, optional): Options include 'spiral'. Defaults to "spiral".
+            configuration (str, optional): Options include 'spiral' and 'vertical'. Defaults to "vertical".
         
         Keyword Args:
-            rectangle_width (float, optional): If using channel_shape = 'rectangle', this is the height of the rectangles (in the radial direction).
-            rectangle_height (float, optional): If using channel_shape = 'rectangle, this is the width of the rectangles (in the hoopwise direction). 
-            circle_diameter (float, optional): If using channel_shape = 'semi-circle', this is the diameter of the semi circle.
-            custom_effective_diameter (float, optional) : If using channel_shape = 'custom', this is the effective diameter you want to use. 
-            custom_flow_area (float, optional) : If using channel_shape = 'custom', this is the flow you want to use. 
+            channel_shape (str, optional): Used if configuration = 'spiral'. Options include 'rectangle', 'semi-circle', and 'custom'. 
+            channel_height (float, optional): If using configuration = 'vertical' or channel_shape = 'rectangle', this is the height of the channels (m).
+            channel_width (float, optional): If using channel_shape = 'rectangle', this is the width of the channels (m).
+            channel_diameter (float, optional): If using channel_shape = 'semi-circle', this is the diameter of the semi circle.
+            custom_effective_diameter (float, optional): If using channel_shape = 'custom', this is the effective diameter you want to use. 
+            custom_flow_area (float, optional): If using channel_shape = 'custom', this is the flow you want to use. 
         """
         self.cooling_jacket = cool.CoolingJacket(inner_wall, 
-                                             inlet_T, 
-                                             inlet_p0, 
-                                             coolant_transport, 
-                                             mdot_coolant, 
-                                             xs, 
-                                             channel_shape, 
-                                             configuration, 
-                                             **kwargs)
+                                                inlet_T, 
+                                                inlet_p0, 
+                                                coolant_transport, 
+                                                mdot_coolant, 
+                                                xs, 
+                                                configuration, 
+                                                **kwargs)
 
     def add_exhaust_transport(self, transport_properties):
         """Add a model for the exhaust gas transport properties (e.g. viscosity, thermal doncutivity, etc.). This is needed to run cooling system analyses.
@@ -1012,6 +1005,18 @@ class Engine:
                 - "boil_off_position" : x position of any coolant boil off. Equal to None if the coolant does not boil.
         """
 
+        '''Check if we have everything needed to run the simulation'''
+        try:
+            self.geometry
+        except AttributeError:
+            raise AttributeError("Cannot execute run_heating_analysis() without additional geometry definitions. You need to add geometry with the 'Engine.add_geometry()' function.")
+
+        try:
+            self.exhaust_transport
+        except AttributeError:
+            raise AttributeError("Cannot execute run_heating_analysis() without an exhaust gas transport properties model. You need to add one with the 'Engine.add_exhaust_transport()' function.")
+
+
         '''Initialise variables and arrays'''
         #To keep track of any coolant boiling
         boil_off_position = None
@@ -1052,14 +1057,14 @@ class Engine:
             #Gas side heat transfer coefficient
             if h_gas_model == "1":
                 h_gas[i] = cool.h_gas_1(2*self.y(x),
-                                   self.M(x),
-                                   T_gas[i],
-                                   self.rho(x),
-                                   self.perfect_gas.gamma,
-                                   self.perfect_gas.R,
-                                   self.exhaust_transport.mu(T = T_gas[i], p = self.p(x)),
-                                   self.exhaust_transport.k(T = T_gas[i], p = self.p(x)),
-                                   self.exhaust_transport.Pr(T = T_gas[i], p = self.p(x)))
+                                        self.M(x),
+                                        T_gas[i],
+                                        self.rho(x),
+                                        self.perfect_gas.gamma,
+                                        self.perfect_gas.R,
+                                        self.exhaust_transport.mu(T = T_gas[i], p = self.p(x)),
+                                        self.exhaust_transport.k(T = T_gas[i], p = self.p(x)),
+                                        self.exhaust_transport.Pr(T = T_gas[i], p = self.p(x)))
 
             elif h_gas_model == "2":
                 gamma = self.perfect_gas.gamma
@@ -1090,29 +1095,41 @@ class Engine:
 
             elif h_gas_model == "3":
                 h_gas[i] = cool.h_gas_3(self.c_star,
-                                   self.nozzle.At, 
-                                   self.A(x), 
-                                   self.chamber_conditions.p0, 
-                                   self.chamber_conditions.T0, 
-                                   self.M(x), 
-                                   T_wall_inner[i-1], 
-                                   self.exhaust_transport.mu(T = T_gas[i], p = self.p(x)), 
-                                   self.perfect_gas.cp, 
-                                   self.perfect_gas.gamma, 
-                                   self.exhaust_transport.Pr(T = T_gas[i], p = self.p(x)))
+                                        self.nozzle.At, 
+                                        self.A(x), 
+                                        self.chamber_conditions.p0, 
+                                        self.chamber_conditions.T0, 
+                                        self.M(x), 
+                                        T_wall_inner[i-1], 
+                                        self.exhaust_transport.mu(T = T_gas[i], p = self.p(x)), 
+                                        self.perfect_gas.cp, 
+                                        self.perfect_gas.gamma, 
+                                        self.exhaust_transport.Pr(T = T_gas[i], p = self.p(x)))
 
             else:
                 raise AttributeError(f"Could not find the h_gas_model '{h_gas_model}'")
             
             #Coolant side heat transfer coefficient
+            if self.cooling_jacket.configuration == 'spiral':
+                A_coolant = self.cooling_jacket.A(x)
+                D_coolant = self.cooling_jacket.D(x)
+
+            elif self.cooling_jacket.configuration == 'vertical':
+                A_coolant = 2*np.pi*self.y(x)*self.cooling_jacket.channel_height
+                perimeter_coolant = 2*np.pi*self.y(x) + 2*np.pi*(self.y(x) + self.cooling_jacket.channel_height)
+                D_coolant = 4*A_coolant/perimeter_coolant
+            
+            else:
+                raise ValueError(f"The cooling jacket configuration {self.cooling_jacket.configuration} is not recognised. Try 'spiral' or 'vertical'. ")
+
             if h_coolant_model == "1":
-                h_coolant[i] = cool.h_coolant_1(self.cooling_jacket.A(x), 
-                                           self.cooling_jacket.D(x), 
-                                           self.cooling_jacket.mdot_coolant, 
-                                           self.cooling_jacket.coolant_transport.mu(T = T_coolant[i], p = self.cooling_jacket.p0(x)), 
-                                           self.cooling_jacket.coolant_transport.k(T = T_coolant[i], p = self.cooling_jacket.p0(x)), 
-                                           cp_coolant, 
-                                           self.cooling_jacket.coolant_transport.rho(T = T_coolant[i], p = self.cooling_jacket.p0(x)))
+                h_coolant[i] = cool.h_coolant_1(A_coolant, 
+                                                D_coolant, 
+                                                self.cooling_jacket.mdot_coolant, 
+                                                self.cooling_jacket.coolant_transport.mu(T = T_coolant[i], p = self.cooling_jacket.p0(x)), 
+                                                self.cooling_jacket.coolant_transport.k(T = T_coolant[i], p = self.cooling_jacket.p0(x)), 
+                                                cp_coolant, 
+                                                self.cooling_jacket.coolant_transport.rho(T = T_coolant[i], p = self.cooling_jacket.p0(x)))
 
             else:
                 raise AttributeError(f"Could not find the h_coolant_model '{h_coolant_model}'")

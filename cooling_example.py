@@ -26,7 +26,6 @@ water_mass_fraction = 0.10  #Fraction of the fuel that is water, by mass
 '''Coolant jacket'''
 wall_material = bam.materials.CopperC700
 mdot_coolant = mdot/(OF_ratio + 1) 
-semi_circle_diameter = 0.002 
 inlet_T = 298.15                    #Coolant inlet temperature
 
 '''Get combustion properties from pypropep'''
@@ -66,18 +65,23 @@ nozzle = bam.Nozzle.from_engine_components(perfect_gas, chamber_conditions, p_am
 white_dwarf = bam.Engine(perfect_gas, chamber_conditions, nozzle)
 chamber_length = L_star*nozzle.At/Ac
 
+'''Add the cooling system to the engine'''
+white_dwarf.add_geometry(chamber_length, Ac, wall_thickness)
+white_dwarf.add_exhaust_transport(gas_transport)
+
+#Spiral channels
+white_dwarf.add_cooling_jacket(wall_material, inlet_T, pc, coolant_transport, mdot_coolant, 
+                               configuration = "spiral", channel_shape = "semi-circle", channel_diameter = 0.002)
+
+#Or vertical channels
+#white_dwarf.add_cooling_jacket(wall_material, inlet_T, pc, coolant_transport, mdot_coolant, 
+#                               configuration = "vertical", channel_height = 0.002)
+
+'''Run the heating analysis'''
 print(f"Sea level thrust = {white_dwarf.thrust(1e5)/1000} kN")
 print(f"Sea level Isp = {white_dwarf.isp(1e5)} s")
 
-'''Add the cooling system to the engine'''
-white_dwarf.add_geometry(chamber_length, Ac, wall_thickness)
-white_dwarf.add_cooling_jacket(wall_material, inlet_T, pc, coolant_transport, mdot_coolant, channel_shape = "semi-circle", circle_diameter = semi_circle_diameter)
-white_dwarf.add_exhaust_transport(gas_transport)
-
-'''Run the heating analysis'''
 cooling_data = white_dwarf.run_heating_analysis(to_json = "data/heating_output.json")
-
 white_dwarf.plot_geometry()
 bamboo.plot.plot_temperatures(cooling_data, gas_temperature=False)
-
 plt.show()
