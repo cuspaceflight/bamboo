@@ -127,7 +127,6 @@ def h_coolant_1(A, D, mdot, mu, k, c_bar, rho):
     return 0.023*c_bar * (mdot/A) * (D*v*rho/mu)**(-0.2) * (mu*c_bar/k)**(-2/3)
 
 
-
 class EngineGeometry:
     """Class for storing and calculating features of the engine's geometry.
 
@@ -249,7 +248,7 @@ class CoolingJacket:
         inner_wall (Material): Inner wall material
         inlet_T (float): Inlet coolant temperature (K)
         inlet_p0 (float): Inlet coolant stagnation pressure (Pa)
-        coolprop_coolant_name (str): Used with CoolProp to get coolant physical properties. See http://www.coolprop.org/fluid_properties/PurePseudoPure.html for a list of fluids.
+        coolant_transport (TransportProperties): Container for the coolant transport properties.
         mdot_coolant (float): Coolant mass flow rate (kg/s)
         channel_shape (str, optional): Options include 'rectangle', 'semi-circle', and 'custom'. Defaults to "rectangle".
         configuration (str, optional): Options include 'spiral'. Defaults to "spiral".
@@ -261,10 +260,10 @@ class CoolingJacket:
         custom_effective_diameter (float, optional) : If using channel_shape = 'custom', this is the effective diameter you want to use. 
         custom_flow_area (float, optional) : If using channel_shape = 'custom', this is the flow you want to use. 
     """
-    def __init__(self, inner_wall, inlet_T, inlet_p0, coolprop_coolant_name, mdot_coolant, channel_shape = "rectangle", configuration = "spiral", **kwargs):
+    def __init__(self, inner_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, channel_shape = "rectangle", configuration = "spiral", **kwargs):
 
         self.inner_wall = inner_wall
-        self.coolprop_coolant_name = coolprop_coolant_name          #thermo library Chemical
+        self.coolant_transport = coolant_transport       
         self.mdot_coolant = mdot_coolant
         self.inlet_T = inlet_T
         self.inlet_p0 = inlet_p0
@@ -344,7 +343,116 @@ class Material:
         self.k = k                  
 
         self.perf_therm = (1 - self.poisson) * self.k / (self.alpha * self.E)   #Performance coefficient for thermal stress, higher is better
+
+class TransportProperties:
+    def __init__(self, model = "thermo", **kwargs):
+        """Container for transport properties of a fluid.
+
+        Args:
+            model (str, optional): The module to use for modelling. Intended to offer 'thermo', 'CoolProp' and 'cantera', but only thermo works as of now. Defaults to "thermo".
+            
+        Keywords Args:
+            thermo_object (thermo.chemical.Chemical or thermo.mixture.Mixture): An object from the 'thermo' Python module.
+            coolprop_name (str): Name of the chemcial or mixture for the CoolProp module. See http://www.coolprop.org/ for a list of available fluids.
+        """
+        self.model = model
+
+        if model == "thermo":
+            self.thermo_object = kwargs["thermo_object"]
+
+        elif model == "CoolProp":
+            self.coolprop_name = kwargs["coolprop_name"]
         
+        else:
+            raise ValueError(f"The model {model} is not a valid option.")
+
+    def k(self, T, p):
+        """Thermal conductivity
+
+        Args:
+            T (float): Temperature (K)
+            p (float): Pressure (Pa)
+
+        Returns:
+            float: Thermal conductivity
+        """
+        if self.model == "thermo":
+            self.thermo_object.calculate(T = T, P = p) 
+            return self.thermo_object.
+            
+        elif self.model == "CoolProp":
+            return PropsSI("CONDUCTIVITY", "T", T, "P", p, self.coolprop_name)
+
+    def mu(self, T, p):
+        """Absolute viscosity
+
+        Args:
+            T (float): Temperature (K)
+            p (float): Pressure (Pa)
+
+        Returns:
+            float: Absolute viscosity
+        """
+        if self.model == "thermo":
+            self.thermo_object.calculate(T = T, P = p) 
+            return self.thermo_object.mu
+
+        elif self.model == "CoolProp":
+            return PropsSI("VISCOSITY", "T", T, "P", p, self.coolprop_name)
+
+    def Pr(self, T, p):
+        """Prandtl number
+
+        Args:
+            T (float): Temperature (K)
+            p (float): Pressure (Pa)
+
+        Returns:
+            float: Prandtl number
+        """
+        if self.model == "thermo":
+            self.thermo_object.calculate(T = T, P = p) 
+            return self.thermo_object.Pr
+
+        elif self.model == "CoolProp":
+            return PropsSI("PRANDTL", "T", T, "P", p, self.coolprop_name)
+
+    def cp(self, T, p):
+        """Specific heat capacity at constant pressure (J/kg/K)
+
+        Args:
+            T (float): Temperature (K)
+            p (float): Pressure (Pa)
+
+        Returns:
+            float: Specific heat capacity at constant pressure (J/kg/K)
+
+        """
+        if self.model == "thermo":
+            self.thermo_object.calculate(T = T, P = p) 
+            return self.thermo_object.Cp
+        
+        elif self.model == "CoolProp":
+            return PropsSI("CPMASS", "T", T, "P", p, self.coolprop_name)
+
+    def rho(self, T, p):
+        """Density (kg/m3)
+
+        Args:
+            T (float): Temperature (K)
+            p (float): Pressure (Pa)
+
+        Returns:
+            float: Density (kg/m3)
+
+        """
+        if self.model == "thermo":
+            self.thermo_object.calculate(T = T, P = p) 
+            return self.thermo_object.rho
+        
+        elif self.model == "CoolProp":
+            return PropsSI("DMASS", "T", T, "P", p, self.coolprop_name)
+
 class EngineWithCooling:
     """Used for running cooling system analyses.
 
@@ -353,14 +461,15 @@ class EngineWithCooling:
         geometry (EngineGeometry): Engine geometry.
         cooling_jacket (CoolingJacket): Cooling jacket properties.
         perfect_gas (PerfectGas): Properties of the exhaust gas.
-        thermo_gas (thermo.chemical.Chemical or thermo.mixture.Mixture): Object from the 'thermo' module, to use to get physical properties of the gas (e.g. viscosity).
+        exhaust_transport (TransportProperties): Container for the exhaust gas transport properties.
     """
-    def __init__(self, chamber_conditions, geometry, cooling_jacket, perfect_gas, thermo_gas):
+    def __init__(self, chamber_conditions, geometry, cooling_jacket, perfect_gas, exhaust_transport):
         self.chamber_conditions = chamber_conditions
         self.geometry = geometry
         self.cooling_jacket = cooling_jacket
         self.perfect_gas = perfect_gas
-        self.thermo_gas = thermo_gas
+        self.exhaust_transport = exhaust_transport
+
         self.c_star = self.chamber_conditions.p0 * self.geometry.nozzle.At / self.chamber_conditions.mdot
 
     def M(self, x):
