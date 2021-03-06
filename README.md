@@ -14,5 +14,8 @@ Nozzle flow and cooling dynamics using perfect gas equations for 1D isentropic f
 - Tools for modelling stress in the engine walls.
 
 ## Documentation
+(currently outdated)
+
 Made using Sphinx, available at: 
 https://cuspaceflight.github.io/bamboo/
+
