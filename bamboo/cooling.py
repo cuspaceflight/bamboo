@@ -345,16 +345,17 @@ class Material:
         self.perf_therm = (1 - self.poisson) * self.k / (self.alpha * self.E)   #Performance coefficient for thermal stress, higher is better
 
 class TransportProperties:
-    def __init__(self, model = "thermo", **kwargs):
-        """Container for transport properties of a fluid.
+    """Container for transport properties of a fluid.
 
-        Args:
-            model (str, optional): The module to use for modelling. Intended to offer 'thermo', 'CoolProp' and 'cantera', but only thermo works as of now. Defaults to "thermo".
-            
-        Keywords Args:
-            thermo_object (thermo.chemical.Chemical or thermo.mixture.Mixture): An object from the 'thermo' Python module.
-            coolprop_name (str): Name of the chemcial or mixture for the CoolProp module. See http://www.coolprop.org/ for a list of available fluids.
-        """
+    Args:
+        model (str, optional): The module to use for modelling. Intended to offer 'thermo', 'CoolProp' and 'cantera', but only thermo works as of now. Defaults to "thermo".
+        
+    Keywords Args:
+        thermo_object (thermo.chemical.Chemical or thermo.mixture.Mixture): An object from the 'thermo' Python module.
+        coolprop_name (str): Name of the chemcial or mixture for the CoolProp module. See http://www.coolprop.org/ for a list of available fluids.
+    """
+
+    def __init__(self, model = "thermo", **kwargs):
         self.model = model
 
         if model == "thermo":
@@ -365,6 +366,30 @@ class TransportProperties:
         
         else:
             raise ValueError(f"The model {model} is not a valid option.")
+
+    def check_liquid(self, T, p):
+        """Returns True if the fluid is a liquid at the given temperature and pressure. Used to check for coolant boil-off.
+
+        Args:
+            T (float): Temperature (K)
+            p (float): Pressure (Pa)
+
+        Returns:
+            bool: True if the fluid is liquid, False if it's any other phase
+        """
+        if self.model == "thermo":
+            self.thermo_object.calculate(T = T, P = p) 
+            if self.thermo_object.phase == 'l':
+                return True
+            else:
+                return False
+            
+        elif self.model == "CoolProp":
+            #CoolProp uses a phase index of '0' to refer to the liquid state
+            if PropsSI("PHASE", "T", T, "P", p, self.coolprop_name) == 0:
+                return True
+            else:
+                return False
 
     def k(self, T, p):
         """Thermal conductivity
@@ -378,7 +403,7 @@ class TransportProperties:
         """
         if self.model == "thermo":
             self.thermo_object.calculate(T = T, P = p) 
-            return self.thermo_object.
+            return self.thermo_object.k
             
         elif self.model == "CoolProp":
             return PropsSI("CONDUCTIVITY", "T", T, "P", p, self.coolprop_name)
@@ -695,10 +720,6 @@ class EngineWithCooling:
         h_gas = np.zeros(len(discretised_x))
         h_coolant = np.zeros(len(discretised_x))
 
-        #Make copies of the thermo module Chemicals, so we can modify them
-        coolant = self.cooling_jacket.coolprop_coolant_name
-        exhaust_gas = self.thermo_gas
-
         '''Main loop'''
         for i in range(len(discretised_x)):
             x = discretised_x[i]
@@ -712,25 +733,20 @@ class EngineWithCooling:
                 #Increase in coolant temperature, q*dx = mdot*Cp*dT
                 T_coolant[i] = T_coolant[i-1] + (q_dot[i-1]*dx)/(self.cooling_jacket.mdot_coolant*cp_coolant)   
 
-            #Update coolant conditions
-            cp_coolant = PropsSI("CPMASS", "T", T_coolant[i], "P", self.cooling_jacket.p0(x), self.cooling_jacket.coolprop_coolant_name)
+            #Update coolant heat capacity
+            cp_coolant = self.cooling_jacket.coolant_transport.cp(T = T_coolant[i], p = self.cooling_jacket.p0(x))
 
             #Gas side heat transfer coefficient
             if h_gas_model == "1":
-
-                #Get physical properties using thermo
-                exhaust_gas.calculate(T = T_gas[i], P = self.p(x)) 
-
-                #Calculate the heat transfer coefficient
                 h_gas[i] = h_gas_1(2*self.geometry.y(x),
                                    self.M(x),
                                    T_gas[i],
                                    self.rho(x),
                                    self.perfect_gas.gamma,
                                    self.perfect_gas.R,
-                                   exhaust_gas.mu,
-                                   exhaust_gas.k,
-                                   exhaust_gas.Pr)
+                                   self.exhaust_transport.mu(T = T_gas[i], p = self.p(x)),
+                                   self.exhaust_transport.k(T = T_gas[i], p = self.p(x)),
+                                   self.exhaust_transport.Pr(T = T_gas[i], p = self.p(x)))
 
             elif h_gas_model == "2":
                 gamma = self.perfect_gas.gamma
@@ -743,34 +759,23 @@ class EngineWithCooling:
                 rho_inf = self.rho(x)
                 M_inf = self.M(x)
                 v_inf = M_inf * (gamma*R*T_inf)**0.5    #Gas velocity
-
-                exhaust_gas.calculate(T = T_gas[i], P = p_inf)
-                mu_inf = exhaust_gas.mu
-                Pr_inf = exhaust_gas.Pr
+                mu_inf = self.exhaust_transport.mu(T = T_gas[i], p = p_inf)
+                Pr_inf = self.exhaust_transport.Pr(T = T_gas[i], p = p_inf)
                 cp_inf = self.perfect_gas.cp
 
                 #Properties at arithmetic mean of T_wall and T_inf
                 T_am = (T_inf + T_wall_inner[i-1]) / 2
-
-                exhaust_gas.calculate(T = T_am, P = p_inf)
-                mu_am = exhaust_gas.mu
-                rho_am = p_inf/(R*T_am) #p = rho R T - pressure is roughly uniform across the boundary layer so p_inf ~= p_wall
+                mu_am = self.exhaust_transport.mu(T = T_am, p = p_inf)
+                rho_am = p_inf/(R*T_am)                                 #p = rho R T - pressure is roughly uniform across the boundary layer so p_inf ~= p_wall
 
                 #Stagnation properties
                 p0 = self.chamber_conditions.p0
                 T0 = self.chamber_conditions.T0
-
-                exhaust_gas.calculate(T = T0, P = p0)
-                mu0 = exhaust_gas.mu
+                mu0 = self.exhaust_transport.mu(T =  T0, p = p0)
 
                 h_gas[i] = h_gas_2(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0)
 
             elif h_gas_model == "3":
-
-                #Get physical properties using thermo
-                exhaust_gas.calculate(T = T_gas[i], P = self.p(x))
-
-                #Calculate the heat transfer coefficient
                 h_gas[i] = h_gas_3(self.c_star,
                                    self.geometry.nozzle.At, 
                                    self.geometry.A(x), 
@@ -778,9 +783,10 @@ class EngineWithCooling:
                                    self.chamber_conditions.T0, 
                                    self.M(x), 
                                    T_wall_inner[i-1], 
-                                   exhaust_gas.mu, 
+                                   self.exhaust_transport.mu(T = T_gas[i], p = self.p(x)), 
                                    self.perfect_gas.cp, 
-                                   self.perfect_gas.gamma, exhaust_gas.Pr)
+                                   self.perfect_gas.gamma, 
+                                   self.exhaust_transport.Pr(T = T_gas[i], p = self.p(x)))
 
             else:
                 raise AttributeError(f"Could not find the h_gas_model '{h_gas_model}'")
@@ -790,18 +796,17 @@ class EngineWithCooling:
                 h_coolant[i] = h_coolant_1(self.cooling_jacket.A(x), 
                                            self.cooling_jacket.D(x), 
                                            self.cooling_jacket.mdot_coolant, 
-                                           PropsSI("VISCOSITY", "T", T_coolant[i], "P", self.cooling_jacket.p0(x), self.cooling_jacket.coolprop_coolant_name), 
-                                           PropsSI("CONDUCTIVITY", "T", T_coolant[i], "P", self.cooling_jacket.p0(x), self.cooling_jacket.coolprop_coolant_name), 
+                                           self.cooling_jacket.coolant_transport.mu(T = T_coolant[i], p = self.cooling_jacket.p0(x)), 
+                                           self.cooling_jacket.coolant_transport.k(T = T_coolant[i], p = self.cooling_jacket.p0(x)), 
                                            cp_coolant, 
-                                           PropsSI("DMASS", "T", T_coolant[i], "P", self.cooling_jacket.p0(x), self.cooling_jacket.coolprop_coolant_name))
+                                           self.cooling_jacket.coolant_transport.rho(T = T_coolant[i], p = self.cooling_jacket.p0(x)))
 
             else:
                 raise AttributeError(f"Could not find the h_coolant_model '{h_coolant_model}'")
             
             #Check for coolant boil off - a CoolProp uses a phase index of '0' to refer to the liquid state (see http://www.coolprop.org/coolprop/HighLevelAPI.html)
-            phase_index = PropsSI("PHASE", "T", T_coolant[i], "P", self.cooling_jacket.p0(x), self.cooling_jacket.coolprop_coolant_name)
 
-            if boil_off_position == None and phase_index != 0:
+            if boil_off_position == None and self.cooling_jacket.coolant_transport.check_liquid(T = T_coolant[i], p = self.cooling_jacket.p0(x)) == False:
                 print(f"WARNING: Coolant boiled off at x = {x} m")
                 boil_off_position = x
 

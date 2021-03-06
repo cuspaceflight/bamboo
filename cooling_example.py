@@ -28,7 +28,6 @@ wall_material = bam.materials.CopperC700
 mdot_coolant = mdot/(OF_ratio + 1) 
 semi_circle_diameter = 0.002 
 inlet_T = 298.15                    #Coolant inlet temperature
-thermo_coolant = thermo.mixture.Mixture(['Isopropyl Alcohol', 'Water'], ws = [1 - water_mass_fraction, water_mass_fraction])
 
 '''Get combustion properties from pypropep'''
 #Initialise and get propellants
@@ -50,10 +49,12 @@ gamma = e.properties.Isex   #I don't know why they use 'Isex' for gamma.
 cp = 1000*e.properties.Cp   #Cp is given in kJ/kg/K, we want J/kg/K
 Tc = e.properties.T
 
-'''Get physical properties of the gas using thermo - use the mole fractions given by pypropep'''
-#Exclude H2 and CO- it has very weird Prandtl number effects - it jumps around massively and I'm not sure why.
-#Note that if you want carbon monoxide included you must type 'carbon monoxide', not 'CO' - the latter seems to make thermo use methanol (I don't know why)
+'''Choose the models we want to use for transport properties of the coolant and exhaust gas'''
+#thermo_coolant = thermo.mixture.Mixture(['Isopropyl Alcohol', 'Water'], ws = [1 - water_mass_fraction, water_mass_fraction])
 thermo_gas = thermo.mixture.Mixture(['N2', 'H2O', 'CO2'], zs = [e.composition['N2'], e.composition['H2O'], e.composition['CO2']])   
+
+gas_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_gas)
+coolant_transport = cool.TransportProperties(model = "CoolProp", coolprop_name = f"ETHANOL[{1 - water_mass_fraction}]&WATER[{water_mass_fraction}]")
 
 '''Create the engine object'''
 perfect_gas = bam.PerfectGas(gamma = gamma, cp = cp)    #Gas for frozen flow
@@ -66,9 +67,9 @@ print(f"Sea level thrust = {white_dwarf.thrust(1e5)/1000} kN")
 print(f"Sea level Isp = {white_dwarf.isp(1e5)} s")
 
 '''Cooling system setup'''
-cooling_jacket = cool.CoolingJacket(wall_material, inlet_T, pc, "ETHANOL", mdot_coolant, channel_shape = "semi-circle", circle_diameter = semi_circle_diameter)
+cooling_jacket = cool.CoolingJacket(wall_material, inlet_T, pc, coolant_transport, mdot_coolant, channel_shape = "semi-circle", circle_diameter = semi_circle_diameter)
 engine_geometry = cool.EngineGeometry(nozzle, chamber_length, Ac, wall_thickness)
-cooled_engine = cool.EngineWithCooling(chamber, engine_geometry, cooling_jacket, perfect_gas, thermo_gas)
+cooled_engine = cool.EngineWithCooling(chamber, engine_geometry, cooling_jacket, perfect_gas, gas_transport)
 
 '''Run the cooling system simulation'''
 cooling_data = cooled_engine.run_heating_analysis(number_of_points = 1000, h_gas_model = "3", to_json = "data/heating_output.json")
