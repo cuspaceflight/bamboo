@@ -251,23 +251,23 @@ def rao_theta_e(area_ratio, length_fraction = 0.8):
         #Linearly interpolate and return the result, after converting it to radians
         return np.interp(area_ratio, data["area_ratio"], data["theta_e"]) * np.pi/180
 
-def get_throat_area(gas, chamber_conditions):
+def get_throat_area(perfect_gas, chamber_conditions):
     """Get the nozzle throat area, given the gas properties and combustion chamber conditions. Assumes perfect gas with isentropic flow.
 
     Args:
-        gas (Gas): Exhaust gas leaving the combustion chamber.
+        perfect_gas (PerfectGas): Exhaust gas leaving the combustion chamber.
         chamber_conditions (CombustionChamber): Combustion chamber.
 
     Returns:
         float: Throat area (m^2)
     """
-    return (chamber_conditions.mdot * (gas.cp*chamber_conditions.T0)**0.5 )/( m_bar(1, gas.gamma) * chamber_conditions.p0) 
+    return (chamber_conditions.mdot * (perfect_gas.cp*chamber_conditions.T0)**0.5 )/( m_bar(1, perfect_gas.gamma) * chamber_conditions.p0) 
 
-def get_exit_area(gas, chamber_conditions, p_amb):
+def get_exit_area(perfect_gas, chamber_conditions, p_amb):
     """Get the nozzle exit area, given the gas properties and combustion chamber conditions. Assumes perfect gas with isentropic flow.
 
     Args:
-        gas (Gas): Gas object.
+        perfect_gas (PerfectGas): Gas object.
         chamber_conditions (CombustionChamber): CombustionChamber object
         p_amb (float): Ambient pressure (Pa)
 
@@ -275,8 +275,8 @@ def get_exit_area(gas, chamber_conditions, p_amb):
         float: Optimum nozzle exit area (Pa)
     """
 
-    Me = M_from_p(p_amb, chamber_conditions.p0, gas.gamma)
-    return (chamber_conditions.mdot * (gas.cp*chamber_conditions.T0)**0.5 )/(m_bar(Me, gas.gamma) * chamber_conditions.p0)
+    Me = M_from_p(p_amb, chamber_conditions.p0, perfect_gas.gamma)
+    return (chamber_conditions.mdot * (perfect_gas.cp*chamber_conditions.T0)**0.5 )/(m_bar(Me, perfect_gas.gamma) * chamber_conditions.p0)
 
 def show_conical_shape(A1, At, A2, div_half_angle = 15, conv_half_angle=45):
     """Legacy function. Plots the shape of a conical nozzle with the specified half angle.
@@ -489,6 +489,11 @@ class Engine:
         self.perfect_gas = perfect_gas
         self.chamber_conditions = chamber_conditions
         self.nozzle = nozzle
+
+        #Check if the nozzle is choked
+        max_throat_area = get_throat_area(perfect_gas, chamber_conditions)
+        if self.nozzle.At > max_throat_area:
+            raise ValueError(f"The nozzle throat is not choked. You need to reduce the throat area to at least {max_throat_area} m^2")
 
     def M(self, x):
         """Numerically solve to get the Mach number at a given distance x from the throat, along the centreline. 

@@ -50,10 +50,13 @@ cp = 1000*e.properties.Cp   #Cp is given in kJ/kg/K, we want J/kg/K
 Tc = e.properties.T
 
 '''Choose the models we want to use for transport properties of the coolant and exhaust gas'''
-#thermo_coolant = thermo.mixture.Mixture(['Isopropyl Alcohol', 'Water'], ws = [1 - water_mass_fraction, water_mass_fraction])
+#thermo_coolant = thermo.mixture.Mixture(['ethanol', 'water'], ws = [1 - water_mass_fraction, water_mass_fraction])
+#thermo_coolant = thermo.mixture.Mixture(['propanol', 'water'], ws = [1 - water_mass_fraction, water_mass_fraction])
+thermo_coolant = thermo.chemical.Chemical('ethanol')
 thermo_gas = thermo.mixture.Mixture(['N2', 'H2O', 'CO2'], zs = [e.composition['N2'], e.composition['H2O'], e.composition['CO2']])   
 
 gas_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_gas)
+coolant_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_coolant)
 coolant_transport = cool.TransportProperties(model = "CoolProp", coolprop_name = f"ETHANOL[{1 - water_mass_fraction}]&WATER[{water_mass_fraction}]")
 
 '''Create the engine object'''
@@ -72,7 +75,9 @@ engine_geometry = cool.EngineGeometry(nozzle, chamber_length, Ac, wall_thickness
 cooled_engine = cool.EngineWithCooling(chamber, engine_geometry, cooling_jacket, perfect_gas, gas_transport)
 
 '''Run the cooling system simulation'''
+t = time.time()
 cooling_data = cooled_engine.run_heating_analysis(number_of_points = 1000, h_gas_model = "3", to_json = "data/heating_output.json")
+print(f"Simulation run time: {time.time()-t:.2f} s")
 
 '''Plot the results'''
 engine_geometry.plot_geometry()

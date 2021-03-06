@@ -16,10 +16,18 @@ References:
 import bamboo as bam
 import numpy as np
 import matplotlib.pyplot as plt
-from CoolProp.CoolProp import PropsSI
 import scipy
 import json
 
+#Check if CoolProp is installed
+import imp
+try:
+    imp.find_module('CoolProp')
+    CoolProp_available = True
+    from CoolProp.CoolProp import PropsSI
+
+except ImportError:
+    CoolProp_available = False
 
 SIGMA = 5.670374419e-8      #Stefan-Boltzmann constant (W/m^2/K^4)
 
@@ -362,7 +370,10 @@ class TransportProperties:
             self.thermo_object = kwargs["thermo_object"]
 
         elif model == "CoolProp":
-            self.coolprop_name = kwargs["coolprop_name"]
+            if CoolProp_available:
+                self.coolprop_name = kwargs["coolprop_name"]
+            else:
+                raise ImportError("Could not find the 'CoolProp' module, so can't use TransportProperties.model = 'CoolProp'")
         
         else:
             raise ValueError(f"The model {model} is not a valid option.")
@@ -496,6 +507,11 @@ class EngineWithCooling:
         self.exhaust_transport = exhaust_transport
 
         self.c_star = self.chamber_conditions.p0 * self.geometry.nozzle.At / self.chamber_conditions.mdot
+
+        #Check if the nozzle is choked
+        max_throat_area = bam.get_throat_area(perfect_gas, chamber_conditions)
+        if self.geometry.nozzle.At > max_throat_area:
+            raise ValueError(f"The nozzle throat is not choked. You need to reduce the throat area to at least {max_throat_area} m^2")
 
     def M(self, x):
         """Get exhaust gas Mach number.
