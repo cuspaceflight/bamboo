@@ -2,7 +2,6 @@
 """
 
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 import numpy as np
 
 def plot_temperatures(data_dict, **kwargs):
@@ -80,6 +79,27 @@ def plot_qdot(data_dict, **kwargs):
     q_axs.grid()
     q_axs.set_xlabel("Position (m)")
     q_axs.set_ylabel("Heat transfer rate (W/m)")
+
+def plot_jacket_pressure(data_dict, **kwargs):
+    """Given the output dictionary from a engine cooling analysis, plot the cooling jacket pressure against x position. 
+    Note you will have to run matplotlib.pyplot.show() to see the plot.
+
+    Args:
+        data_dict (dict): Dictionary contaning the cooling analysis results.
+
+    """
+
+    p_figs, p_axs = plt.subplots()
+    p_axs.plot(data_dict["x"], np.array(data_dict["p_coolant"])/1e5, label = "Coolant pressure (bar)")
+
+    if data_dict["boil_off_position"] != None:
+        p_axs.axvline(data_dict["boil_off_position"], color = 'red', linestyle = '--', label = "Coolant boil-off")
+
+    p_axs.legend()
+    p_axs.grid()
+    p_axs.set_xlabel("Position (m)")
+    p_axs.set_ylabel("Coolant pressure (bar)")
+
 
 def animate_transient_temperatures(data_dict, speed = 1, **kwargs): 
     xs = data_dict["x"]
