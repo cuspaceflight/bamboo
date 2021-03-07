@@ -27,7 +27,7 @@ water_mass_fraction = 0.10  #Fraction of the fuel that is water, by mass
 '''Coolant jacket'''
 wall_material = bam.materials.CopperC700
 mdot_coolant = mdot/(OF_ratio + 1) 
-semi_circle_diameter = 0.005 
+semi_circle_diameter = 0.02
 inlet_T = 298.15                    #Coolant inlet temperature
 
 '''Get combustion properties from pypropep'''

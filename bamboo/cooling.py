@@ -309,12 +309,21 @@ class CoolingJacket:
 
         Args:
             radius (float): Radius, measured from engine axis to coolant side of inner liner.
+        
+        Raises:
+            AttributeError: Must have either "spiral" or "vertical" channel configuration.
 
         Returns:
             float: Total cooling channel cross flow area (m^2)
         """
-        channel_count = 2*np.pi*radius/self.channel_width # Only a rough guide
+        if self.configuration == "vertical":
+            channel_count = 2*np.pi*radius/self.channel_width # Only a rough guide
 
+        elif self.configuration == "spiral":
+            channel_count = 1
+        
+        else:
+            raise AttributeError("Invalid cooling channel configuration")
         return self.flow_area*channel_count
     
     def D(self, x=None):

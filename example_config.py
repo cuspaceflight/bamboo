@@ -62,7 +62,7 @@ thermo_gas = thermo.mixture.Mixture(['N2', 'H2O', 'CO2'], zs=[
 '''Coolant jacket'''
 OF_mass_ratio = 3
 mdot_coolant = mdot / (OF_mass_ratio + 1)
-semi_circle_diameter = 4e-3
+semi_circle_diameter = 0.02
 inlet_T = 298.15  # Coolant inlet temperature
 thermo_coolant = thermo.chemical.Chemical('Isopropyl Alcohol')
 
