@@ -17,7 +17,6 @@ wall_thickness = 2e-3
 '''Chamber conditions'''
 pc = 15e5               #Chamber pressure (Pa)
 p_tank = 20e5           #Tank pressure (Pa) - used for cooling jacket
-pt = 20e5               #Tank pressure (Pa)
 mdot = 5.4489           #Mass flow rate (kg/s)
 p_amb = 1.01325e5       #Ambient pressure (Pa). 1.01325e5 is sea level atmospheric.
 OF_ratio = 3.5          #Oxidiser/fuel mass ratio
