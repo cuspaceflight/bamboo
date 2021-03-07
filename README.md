@@ -23,7 +23,7 @@ Liquid rocket engine modelling package, using 1D compressible flow relations and
 - Time dependent cooling analysis
 
 ## Documentation
-(currently outdated)
+(may be outdated)
 
 Made using Sphinx, available at: 
 https://cuspaceflight.github.io/bamboo/
