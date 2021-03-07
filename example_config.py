@@ -8,11 +8,13 @@ import numpy as np
 points = 4000 # Must be consistent to use liner optimisation
 
 '''Chamber conditions'''
-Ac = 116.6e-4  # Chamber cross-sectional area (m^2)
+Ac = np.pi*0.1**2  # Chamber cross-sectional area (m^2)
+L_star = 1.5
 pc = 15e5  # Chamber pressure (Pa)
-mdot = 4.757  # Mass flow rate (kg/s)
+pt = 20e5  # Tank pressure (for coolant jacket inlet)
+mdot = 5.4489  # Mass flow rate (kg/s)
 p_amb = 1.01325e5  # Ambient pressure (Pa). 1.01325e5 is sea level atmospheric.
-OF_ratio = 4  # Mass ratio
+OF_ratio = 3.5 # Mass ratio
 
 '''Wall material properties - midranges values taken for pure copper, granta edupack 2020 '''  # What would I do without 1A materials
 wall_modulus = 130E9  # Young's modulus (Pa)
@@ -20,6 +22,9 @@ wall_yield = 195E6  # Yield stress (Pa)
 wall_poisson = 0.345  # Poisson's ratio
 wall_expansion = 17.35E-6  # Thermal expansion coefficient (strain/K)
 wall_conductivity = 292  # Thermal conductivity (W/mK)
+
+'''Liner profile'''
+wall_thickness = np.array(points * [2e-3])
 
 '''We want to investigate adding water to the isopropyl alcohol'''
 water_mass_fraction = 0.10  # Fraction of the fuel that is water, by mass
@@ -53,9 +58,6 @@ Tc = e.properties.T
 thermo_gas = thermo.mixture.Mixture(['N2', 'H2O', 'CO2'], zs=[
                                     e.composition['N2'], e.composition['H2O'], e.composition['CO2']])
 
-'''Engine dimensions'''
-chamber_length = 0.170  # 75e-2
-wall_thickness = np.array(points * [3e-3])
 
 '''Coolant jacket'''
 OF_mass_ratio = 3
@@ -69,6 +71,7 @@ perfect_gas = bam.PerfectGas(gamma=gamma, cp=cp)  # Gas for frozen flow
 chamber = bam.ChamberConditions(pc, Tc, mdot)
 nozzle = bam.Nozzle.from_engine_components(
     perfect_gas, chamber, p_amb, type="rao", length_fraction=0.8)
+chamber_length = L_star*nozzle.At/Ac
 white_dwarf = bam.Engine(perfect_gas, chamber, nozzle)
 
 print(f"Sea level thrust = {white_dwarf.thrust(p_amb)/1000} kN")
@@ -84,8 +87,8 @@ wall_material = cool.Material(
 cooling_jacket = cool.CoolingJacket(
     wall_material,
     inlet_T,
-    pc,
-    thermo_coolant,
+    pt,
+    "ETHANOL",                     # Need a dictionary or something for propellant names between modules
     mdot_coolant,
     channel_shape="semi-circle",
     circle_diameter=semi_circle_diameter)

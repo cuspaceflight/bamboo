@@ -51,13 +51,10 @@ cp = 1000*e.properties.Cp   #Cp is given in kJ/kg/K, we want J/kg/K
 Tc = e.properties.T
 
 '''Choose the models we want to use for transport properties of the coolant and exhaust gas'''
-#thermo_coolant = thermo.mixture.Mixture(['ethanol', 'water'], ws = [1 - water_mass_fraction, water_mass_fraction])
-#thermo_coolant = thermo.mixture.Mixture(['propanol', 'water'], ws = [1 - water_mass_fraction, water_mass_fraction])
-thermo_coolant = thermo.chemical.Chemical('ethanol')
+#thermo_coolant = thermo.mixture.Mixture(['Isopropyl Alcohol', 'Water'], ws = [1 - water_mass_fraction, water_mass_fraction])
 thermo_gas = thermo.mixture.Mixture(['N2', 'H2O', 'CO2'], zs = [e.composition['N2'], e.composition['H2O'], e.composition['CO2']])   
 
 gas_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_gas)
-coolant_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_coolant)
 coolant_transport = cool.TransportProperties(model = "CoolProp", coolprop_name = f"ETHANOL[{1 - water_mass_fraction}]&WATER[{water_mass_fraction}]")
 
 '''Create the engine object'''
@@ -75,16 +72,22 @@ cooling_jacket = cool.CoolingJacket(wall_material, inlet_T, pt, coolant_transpor
 engine_geometry = cool.EngineGeometry(nozzle, chamber_length, Ac, wall_thickness)
 cooled_engine = cool.EngineWithCooling(chamber, engine_geometry, cooling_jacket, perfect_gas, gas_transport)
 
-'''Run the cooling system simulation'''
-t = time.time()
+'''Run the cooling system simulation, calculate coolant channel length'''
 cooling_data = cooled_engine.run_heating_analysis(number_of_points = 1000, h_gas_model = "3", to_json = "data/heating_output.json")
-print(f"Simulation run time: {time.time()-t:.2f} s")
+channel_length = cooled_engine.channel_geometry(number_of_sections = 1000)
 
-'''Plot the results'''
-engine_geometry.plot_geometry()
-#cooled_engine.show_gas_mach()
-bam.plot.plot_temperatures(cooling_data, gas_temperature = False)
-#bam.plot.plot_qdot(cooling_data)
-bam.plot.plot_h(cooling_data, qdot = True)
+'''Plot g raph'''
+fig, axs = plt.subplots()
+axs.plot(cooling_data["x"], np.array(cooling_data["p_coolant"])/1e5)
+axs.grid()
+
+axs.set_ylabel("Coolant pressure ($Bar$)")
+axs.set_xlabel("Engine position ($m$)")
+
+# Need to get more data from channel_geometry and plot a second line for this
+#axs2 = axs.twiny()
+#axs2.set_xticks(np.linspace(0, channel_length, 5))
+#axs2.invert_xaxis()
+#axs2.set_xlabel("Coolant path length ($m$)")
 
 plt.show()

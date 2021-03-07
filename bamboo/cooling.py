@@ -11,6 +11,8 @@ References:
     - [1] - The Thrust Optimised Parabolic nozzle, AspireSpace, http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf   \n
     - [2] - Rocket Propulsion Elements, 7th Edition  \n
     - [3] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf  \n
+    - [4] - Modelling ablative and regenerative cooling systems for an ethylene/ethane/nitrous oxide liquid fuel rocket engine, Elizabeth C. Browne, https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&isAllowed=y  \n
+    - [5] - Thermofluids databook, CUED, http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf    \n
 '''
 
 import bamboo as bam
@@ -266,7 +268,8 @@ class CoolingJacket:
         rectangle_height (float, optional): If using channel_shape = 'rectangle, this is the width of the rectangles (in the hoopwise direction). 
         circle_diameter (float, optional): If using channel_shape = 'semi-circle', this is the diameter of the semi circle.
         custom_effective_diameter (float, optional) : If using channel_shape = 'custom', this is the effective diameter you want to use. 
-        custom_flow_area (float, optional) : If using channel_shape = 'custom', this is the flow you want to use. 
+        custom_flow_area (float, optional) : If using channel_shape = 'custom', this is the flow you want to use.
+        custom_width (float, optional) : If using channel_shape = 'custom', this is the width of the channel at its widest point. 
     """
     def __init__(self, inner_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, channel_shape = "rectangle", configuration = "spiral", **kwargs):
 
@@ -286,6 +289,7 @@ class CoolingJacket:
             self.flow_area = self.rectangle_width*self.rectangle_height
             self.hydraulic_radius = self.flow_area/self.perimeter
             self.effective_diameter = 4*self.hydraulic_radius
+            self.channel_width = self.rectangle_width
 
         if self.channel_shape == "semi-circle":
             self.circle_diameter = kwargs["circle_diameter"]
@@ -293,21 +297,25 @@ class CoolingJacket:
             self.flow_area = np.pi*self.circle_diameter**2/8
             self.hydraulic_radius = self.flow_area/self.perimeter
             self.effective_diameter = 4*self.hydraulic_radius
+            self.channel_width = self.circle_diameter
 
         if self.channel_shape == "custom":
             self.flow_area = kwargs["custom_flow_area"]
             self.effective_diameter = kwargs["custom_effective_diameter"]
+            self.channel_width = kwargs["custom_width"]
 
-    def A(self, x=None):
-        """Get coolant channel cross flow cross sectional area.
+    def A(self, radius):
+        """Get total coolant channel cross flow cross sectional area.
 
         Args:
-            x (float, optional): Axial position along the engine. This parameter may have no effect on the output. Defaults to None.
+            radius (float): Radius, measured from engine axis to coolant side of inner liner.
 
         Returns:
-            float: Cooling channel cross flow area (m^2)
+            float: Total cooling channel cross flow area (m^2)
         """
-        return self.flow_area
+        channel_count = 2*np.pi*radius/self.channel_width # Only a rough guide
+
+        return self.flow_area*channel_count
     
     def D(self, x=None):
         """Get the 'effective diameter' of the cooling channel. This is equal 4*hydraulic_radius, with hydraulic_radius = channel_area / channel_perimeter.
@@ -636,7 +644,48 @@ class EngineWithCooling:
         Returns:
             float: Coolant velocity (m/s)
         """
-        return self.cooling_jacket.mdot_coolant/(rho_coolant * self.cooling_jacket.A(x))
+        radius = self.geometry.y(x)
+        return self.cooling_jacket.mdot_coolant/(rho_coolant * self.cooling_jacket.A(radius))
+
+    def coolant_friction_factor(self, x, T, p,):
+        """Determine the friction factor of the coolant at the current position.
+           Formula from reference [5] page 29.
+
+        Args:
+            x (float): Axial position
+            T (float): Coolant temperature at x            
+            p (float): Coolant pressure at x
+
+        Returns:
+            float: Dimensionless friction factor
+        """
+        mu = self.cooling_jacket.coolant_transport.mu(T=T, p=p)
+        rho = self.cooling_jacket.coolant_transport.rho(T=T, p=p)
+        D = self.cooling_jacket.effective_diameter
+        v = self.coolant_velocity(x, rho)
+
+        reynolds = rho*v*D/mu
+
+        return (0.79*np.log(reynolds)-1.64)**(-2)
+    
+    def coolant_pressure_drop(self, friction_factor, x, dl, T, p):
+        """Determine the coolant pressure drop using the friction factor.
+
+        Args:
+            friction_factor (float): Dimensionless friction factor
+            x (float): Axial position
+            dl (float): Length to evaluate pressure drop over - an increment along the channel, not the engine axis
+            T (float): Coolant temperature at x            
+            p (float): Coolant pressure at x
+
+        Returns:
+            float: Pressure drop (Pa)
+        """
+        D = self.cooling_jacket.effective_diameter
+        rho = self.cooling_jacket.coolant_transport.rho(T=T, p=p)
+        v = self.coolant_velocity(x, rho)
+
+        return friction_factor*dl*rho*(v**2)/(2*D)
 
     def map_liner_profile(self, number_of_points=1000):
         """Maps the provided liner thickness profile to the engine geometry,
@@ -655,6 +704,41 @@ class EngineWithCooling:
             liner_index = x_pos * len(self.geometry.wall_thickness)
             liner[i] = np.interp(liner_index, range(len(self.geometry.wall_thickness)), self.geometry.wall_thickness)
         return liner
+
+    def channel_geometry(self, number_of_sections = 1000):
+        """Finds the path length of the coolant in the jacket from engine geometry and channel configuration.
+
+        Args:
+            number_of_sections (int, optional): Number of sections to split path into. Defaults to 1000.
+
+        Raises:
+            AttributeError: Must have either "spiral" or "vertical" channel configuration.
+
+        Returns:
+            float: Coolant path length (m).
+        """
+        discretised_x = np.linspace(self.geometry.x_max, self.geometry.x_min, number_of_sections)
+        axis_length = self.geometry.x_max - self.geometry.x_min # Axial engine length
+        length = 0
+
+        if self.cooling_jacket.configuration == "spiral":
+            pitch = self.cooling_jacket.channel_width # No gaps between channels so spiral pitch = width
+            section_turns = axis_length/(pitch*number_of_sections) # Number of turns per discrete section
+            for i in range(number_of_sections-1):
+                radius_avg = (self.geometry.y(discretised_x[i]) + self.geometry.y(discretised_x[i+1]))/2
+                length += section_turns * np.sqrt(pitch**2 + (radius_avg*2*np.pi)**2)
+                # Find the average radius for this section and use it to determine the spiral section length
+            return length
+
+        if self.cooling_jacket.configuration == "vertical":
+            dx = discretised_x[0] - discretised_x[1]
+            for i in range(number_of_sections-1):
+                dy = np.abs(self.geometry.y(discretised_x[i]) - self.geometry.y(discretised_x[i+1]))
+                length += np.sqrt(dy**2 + dx**2)
+            return length
+        
+        else:
+            raise AttributeError("Invalid cooling channel configuration")
 
     def thermal_circuit(self, x, h_gas, h_coolant, inner_wall, wall_thickness, T_gas, T_coolant):
         """
@@ -726,6 +810,9 @@ class EngineWithCooling:
         #Discretised liner thickness
         liner = self.map_liner_profile(number_of_points)
 
+        #Calculation of coolant channel length
+        channel_length = self.channel_geometry(number_of_sections=number_of_points)
+
         #Temperatures and heat transfer rates
         T_wall_inner = np.zeros(len(discretised_x)) #Gas side wall temperature
         T_wall_outer = np.zeros(len(discretised_x)) #Coolant side wall temperature
@@ -735,22 +822,26 @@ class EngineWithCooling:
         q_Adot = np.zeros(len(discretised_x))       #Heat transfer rate per unit area
         h_gas = np.zeros(len(discretised_x))
         h_coolant = np.zeros(len(discretised_x))
+        p_coolant = np.zeros(len(discretised_x))    #Coolant pressure
 
         '''Main loop'''
         for i in range(len(discretised_x)):
             x = discretised_x[i]
             T_gas[i] = self.T(x)
 
-            #Calculate the current coolant temperature
+            #Calculate the current coolant temperature and pressure
             if i == 0:
                 T_coolant[i] = self.cooling_jacket.inlet_T
+                p_coolant[i] = self.cooling_jacket.inlet_p0
 
             else:
                 #Increase in coolant temperature, q*dx = mdot*Cp*dT
-                T_coolant[i] = T_coolant[i-1] + (q_dot[i-1]*dx)/(self.cooling_jacket.mdot_coolant*cp_coolant)   
+                T_coolant[i] = T_coolant[i-1] + (q_dot[i-1]*dx)/(self.cooling_jacket.mdot_coolant*cp_coolant)
+                friction_factor = self.coolant_friction_factor(x, T=T_coolant[i], p=p_coolant[i-1])
+                p_coolant[i] = p_coolant[i-1] - self.coolant_pressure_drop(friction_factor, x, (channel_length/number_of_points), T_coolant[i], p_coolant[i-1])   
 
             #Update coolant heat capacity
-            cp_coolant = self.cooling_jacket.coolant_transport.cp(T = T_coolant[i], p = self.cooling_jacket.p0(x))
+            cp_coolant = self.cooling_jacket.coolant_transport.cp(T = T_coolant[i], p = p_coolant[i])
 
             #Gas side heat transfer coefficient
             if h_gas_model == "1":
@@ -809,20 +900,20 @@ class EngineWithCooling:
             
             #Coolant side heat transfer coefficient
             if h_coolant_model == "1":
-                h_coolant[i] = h_coolant_1(self.cooling_jacket.A(x), 
+                h_coolant[i] = h_coolant_1(self.cooling_jacket.A(self.geometry.y(x)), 
                                            self.cooling_jacket.D(x), 
                                            self.cooling_jacket.mdot_coolant, 
-                                           self.cooling_jacket.coolant_transport.mu(T = T_coolant[i], p = self.cooling_jacket.p0(x)), 
-                                           self.cooling_jacket.coolant_transport.k(T = T_coolant[i], p = self.cooling_jacket.p0(x)), 
+                                           self.cooling_jacket.coolant_transport.mu(T = T_coolant[i], p = p_coolant[i]), 
+                                           self.cooling_jacket.coolant_transport.k(T = T_coolant[i], p = p_coolant[i]), 
                                            cp_coolant, 
-                                           self.cooling_jacket.coolant_transport.rho(T = T_coolant[i], p = self.cooling_jacket.p0(x)))
+                                           self.cooling_jacket.coolant_transport.rho(T = T_coolant[i], p = p_coolant[i]))
 
             else:
                 raise AttributeError(f"Could not find the h_coolant_model '{h_coolant_model}'")
             
             #Check for coolant boil off - a CoolProp uses a phase index of '0' to refer to the liquid state (see http://www.coolprop.org/coolprop/HighLevelAPI.html)
 
-            if boil_off_position == None and self.cooling_jacket.coolant_transport.check_liquid(T = T_coolant[i], p = self.cooling_jacket.p0(x)) == False:
+            if boil_off_position == None and self.cooling_jacket.coolant_transport.check_liquid(T = T_coolant[i], p = p_coolant[i]) == False:
                 print(f"WARNING: Coolant boiled off at x = {x} m")
                 boil_off_position = x
 
@@ -843,6 +934,7 @@ class EngineWithCooling:
                 "q_Adot": list(q_Adot),
                 "h_gas" : list(h_gas),
                 "h_coolant" : list(h_coolant),
+                "p_coolant" : list(p_coolant),
                 "boil_off_position" : boil_off_position}
 
         #Export a .JSON file if required
