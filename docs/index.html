@@ -157,7 +157,7 @@
   <div class="section" id="welcome-to-bamboo-s-documentation">
 <h1>Welcome to Bamboo’s documentation!<a class="headerlink" href="#welcome-to-bamboo-s-documentation" title="Permalink to this headline">¶</a></h1>
 <p>Use the sidebar (on the left) to find lists of all the available classes and functions, for each submodule.
-Use the ‘home’ buttons (with a small image of a house) to navigate back to this main page.</p>
+Use the ‘home’ buttons (with the small image of a house) to navigate back to this main page.</p>
 <table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
@@ -387,12 +387,12 @@ Data obtained by using <a class="reference external" href="http://www.graphreade
 
 <dl class="py function">
 <dt id="bamboo.main.get_throat_area">
-<code class="sig-prename descclassname"><span class="pre">bamboo.main.</span></code><code class="sig-name descname"><span class="pre">get_throat_area</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chamber_conditions</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.get_throat_area" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">bamboo.main.</span></code><code class="sig-name descname"><span class="pre">get_throat_area</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">perfect_gas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chamber_conditions</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.get_throat_area" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the nozzle throat area, given the gas properties and combustion chamber conditions. Assumes perfect gas with isentropic flow.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>gas</strong> (<em>Gas</em>) – Exhaust gas leaving the combustion chamber.</p></li>
+<li><p><strong>perfect_gas</strong> (<a class="reference internal" href="#bamboo.main.PerfectGas" title="bamboo.main.PerfectGas"><em>PerfectGas</em></a>) – Exhaust gas leaving the combustion chamber.</p></li>
 <li><p><strong>chamber_conditions</strong> (<em>CombustionChamber</em>) – Combustion chamber.</p></li>
 </ul>
 </dd>
@@ -407,12 +407,12 @@ Data obtained by using <a class="reference external" href="http://www.graphreade
 
 <dl class="py function">
 <dt id="bamboo.main.get_exit_area">
-<code class="sig-prename descclassname"><span class="pre">bamboo.main.</span></code><code class="sig-name descname"><span class="pre">get_exit_area</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chamber_conditions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_amb</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.get_exit_area" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">bamboo.main.</span></code><code class="sig-name descname"><span class="pre">get_exit_area</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">perfect_gas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chamber_conditions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_amb</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.get_exit_area" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the nozzle exit area, given the gas properties and combustion chamber conditions. Assumes perfect gas with isentropic flow.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>gas</strong> (<em>Gas</em>) – Gas object.</p></li>
+<li><p><strong>perfect_gas</strong> (<a class="reference internal" href="#bamboo.main.PerfectGas" title="bamboo.main.PerfectGas"><em>PerfectGas</em></a>) – Gas object.</p></li>
 <li><p><strong>chamber_conditions</strong> (<em>CombustionChamber</em>) – CombustionChamber object</p></li>
 <li><p><strong>p_amb</strong> (<em>float</em>) – Ambient pressure (Pa)</p></li>
 </ul>
@@ -561,6 +561,24 @@ Data obtained by using <a class="reference external" href="http://www.graphreade
 </dd></dl>
 
 <dl class="py class">
+<dt id="bamboo.main.EngineGeometry">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.main.</span></code><code class="sig-name descname"><span class="pre">EngineGeometry</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nozzle</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chamber_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chamber_area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">style</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.EngineGeometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Container for additional engine geometry parameters (mostly chamber geometry). Used internally for heating analyses.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nozzle</strong> (<em>float</em>) – Nozzle of the engine.</p></li>
+<li><p><strong>chamber_length</strong> (<em>float</em>) – Length of the combustion chamber (m)</p></li>
+<li><p><strong>chamber_area</strong> (<em>float</em>) – Cross sectional area of the combustion chamber (m^2)</p></li>
+<li><p><strong>wall_thickness</strong> (<em>float</em><em> or </em><em>array</em>) – Thickness of the inner liner wall (m). Can be constant (float), or variable (array).</p></li>
+<li><p><strong>style</strong> (<em>str</em><em>, </em><em>optional</em>) – Geometry style to use. Currently the only option is ‘auto’. Defaults to “auto”.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
 <dt id="bamboo.main.Engine">
 <em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.main.</span></code><code class="sig-name descname"><span class="pre">Engine</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">perfect_gas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chamber_conditions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nozzle</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
@@ -575,12 +593,52 @@ Data obtained by using <a class="reference external" href="http://www.graphreade
 </dd>
 </dl>
 <dl class="py method">
-<dt id="bamboo.main.Engine.M">
-<code class="sig-name descname"><span class="pre">M</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.M" title="Permalink to this definition">¶</a></dt>
-<dd><p>Numerically solve to get the Mach number at a given distance x from the throat, along the centreline.</p>
+<dt id="bamboo.main.Engine.y">
+<code class="sig-name descname"><span class="pre">y</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.y" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the radius of the engine contour for a given x position.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>x</strong> (<em>float</em>) – Distance along centreline from the throat (m)</p>
+<dd class="field-odd"><p><strong>x</strong> (<em>float</em>) – x position (m). x = 0 is the throat, x &gt; 0 is the nozzle diverging section.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Radius of the engine contour (m).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.A">
+<code class="sig-name descname"><span class="pre">A</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.A" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the engine cross sectional area at a given x position.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>float</em>) – x position (m). x = 0 is the throat, x &gt; 0 is the nozzle diverging section.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Cross sectional area (m^2)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.M">
+<code class="sig-name descname"><span class="pre">M</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.M" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get exhaust gas Mach number.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>float</em>) – Axial position along the engine (m). Throat is at x = 0.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Mach number of the freestream.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
 </dd>
 </dl>
 </dd></dl>
@@ -612,6 +670,23 @@ Data obtained by using <a class="reference external" href="http://www.graphreade
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Pressure (Pa)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.rho">
+<code class="sig-name descname"><span class="pre">rho</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.rho" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get exhaust gas density.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>float</em>) – Axial position. Throat is at x = 0.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Freestream gas density (kg/m^3)</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>float</p>
@@ -720,6 +795,316 @@ separation occurs when P_wall/P_amb = 0.583 * (P_amb/P_chamber)^(0.195).</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt id="bamboo.main.Engine.plot_geometry">
+<code class="sig-name descname"><span class="pre">plot_geometry</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.plot_geometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the engine geometry. Note that to see the plot, you will need to run matplotlib.pyplot.show().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>number_of_points</strong> (<em>int</em><em>, </em><em>optional</em>) – Numbers of discrete points to plot. Defaults to 1000.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.plot_gas_temperature">
+<code class="sig-name descname"><span class="pre">plot_gas_temperature</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.plot_gas_temperature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot freestream gas temperature against position. Note that to see the plot, you will need to run matplotlib.pyplot.show().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>number_of_points</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of points to discretise the plot into. Defaults to 1000.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.plot_gas_mach">
+<code class="sig-name descname"><span class="pre">plot_gas_mach</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.plot_gas_mach" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot Mach number against position. Note that to see the plot, you will need to run matplotlib.pyplot.show().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>number_of_points</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of points to discretise the plot into. Defaults to 1000.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.add_geometry">
+<code class="sig-name descname"><span class="pre">add_geometry</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chamber_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chamber_area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">style</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.add_geometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify extra geometry parameters. Required for running cooling system analyses.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nozzle</strong> (<a class="reference internal" href="#bamboo.main.Nozzle" title="bamboo.main.Nozzle"><em>Nozzle</em></a>) – Nozzle of the engine.</p></li>
+<li><p><strong>chamber_length</strong> (<em>float</em>) – Length of the combustion chamber (m)</p></li>
+<li><p><strong>chamber_area</strong> (<em>float</em>) – Cross sectional area of the combustion chamber (m^2)</p></li>
+<li><p><strong>wall_thickness</strong> (<em>float</em><em> or </em><em>array</em>) – Thickness of the inner liner wall (m). Can be constant (float), or variable (array).</p></li>
+<li><p><strong>geometry</strong> (<em>str</em><em>, </em><em>optional</em>) – Geometry style to use. Currently the only option is ‘auto’. Defaults to “auto”.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.add_cooling_jacket">
+<code class="sig-name descname"><span class="pre">add_cooling_jacket</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inner_wall</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inlet_T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inlet_p0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coolant_transport</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot_coolant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[-</span> <span class="pre">1000,</span> <span class="pre">1000]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">configuration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'spiral'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.add_cooling_jacket" title="Permalink to this definition">¶</a></dt>
+<dd><p>Container for cooling jacket information - e.g. for regenerative cooling.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>inner_wall</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Inner wall material</p></li>
+<li><p><strong>inlet_T</strong> (<em>float</em>) – Inlet coolant temperature (K)</p></li>
+<li><p><strong>inlet_p0</strong> (<em>float</em>) – Inlet coolant stagnation pressure (Pa)</p></li>
+<li><p><strong>coolant_transport</strong> (<a class="reference internal" href="#bamboo.cooling.TransportProperties" title="bamboo.cooling.TransportProperties"><em>TransportProperties</em></a>) – Container for the coolant transport properties.</p></li>
+<li><p><strong>mdot_coolant</strong> (<em>float</em>) – Coolant mass flow rate (kg/s)</p></li>
+<li><p><strong>xs</strong> (<em>list</em>) – x position that the cooling jacket starts and ends at in the form [x_start, x_end]. Defaults to [-1000, 1000].</p></li>
+<li><p><strong>configuration</strong> (<em>str</em><em>, </em><em>optional</em>) – Options include ‘spiral’ and ‘vertical’. Defaults to “vertical”.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>channel_shape</strong> (<em>str</em><em>, </em><em>optional</em>) – Used if configuration = ‘spiral’. Options include ‘rectangle’, ‘semi-circle’, and ‘custom’.</p></li>
+<li><p><strong>channel_height</strong> (<em>float</em><em>, </em><em>optional</em>) – If using configuration = ‘vertical’ or channel_shape = ‘rectangle’, this is the height of the channels (m).</p></li>
+<li><p><strong>channel_width</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘rectangle’, this is the width of the channels (m).</p></li>
+<li><p><strong>channel_diameter</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘semi-circle’, this is the diameter of the semi circle.</p></li>
+<li><p><strong>custom_effective_diameter</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘custom’, this is the effective diameter you want to use.</p></li>
+<li><p><strong>custom_flow_area</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘custom’, this is the flow you want to use.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.add_exhaust_transport">
+<code class="sig-name descname"><span class="pre">add_exhaust_transport</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transport_properties</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.add_exhaust_transport" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a model for the exhaust gas transport properties (e.g. viscosity, thermal doncutivity, etc.). This is needed to run cooling system analyses.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>transport_properties</strong> (<a class="reference internal" href="#bamboo.cooling.TransportProperties" title="bamboo.cooling.TransportProperties"><em>TransportProperties</em></a>) – Container for the exhaust gas transport properties.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.add_ablative">
+<code class="sig-name descname"><span class="pre">add_ablative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ablative_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[-</span> <span class="pre">1000,</span> <span class="pre">1000]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.add_ablative" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.map_liner_profile">
+<code class="sig-name descname"><span class="pre">map_liner_profile</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.map_liner_profile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maps the provided liner thickness profile to the engine geometry,
+so each element in cooling analysis has a thickness value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>number_of_points</strong> (<em>int</em>) – Number of discrete liner positions</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Interpolated liner thickness profile</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>liner (array)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.channel_geometry">
+<code class="sig-name descname"><span class="pre">channel_geometry</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_sections</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.channel_geometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds the path length of the coolant in the jacket from engine geometry and channel configuration.
+:param number_of_sections: Number of sections to split path into. Defaults to 1000.
+:type number_of_sections: int, optional</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>AttributeError</strong> – Must have either “spiral” or “vertical” channel configuration.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Coolant path length (m).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.coolant_friction_factor">
+<code class="sig-name descname"><span class="pre">coolant_friction_factor</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.coolant_friction_factor" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Determine the friction factor of the coolant at the current position.</dt><dd><p>Formula from reference [5] page 29.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>float</em>) – Axial position</p></li>
+<li><p><strong>y</strong> (<em>float</em><em>, </em><em>optional</em>) – The radius of the engine (m) (NOT the radius of the cooling channel).  Only required for ‘vertical’ channels.</p></li>
+<li><p><strong>T</strong> (<em>float</em>) – Coolant temperature at x</p></li>
+<li><p><strong>p</strong> (<em>float</em>) – Coolant pressure at x</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dimensionless friction factor</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.coolant_pressure_drop">
+<code class="sig-name descname"><span class="pre">coolant_pressure_drop</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">friction_factor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.coolant_pressure_drop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the coolant pressure drop using the friction factor.
+:param friction_factor: Dimensionless friction factor
+:type friction_factor: float
+:param x: Axial position
+:type x: float
+:param y: The radius of the engine (m) (NOT the radius of the cooling channel).  Only required for ‘vertical’ channels.
+:type y: float, optional
+:param dl: Length to evaluate pressure drop over - an increment along the channel, not the engine axis
+:type dl: float
+:param T: Coolant temperature at x
+:type T: float
+:param p: Coolant pressure at x
+:type p: float</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Pressure drop (Pa)</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.regen_thermal_circuit">
+<code class="sig-name descname"><span class="pre">regen_thermal_circuit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_gas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_coolant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_gas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_coolant</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.regen_thermal_circuit" title="Permalink to this definition">¶</a></dt>
+<dd><p>q is per unit length along the nozzle wall (axially) - positive when heat is flowing to the coolant.
+q_Adot is the heat flux per unit area along the nozzle wall.
+Uses the idea of thermal circuits and resistances - we have three resistors in series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>r</strong> (<em>float</em>) – Radius to the inner wall of the engine (m)</p></li>
+<li><p><strong>h_gas</strong> (<em>float</em>) – Gas side convective heat transfer coefficient</p></li>
+<li><p><strong>h_coolant</strong> (<em>float</em>) – Coolant side convective heat transfer coefficient</p></li>
+<li><p><strong>wall_material</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Material object for the inner wall, needed for thermal conductivity</p></li>
+<li><p><strong>wall_thickness</strong> (<em>float</em>) – Thickness of the inner wall at x position (m)</p></li>
+<li><p><strong>T_gas</strong> (<em>float</em>) – Free stream gas temperature (K)</p></li>
+<li><p><strong>T_coolant</strong> (<em>float</em>) – Coolant temperature (K)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>q_dot, R_gas, R_wall, R_coolant</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float, float, float, float, float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.ablative_thermal_circuit">
+<code class="sig-name descname"><span class="pre">ablative_thermal_circuit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_gas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ablative_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ablative_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_gas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_wall</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.ablative_thermal_circuit" title="Permalink to this definition">¶</a></dt>
+<dd><p>q is per unit length along the nozzle wall (axially) - positive when heat is flowing to the coolant.
+q_Adot is the heat flux per unit area along the nozzle wall.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>r</strong> (<em>float</em>) – Radius to the inner wall of the engine (m)</p></li>
+<li><p><strong>h_gas</strong> (<em>float</em>) – Gas side convective heat transfer coefficient</p></li>
+<li><p><strong>ablative_material</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Material object for the ablative material, needed for thermal conductivity</p></li>
+<li><p><strong>ablative_thickness</strong> (<em>float</em>) – Thickness of the ablative material (m)</p></li>
+<li><p><strong>T_gas</strong> (<em>float</em>) – Free stream gas temperature (K)</p></li>
+<li><p><strong>T_wall</strong> (<em>float</em>) – Wall temperature (K)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>q_dot, R_gas, R_ablative</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float, float, float, float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.steady_heating_analysis">
+<code class="sig-name descname"><span class="pre">steady_heating_analysis</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_gas_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_coolant_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_json</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'heating_output.json'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.steady_heating_analysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Steady state heating analysis. Can be used for regenarative cooling, or combined regenerative and ablative cooling.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>number_of_points</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of discrete points to divide the engine into. Defaults to 1000.</p></li>
+<li><p><strong>h_gas_model</strong> (<em>str</em><em>, </em><em>optional</em>) – Equation to use for the gas side convective heat transfer coefficients. Options are ‘1’, ‘2’ and ‘3’. Defaults to “1”.</p></li>
+<li><p><strong>h_coolant_model</strong> (<em>str</em><em>, </em><em>optional</em>) – Equation to use for the coolant side convective heat transfer coefficients, currently the only option is ‘1’. Defaults to “1”.</p></li>
+<li><p><strong>to_json</strong> (<em>str</em><em> or </em><em>bool</em><em>, </em><em>optional</em>) – Directory to export a .JSON file to, containing simulation results. If False, no .JSON file is saved. Defaults to ‘heating_output.json’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Results of the simulation. Contains the following dictionary keys:</dt><dd><ul class="simple">
+<li><p>”x” : x positions corresponding to the rest of the data (m)</p></li>
+<li><p>”T_wall_inner” : Exhaust gas side wall temperature (K)</p></li>
+<li><p>”T_wall_outer” : Coolant side wall temperature (K)</p></li>
+<li><p>”T_coolant” : Coolant temperature (K)</p></li>
+<li><p>”T_gas” : Exhaust gas freestream temperature (K)</p></li>
+<li><p>”q_dot” : Heat transfer rate per unit length (axially along the engine) (W/m)</p></li>
+<li><p>”q_Adot”: Heat transfer rate per unit area (W/m^2)</p></li>
+<li><p>”h_gas” : Convective heat transfer rate for the exhaust gas side</p></li>
+<li><p>”h_coolant” : Convective heat transfer rate for the coolant side</p></li>
+<li><p>”boil_off_position” : x position of any coolant boil off. Equal to None if the coolant does not boil.</p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.transient_heating_analysis">
+<code class="sig-name descname"><span class="pre">transient_heating_analysis</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_starting_T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">298.15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_gas_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_json</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'heating_output.json'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.transient_heating_analysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is used exclusive for pure ablative cooling, without any regenerative cooling jacket.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>number_of_points</strong> (<em>int</em><em>, </em><em>optional</em>) – [description]. Defaults to 1000.</p></li>
+<li><p><strong>dt</strong> (<em>float</em><em>, </em><em>optional</em>) – Timestep (s). Defaults to 0.1.</p></li>
+<li><p><strong>t_max</strong> (<em>float</em><em>, </em><em>optional</em>) – Maximum time to run to (s). Defaults to 100</p></li>
+<li><p><strong>wall_starting_T</strong> (<em>float</em><em>, </em><em>optional</em>) – Starting temperature for the wall (K). Defaults to 298.15.</p></li>
+<li><p><strong>h_gas_model</strong> (<em>str</em><em>, </em><em>optional</em>) – [description]. Defaults to “1”.</p></li>
+<li><p><strong>to_json</strong> (<em>str</em><em>, </em><em>optional</em>) – [description]. Defaults to “heating_output.json”.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.run_stress_analysis">
+<code class="sig-name descname"><span class="pre">run_stress_analysis</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">heating_result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'thermal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">condition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'steady'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.run_stress_analysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform stress analysis on the liner, using a cooling result.
+:param heating_result: Requires a heating analysis result to compute stress.
+:type heating_result: dict
+:param type: Options are “pressure”,  “thermal” and “combined”. Defaults to “thermal”. (ONLY DEFAULT WORKS)
+:type type: str, optional
+:param condition: Engine state for analysis. Options are “steady”, “startup”, or “shutdown”. Defaults to “steady”. (ONLY DEFAULT WORKS)
+:type condition: str, optional</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Analysis result. ‘thermal_stress’ is the heat induced stress, ‘deltaT_wall’ is the wall temperature difference, hot side - cold side</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 </div>
@@ -732,12 +1117,18 @@ separation occurs when P_wall/P_amb = 0.583 * (P_amb/P_chamber)^(0.195).</p>
 <li><p>The EngineWithCooling.rho() function calculates rho by doing p/RT, but it would probably be faster to just use isentropic compressible flow relations.</p></li>
 </ul>
 </dd>
+<dt>Useful:</dt><dd><ul class="simple">
+<li><p>List of CoolProp properties: <a class="reference external" href="http://www.coolprop.org/coolprop/HighLevelAPI.html#table-of-string-inputs-to-propssi-function">http://www.coolprop.org/coolprop/HighLevelAPI.html#table-of-string-inputs-to-propssi-function</a></p></li>
+</ul>
+</dd>
 </dl>
 <p class="rubric">References</p>
 <ul class="simple">
 <li><p>[1] - The Thrust Optimised Parabolic nozzle, AspireSpace, <a class="reference external" href="http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf">http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf</a></p></li>
 <li><p>[2] - Rocket Propulsion Elements, 7th Edition</p></li>
 <li><p>[3] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, <a class="reference external" href="https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf">https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf</a></p></li>
+<li><p>[4] - Modelling ablative and regenerative cooling systems for an ethylene/ethane/nitrous oxide liquid fuel rocket engine, Elizabeth C. Browne, <a class="reference external" href="https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&amp;isAllowed=y">https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&amp;isAllowed=y</a></p></li>
+<li><p>[5] - Thermofluids databook, CUED, <a class="reference external" href="http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf">http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf</a></p></li>
 </ul>
 <dl class="py function">
 <dt id="bamboo.cooling.black_body">
@@ -785,9 +1176,10 @@ Uses Eqn (8-22) on page 312 or RPE 7th edition.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="bamboo.cooling.h_gas_bartz_1">
-<code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">h_gas_bartz_1</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">D</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cp_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_am</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_am</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.h_gas_bartz_1" title="Permalink to this definition">¶</a></dt>
-<dd><p>Equation (8-23) from page 312 of RPE 7th edition. ‘am’ refers to the gas being at the ‘arithmetic mean’ of the wall and freestream temperatures.</p>
+<dt id="bamboo.cooling.h_gas_2">
+<code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">h_gas_2</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">D</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cp_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_am</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_am</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.h_gas_2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bartz equation,
+usingEquation (8-23) from page 312 of RPE 7th edition. ‘am’ refers to the gas being at the ‘arithmetic mean’ of the wall and freestream temperatures.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Seems to provide questionable results - may have been implemented incorrectly.</p>
@@ -816,8 +1208,8 @@ Uses Eqn (8-22) on page 312 or RPE 7th edition.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="bamboo.cooling.h_gas_bartz_2">
-<code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">h_gas_bartz_2</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c_star</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">At</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Tc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Tw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.h_gas_bartz_2" title="Permalink to this definition">¶</a></dt>
+<dt id="bamboo.cooling.h_gas_3">
+<code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">h_gas_3</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c_star</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">At</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Tc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Tw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.h_gas_3" title="Permalink to this definition">¶</a></dt>
 <dd><p>Alternative equation for Bartz heat transfer coefficient.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -845,8 +1237,8 @@ Uses Eqn (8-22) on page 312 or RPE 7th edition.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="bamboo.cooling.h_coolant">
-<code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">h_coolant</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">D</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_bar</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.h_coolant" title="Permalink to this definition">¶</a></dt>
+<dt id="bamboo.cooling.h_coolant_1">
+<code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">h_coolant_1</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">D</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_bar</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.h_coolant_1" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the convective heat transfer coefficient for the coolant side.
 Uses the equation from page 317 of RPE 7th edition.</p>
 <dl class="field-list simple">
@@ -871,134 +1263,8 @@ Uses the equation from page 317 of RPE 7th edition.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt id="bamboo.cooling.EngineGeometry">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">EngineGeometry</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nozzle</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chamber_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chamber_area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">geometry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.EngineGeometry" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Class for storing and calculating features of the engine’s geometry.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>nozzle</strong> (<em>float</em>) – Nozzle of the engine.</p></li>
-<li><p><strong>chamber_length</strong> (<em>float</em>) – Length of the combustion chamber (m)</p></li>
-<li><p><strong>chamber_area</strong> (<em>float</em>) – Cross sectional area of the combustion chamber (m^2)</p></li>
-<li><p><strong>wall_thickness</strong> (<em>float</em><em> or </em><em>array</em>) – Thickness of the inner liner wall (m). Can be constant (float), or variable (array).</p></li>
-<li><p><strong>geometry</strong> (<em>str</em><em>, </em><em>optional</em>) – Geometry system to use. Currently the only option is ‘auto’. Defaults to “auto”.</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="bamboo.cooling.EngineGeometry.y">
-<code class="sig-name descname"><span class="pre">y</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.EngineGeometry.y" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the radius of the engine contour for a given x position.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>x</strong> (<em>float</em>) – x position (m). x = 0 is the throat, x &gt; 0 is the nozzle diverging section.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Radius of the engine contour (m).</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="bamboo.cooling.EngineGeometry.A">
-<code class="sig-name descname"><span class="pre">A</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.EngineGeometry.A" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the engine cross sectional area at a given x position.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>x</strong> (<em>float</em>) – x position (m). x = 0 is the throat, x &gt; 0 is the nozzle diverging section.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Cross sectional area (m^2)</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="bamboo.cooling.EngineGeometry.plot_geometry">
-<code class="sig-name descname"><span class="pre">plot_geometry</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.EngineGeometry.plot_geometry" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plots the engine geometry. Note that to see the plot, you will need to run matplotlib.pyplot.show().</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>number_of_points</strong> (<em>int</em><em>, </em><em>optional</em>) – Numbers of discrete points to plot. Defaults to 1000.</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="bamboo.cooling.CoolingJacket">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">CoolingJacket</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inner_wall</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inlet_T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inlet_p0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermo_coolant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot_coolant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rectangle'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">configuration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'spiral'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.CoolingJacket" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Cooling jacket parameters.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>inner_wall</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Inner wall material</p></li>
-<li><p><strong>inlet_T</strong> (<em>float</em>) – Inlet coolant temperature (K)</p></li>
-<li><p><strong>inlet_p0</strong> (<em>float</em>) – Inlet coolant stagnation pressure (Pa)</p></li>
-<li><p><strong>thermo_coolant</strong> (<em>thermo.chemical.Chemical</em><em> or </em><em>thermo.mixture.Mixture</em>) – Used to get physical properties of the coolant.</p></li>
-<li><p><strong>mdot_coolant</strong> (<em>float</em>) – Coolant mass flow rate (kg/s)</p></li>
-<li><p><strong>channel_shape</strong> (<em>str</em><em>, </em><em>optional</em>) – Options include ‘rectangle’, ‘semi-circle’, and ‘custom’. Defaults to “rectangle”.</p></li>
-<li><p><strong>configuration</strong> (<em>str</em><em>, </em><em>optional</em>) – Options include ‘spiral’. Defaults to “spiral”.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Keyword Arguments</dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>rectangle_width</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘rectangle’, this is the height of the rectangles (in the radial direction).</p></li>
-<li><p><strong>rectangle_height</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘rectangle, this is the width of the rectangles (in the hoopwise direction).</p></li>
-<li><p><strong>circle_diameter</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘semi-circle’, this is the diameter of the semi circle.</p></li>
-<li><p><strong>custom_effective_diameter</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘custom’, this is the effective diameter you want to use.</p></li>
-<li><p><strong>custom_flow_area</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘custom’, this is the flow you want to use.</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="bamboo.cooling.CoolingJacket.A">
-<code class="sig-name descname"><span class="pre">A</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.CoolingJacket.A" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get coolant channel cross flow cross sectional area.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>x</strong> (<em>float</em><em>, </em><em>optional</em>) – Axial position along the engine. This parameter may have no effect on the output. Defaults to None.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Cooling channel cross flow area (m^2)</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="bamboo.cooling.CoolingJacket.D">
-<code class="sig-name descname"><span class="pre">D</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.CoolingJacket.D" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the ‘effective diameter’ of the cooling channel. This is equal 4*hydraulic_radius, with hydraulic_radius = channel_area / channel_perimeter.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>x</strong> (<em>float</em><em>, </em><em>optional</em>) – Axial position along the engine. This parameter may have no effect on the output. Defaults to None.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Effective diameter (m)</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
 <dt id="bamboo.cooling.Material">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">Material</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">E</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">poisson</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.Material" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">Material</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">E</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">poisson</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.Material" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class used to specify a material and its properties.
 Used specifically for defining the inner liner of an engine.</p>
@@ -1012,124 +1278,229 @@ Used specifically for defining the inner liner of an engine.</p>
 <li><p><strong>k</strong> (<em>float</em>) – Thermal conductivity (W/m/K)</p></li>
 </ul>
 </dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>c</strong> (<em>float</em>) – Specific heat capacity (J/kg/K)</p></li>
+<li><p><strong>rho</strong> (<em>float</em>) – Density (kg/m^3)</p></li>
+</ul>
+</dd>
 </dl>
 </dd></dl>
 
 <dl class="py class">
-<dt id="bamboo.cooling.EngineWithCooling">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">EngineWithCooling</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chamber_conditions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">geometry</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cooling_jacket</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">perfect_gas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermo_gas</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.EngineWithCooling" title="Permalink to this definition">¶</a></dt>
+<dt id="bamboo.cooling.TransportProperties">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">TransportProperties</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'thermo'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Used for running cooling system analyses.</p>
+<p>Container for transport properties of a fluid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>model</strong> (<em>str</em><em>, </em><em>optional</em>) – The module to use for modelling. Intended to offer ‘thermo’, ‘CoolProp’ and ‘cantera’, but only thermo works as of now. Defaults to “thermo”.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Keywords Args:</dt><dd><p>thermo_object (thermo.chemical.Chemical or thermo.mixture.Mixture): An object from the ‘thermo’ Python module.
+coolprop_name (str): Name of the chemcial or mixture for the CoolProp module. See <a class="reference external" href="http://www.coolprop.org/">http://www.coolprop.org/</a> for a list of available fluids.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="bamboo.cooling.TransportProperties.check_liquid">
+<code class="sig-name descname"><span class="pre">check_liquid</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties.check_liquid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the fluid is a liquid at the given temperature and pressure. Used to check for coolant boil-off.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>chamber_conditions</strong> (<a class="reference internal" href="#bamboo.main.ChamberConditions" title="bamboo.main.ChamberConditions"><em>ChamberConditions</em></a>) – Engine chamber conditions object.</p></li>
-<li><p><strong>geometry</strong> (<a class="reference internal" href="#bamboo.cooling.EngineGeometry" title="bamboo.cooling.EngineGeometry"><em>EngineGeometry</em></a>) – Engine geometry.</p></li>
-<li><p><strong>cooling_jacket</strong> (<a class="reference internal" href="#bamboo.cooling.CoolingJacket" title="bamboo.cooling.CoolingJacket"><em>CoolingJacket</em></a>) – Cooling jacket properties.</p></li>
-<li><p><strong>perfect_gas</strong> (<a class="reference internal" href="#bamboo.main.PerfectGas" title="bamboo.main.PerfectGas"><em>PerfectGas</em></a>) – Properties of the exhaust gas.</p></li>
-<li><p><strong>thermo_gas</strong> (<em>thermo.chemical.Chemical</em><em> or </em><em>thermo.mixture.Mixture</em>) – Object from the ‘thermo’ module, to use to get physical properties of the gas (e.g. viscosity).</p></li>
+<li><p><strong>T</strong> (<em>float</em>) – Temperature (K)</p></li>
+<li><p><strong>p</strong> (<em>float</em>) – Pressure (Pa)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if the fluid is liquid, False if it’s any other phase</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.cooling.TransportProperties.k">
+<code class="sig-name descname"><span class="pre">k</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties.k" title="Permalink to this definition">¶</a></dt>
+<dd><p>Thermal conductivity</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>float</em>) – Temperature (K)</p></li>
+<li><p><strong>p</strong> (<em>float</em>) – Pressure (Pa)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Thermal conductivity</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.cooling.TransportProperties.mu">
+<code class="sig-name descname"><span class="pre">mu</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties.mu" title="Permalink to this definition">¶</a></dt>
+<dd><p>Absolute viscosity</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>float</em>) – Temperature (K)</p></li>
+<li><p><strong>p</strong> (<em>float</em>) – Pressure (Pa)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Absolute viscosity</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.cooling.TransportProperties.Pr">
+<code class="sig-name descname"><span class="pre">Pr</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties.Pr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prandtl number</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>float</em>) – Temperature (K)</p></li>
+<li><p><strong>p</strong> (<em>float</em>) – Pressure (Pa)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Prandtl number</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.cooling.TransportProperties.cp">
+<code class="sig-name descname"><span class="pre">cp</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties.cp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specific heat capacity at constant pressure (J/kg/K)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>float</em>) – Temperature (K)</p></li>
+<li><p><strong>p</strong> (<em>float</em>) – Pressure (Pa)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Specific heat capacity at constant pressure (J/kg/K)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.cooling.TransportProperties.rho">
+<code class="sig-name descname"><span class="pre">rho</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties.rho" title="Permalink to this definition">¶</a></dt>
+<dd><p>Density (kg/m3)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>float</em>) – Temperature (K)</p></li>
+<li><p><strong>p</strong> (<em>float</em>) – Pressure (Pa)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Density (kg/m3)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="bamboo.cooling.CoolingJacket">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">CoolingJacket</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inner_wall</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inlet_T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inlet_p0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coolant_transport</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot_coolant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[-</span> <span class="pre">1000,</span> <span class="pre">1000]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">configuration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'spiral'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.CoolingJacket" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Container for cooling jacket information - e.g. for regenerative cooling.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>inner_wall</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Inner wall material</p></li>
+<li><p><strong>inlet_T</strong> (<em>float</em>) – Inlet coolant temperature (K)</p></li>
+<li><p><strong>inlet_p0</strong> (<em>float</em>) – Inlet coolant stagnation pressure (Pa)</p></li>
+<li><p><strong>coolant_transport</strong> (<a class="reference internal" href="#bamboo.cooling.TransportProperties" title="bamboo.cooling.TransportProperties"><em>TransportProperties</em></a>) – Container for the coolant transport properties.</p></li>
+<li><p><strong>mdot_coolant</strong> (<em>float</em>) – Coolant mass flow rate (kg/s)</p></li>
+<li><p><strong>xs</strong> (<em>list</em>) – x position that the cooling jacket starts and ends at in the form [x_start, x_end]. Defaults to [-1000, 1000].</p></li>
+<li><p><strong>configuration</strong> (<em>str</em><em>, </em><em>optional</em>) – Options include ‘spiral’ and ‘vertical’. Defaults to “vertical”.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>channel_shape</strong> (<em>str</em><em>, </em><em>optional</em>) – Used if configuration = ‘spiral’. Options include ‘rectangle’, ‘semi-circle’, and ‘custom’.</p></li>
+<li><p><strong>channel_height</strong> (<em>float</em><em>, </em><em>optional</em>) – If using configuration = ‘vertical’ or channel_shape = ‘rectangle’, this is the height of the channels (m).</p></li>
+<li><p><strong>channel_width</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘rectangle’, this is the width of the channels (m). If using channel_shape = ‘semi-circle’, this is the diameter of the semi circle (m).</p></li>
+<li><p><strong>custom_effective_diameter</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘custom’, this is the effective diameter you want to use.</p></li>
+<li><p><strong>custom_flow_area</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘custom’, this is the flow you want to use.</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py method">
-<dt id="bamboo.cooling.EngineWithCooling.M">
-<code class="sig-name descname"><span class="pre">M</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.EngineWithCooling.M" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get exhaust gas Mach number.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>x</strong> (<em>float</em>) – Axial position along the engine (m). Throat is at x = 0.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Mach number of the freestream.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="bamboo.cooling.EngineWithCooling.T">
-<code class="sig-name descname"><span class="pre">T</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.EngineWithCooling.T" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get exhaust gas temperature.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>x</strong> (<em>float</em>) – Axial position (m). Throat is at x = 0.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Temperature (K)</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="bamboo.cooling.EngineWithCooling.p">
-<code class="sig-name descname"><span class="pre">p</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.EngineWithCooling.p" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get exhaust gas pressure.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>x</strong> (<em>float</em>) – Axial position (m). Throat is at x = 0.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Freestream pressure (Pa)</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="bamboo.cooling.EngineWithCooling.rho">
-<code class="sig-name descname"><span class="pre">rho</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.EngineWithCooling.rho" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get exhaust gas density.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>x</strong> (<em>float</em>) – Axial position. Throat is at x = 0.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Freestream gas density (kg/m^3)</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="bamboo.cooling.EngineWithCooling.show_gas_temperature">
-<code class="sig-name descname"><span class="pre">show_gas_temperature</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.EngineWithCooling.show_gas_temperature" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot freestream gas temperature against position. Note that to see the plot, you will need to run matplotlib.pyplot.show().</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>number_of_points</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of points to discretise the plot into. Defaults to 1000.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="bamboo.cooling.EngineWithCooling.show_gas_mach">
-<code class="sig-name descname"><span class="pre">show_gas_mach</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.EngineWithCooling.show_gas_mach" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot Mach number against position. Note that to see the plot, you will need to run matplotlib.pyplot.show().</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>number_of_points</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of points to discretise the plot into. Defaults to 1000.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="bamboo.cooling.EngineWithCooling.coolant_velocity">
-<code class="sig-name descname"><span class="pre">coolant_velocity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_coolant</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.EngineWithCooling.coolant_velocity" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get coolant velocity</p>
+<dt id="bamboo.cooling.CoolingJacket.A">
+<code class="sig-name descname"><span class="pre">A</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.CoolingJacket.A" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get coolant channel cross flow cross sectional area.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> (<em>float</em>) – Axial position</p></li>
-<li><p><strong>rho_coolant</strong> (<em>float</em>) – Coolant density (kg/m3)</p></li>
+<li><p><strong>x</strong> (<em>float</em><em>, </em><em>optional</em>) – x position - does not currently affect anything.</p></li>
+<li><p><strong>y</strong> (<em>float</em><em>, </em><em>optional</em>) – The radius of the engine (m) (NOT the radius of the cooling channel).  Only required for ‘vertical’ channels.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Cooling channel flow area (m^2)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.cooling.CoolingJacket.D">
+<code class="sig-name descname"><span class="pre">D</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.CoolingJacket.D" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the ‘effective diameter’ of the cooling channel. This is equal 4*hydraulic_radius, with hydraulic_radius = channel_area / channel_perimeter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>float</em><em>, </em><em>optional</em>) – Axial position along the engine. This parameter may have no effect on the output. Defaults to None.</p></li>
+<li><p><strong>y</strong> (<em>float</em><em>, </em><em>optional</em>) – The radius of the engine (m) (NOT the radius of the cooling channel).  Only required for ‘vertical’ channels.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Effective diameter (m)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.cooling.CoolingJacket.coolant_velocity">
+<code class="sig-name descname"><span class="pre">coolant_velocity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rho_coolant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.CoolingJacket.coolant_velocity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get coolant velocity using mdot = rho*V*A.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rho_coolant</strong> (<em>float</em>) – Coolant density (kg/m^3)</p></li>
+<li><p><strong>x</strong> (<em>float</em><em>, </em><em>optional</em>) – x position - does not currently affect anything.</p></li>
+<li><p><strong>y</strong> (<em>float</em><em>, </em><em>optional</em>) – Is The radius of the engine (m) (NOT the radius of the cooling channel). Only required for ‘vertical’ channels.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1141,209 +1512,12 @@ Used specifically for defining the inner liner of an engine.</p>
 </dl>
 </dd></dl>
 
-<dl class="py method">
-<dt id="bamboo.cooling.EngineWithCooling.h_gas">
-<code class="sig-name descname"><span class="pre">h_gas</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.EngineWithCooling.h_gas" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the convective heat transfer coefficient on the gas side.
-Uses Eqn (8-22) on page 312 or RPE 7th edition.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> (<em>float</em>) – x-position (m)</p></li>
-<li><p><strong>mu</strong> (<em>float</em>) – Absolute viscosity of the exhaust gas</p></li>
-<li><p><strong>k</strong> (<em>float</em>) – Thermal conductivity of the exhaust gas</p></li>
-<li><p><strong>Pr</strong> (<em>float</em>) – Prandtl number of the exhaust gas</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Convective heat transfer coefficient, h, for the exhaust gas side (where q = h(T - T_inf)).</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
 </dd></dl>
 
-<dl class="py method">
-<dt id="bamboo.cooling.EngineWithCooling.h_gas_bartz_1">
-<code class="sig-name descname"><span class="pre">h_gas_bartz_1</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">D</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cp_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_am</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_am</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.EngineWithCooling.h_gas_bartz_1" title="Permalink to this definition">¶</a></dt>
-<dd><p>Equation (8-23) from page 312 of RPE 7th edition. ‘am’ refers to the gas being at the ‘arithmetic mean’ of the wall and freestream temperatures.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Seems to provide questionable results - may have been implemented incorrectly.</p>
-</div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>D</strong> (<em>float</em>) – Gas flow diameter (m)</p></li>
-<li><p><strong>cp_inf</strong> (<em>float</em>) – Specific heat capacity at constant pressure for the gas, in the freestream</p></li>
-<li><p><strong>mu_inf</strong> (<em>float</em>) – Absolute viscosity in the freestream</p></li>
-<li><p><strong>Pr_inf</strong> (<em>float</em>) – Prandtl number in the freestream</p></li>
-<li><p><strong>rho_inf</strong> (<em>float</em>) – Density of the gas in the freestream</p></li>
-<li><p><strong>v_inf</strong> (<em>float</em>) – Velocity of the gas in in the freestream</p></li>
-<li><p><strong>rho_am</strong> (<em>float</em>) – Density of the gas, at T = (T_wall + T_freestream)/2</p></li>
-<li><p><strong>mu_am</strong> (<em>float</em>) – Absolute viscosity of the gas, at T = (T_wall + T_freestream)/2</p></li>
-<li><p><strong>mu0</strong> (<em>float</em>) – Absolute viscosity of the gas under stagnation conditions.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Convective heat transfer coefficient, h, for the exhaust gas side (where q = h(T - T_inf)).</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="bamboo.cooling.EngineWithCooling.h_gas_bartz_2">
-<code class="sig-name descname"><span class="pre">h_gas_bartz_2</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Tw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.EngineWithCooling.h_gas_bartz_2" title="Permalink to this definition">¶</a></dt>
-<dd><p>Alternative equation for Bartz.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>mu</strong> (<em>float</em>) – Absolute viscosity of the gas freestream.</p></li>
-<li><p><strong>cp</strong> (<em>float</em>) – Specific heat at constant pressure for the gas freestream.</p></li>
-<li><p><strong>Pr</strong> (<em>float</em>) – Prandtl number for the gas freestream.</p></li>
-<li><p><strong>M</strong> (<em>float</em>) – Mach number in the gas freestream.</p></li>
-<li><p><strong>A</strong> (<em>float</em>) – Flow area of the gas.</p></li>
-<li><p><strong>Tw</strong> (<em>float</em>) – Gas temperature at the wall.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Convective heat transfer coefficient, h, for the exhaust gas side (where q = h(T - T_inf)).</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="bamboo.cooling.EngineWithCooling.h_coolant">
-<code class="sig-name descname"><span class="pre">h_coolant</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_bar</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.EngineWithCooling.h_coolant" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the convective heat transfer coefficient for the coolant side.
-Uses the equation from page 317 of RPE 7th edition.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> (<em>float</em>) – x-position (m)</p></li>
-<li><p><strong>mu</strong> (<em>float</em>) – Absolute viscosity of coolant</p></li>
-<li><p><strong>k</strong> (<em>float</em>) – Thermal conductivity of coolant</p></li>
-<li><p><strong>c_bar</strong> (<em>float</em>) – Average specific heat capacity of coolant</p></li>
-<li><p><strong>rho</strong> (<em>float</em>) – Density of coolant (kg/m3)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Coolant side convective heat transfer coefficient</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="bamboo.cooling.EngineWithCooling.map_liner_profile">
-<code class="sig-name descname"><span class="pre">map_liner_profile</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.EngineWithCooling.map_liner_profile" title="Permalink to this definition">¶</a></dt>
-<dd><p>Maps the provided liner thickness profile to the engine geometry,
-so each element in cooling analysis has a thickness value.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>number_of_points</strong> (<em>int</em>) – Number of discrete liner positions</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Interpolated liner thickness profile</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>liner (array)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="bamboo.cooling.EngineWithCooling.thermal_circuit">
-<code class="sig-name descname"><span class="pre">thermal_circuit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_gas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_coolant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inner_wall</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_gas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_coolant</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.EngineWithCooling.thermal_circuit" title="Permalink to this definition">¶</a></dt>
-<dd><p>q is per unit length along the nozzle wall (axially) - positive when heat is flowing to the coolant.
-q_Adot is the heat flux per unit area along the nozzle wall.
-Uses the idea of thermal circuits and resistances - we have three resistors in series.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> (<em>float</em>) – x position (m)</p></li>
-<li><p><strong>h_gas</strong> (<em>float</em>) – Gas side convective heat transfer coefficient</p></li>
-<li><p><strong>h_coolant</strong> (<em>float</em>) – Coolant side convective heat transfer coefficient</p></li>
-<li><p><strong>inner_wall</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Material object for the inner wall, needed for thermal conductivity</p></li>
-<li><p><strong>wall_thickness</strong> (<em>float</em>) – Thickness of the inner wall at x position (m)</p></li>
-<li><p><strong>T_gas</strong> (<em>float</em>) – Free stream gas temperature (K)</p></li>
-<li><p><strong>T_coolant</strong> (<em>float</em>) – Coolant temperature (K)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>q_dot, R_gas, R_wall, R_coolant, q_Adot</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float, float, float, float, float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="bamboo.cooling.EngineWithCooling.run_heating_analysis">
-<code class="sig-name descname"><span class="pre">run_heating_analysis</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_gas_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'standard'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_json</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'heating_output.json'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.EngineWithCooling.run_heating_analysis" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run a simulation of the engine cooling system to get wall temperatures, coolant temperatures, etc.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>number_of_points</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of discrete points to divide the engine into. Defaults to 1000.</p></li>
-<li><p><strong>h_gas_model</strong> (<em>str</em><em>, </em><em>optional</em>) – Equation to use for the gas side convective heat transfer coefficients. Options are ‘standard’ and ‘bartz 1’, ‘bartz 2’. Defaults to “standard”.</p></li>
-<li><p><strong>to_json</strong> (<em>str</em><em> or </em><em>bool</em><em>, </em><em>optional</em>) – Directory to export a .JSON file to, containing simulation results. If False, no .JSON file is saved. Defaults to ‘heating_output.json’.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><dl class="simple">
-<dt>Results of the simulation. Contains the following dictionary keys:</dt><dd><ul class="simple">
-<li><p>”x” : x positions corresponding to the rest of the data (m)</p></li>
-<li><p>”T_wall_inner” : Exhaust gas side wall temperature (K)</p></li>
-<li><p>”T_wall_outer” : Coolant side wall temperature (K)</p></li>
-<li><p>”T_coolant” : Coolant temperature (K)</p></li>
-<li><p>”T_gas” : Exhaust gas freestream temperature (K)</p></li>
-<li><p>”q_dot” : Heat transfer rate per unit length (axially along the engine) (W/m)</p></li>
-<li><p>”q_Adot”: Heat transfer rate per unit area (W/m^2)</p></li>
-<li><p>”h_gas” : Convective heat transfer rate for the exhaust gas side</p></li>
-<li><p>”h_coolant” : Convective heat transfer rate for the coolant side</p></li>
-<li><p>”boil_off_position” : x position of any coolant boil off. Equal to None if the coolant does not boil.</p></li>
-</ul>
-</dd>
-</dl>
-</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>dict</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="bamboo.cooling.EngineWithCooling.run_stress_analysis">
-<code class="sig-name descname"><span class="pre">run_stress_analysis</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">heating_result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'thermal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">condition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'steady'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.EngineWithCooling.run_stress_analysis" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform stress analysis on the liner, using a cooling result.
-:param heating_result: Requires a heating analysis result to compute stress.
-:type heating_result: dict
-:param type: Options are “pressure”,  “thermal” and “combined”. Defaults to “thermal”. (ONLY DEFAULT WORKS)
-:type type: str, optional
-:param condition: Engine state for analysis. Options are “steady”, “startup”, or “shutdown”. Defaults to “steady”. (ONLY DEFAULT WORKS)
-:type condition: str, optional</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>Analysis result. ‘thermal_stress’ is the heat induced stress, ‘deltaT_wall’ is the wall temperature difference, hot side - cold side</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>dict</p>
-</dd>
-</dl>
-</dd></dl>
-
+<dl class="py class">
+<dt id="bamboo.cooling.Ablative">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">Ablative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ablative_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[-</span> <span class="pre">1000,</span> <span class="pre">1000]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.Ablative" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 </dd></dl>
 
 </div>
@@ -1391,6 +1565,23 @@ Note you will have to run matplotlib.pyplot.show() to see the plot.</p>
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py function">
+<dt id="bamboo.plot.plot_jacket_pressure">
+<code class="sig-prename descclassname"><span class="pre">bamboo.plot.</span></code><code class="sig-name descname"><span class="pre">plot_jacket_pressure</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.plot.plot_jacket_pressure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given the output dictionary from a engine cooling analysis, plot the cooling jacket pressure against x position.
+Note you will have to run matplotlib.pyplot.show() to see the plot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>data_dict</strong> (<em>dict</em>) – Dictionary contaning the cooling analysis results.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="bamboo.plot.animate_transient_temperatures">
+<code class="sig-prename descclassname"><span class="pre">bamboo.plot.</span></code><code class="sig-name descname"><span class="pre">animate_transient_temperatures</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.plot.animate_transient_temperatures" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </div>
 </div>

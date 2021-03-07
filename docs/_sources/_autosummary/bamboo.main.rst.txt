@@ -1,4 +1,4 @@
-bamboo.main
+﻿bamboo.main
 ===========
 
 .. automodule:: bamboo.main
@@ -36,6 +36,7 @@ bamboo.main
    
       ChamberConditions
       Engine
+      EngineGeometry
       Nozzle
       PerfectGas
    
