@@ -18,8 +18,12 @@ Liquid rocket engine modelling package, using 1D compressible flow relations and
 - Tools for modelling engine cooling systems.
 - Tools for modelling stress in the engine walls.
 
+## Incomplete
+- Ablative cooling system modelling
+- Time dependent cooling analysis
+
 ## Documentation
-(currently outdated)
+(may be outdated)
 
 Made using Sphinx, available at: 
 https://cuspaceflight.github.io/bamboo/
