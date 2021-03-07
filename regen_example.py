@@ -1,46 +1,87 @@
-'''
-Subscripts:
-    0 - Stagnation condition
-    c - Chamber condition (should be the same as stagnation conditions)
-    t - At the throat
-    e - At the nozzle exit plane
-    amb - Atmopsheric/ambient condition
-'''
 import bamboo as bam
+import bamboo.cooling as cool
+import bamboo.materials
+
 import numpy as np
+import matplotlib.pyplot as plt
+import pypropep as ppp
+import bamboo.plot
+import thermo
 import time
 
-'''Gas properties - obtained from ProPEP 3'''
-gamma = 1.264               #Ratio of specific heats cp/cv
-molecular_weight = 21.627   #Molecular weight of the exhaust gas (kg/kmol) (only used to calculate R, and hence cp)
+'''Engine dimensions'''
+Ac = np.pi*0.1**2               #Chamber cross-sectional area (m^2)
+L_star = 1.5                    #L_star = Volume_c/Area_t
+wall_thickness = 2e-3
 
 '''Chamber conditions'''
-pc = 10e5           #Chamber pressure (Pa)
-Tc = 2458.89        #Chamber temperature (K) - obtained from ProPEP 3
-mdot = 4.757        #Mass flow rate (kg/s)
-p_amb = 1.01325e5   #Ambient pressure (Pa). 1.01325e5 is sea level atmospheric.
+pc = 15e5               #Chamber pressure (Pa)
+mdot = 5.4489           #Mass flow rate (kg/s)
+p_amb = 1.01325e5       #Ambient pressure (Pa). 1.01325e5 is sea level atmospheric.
+OF_ratio = 3.5          #Oxidiser/fuel mass ratio
+
+'''We want to investigate adding water to the isopropyl alcohol'''
+water_mass_fraction = 0.10  #Fraction of the fuel that is water, by mass
+
+'''Coolant jacket'''
+wall_material = bam.materials.CopperC700
+mdot_coolant = mdot/(OF_ratio + 1) 
+inlet_T = 298.15                    #Coolant inlet temperature
+
+'''Get combustion properties from pypropep'''
+#Initialise and get propellants
+ppp.init()
+e = ppp.Equilibrium()
+ipa = ppp.PROPELLANTS['ISOPROPYL ALCOHOL']
+water = ppp.PROPELLANTS['WATER']
+n2o = ppp.PROPELLANTS['NITROUS OXIDE']
+
+#Add propellants by mass fractions (note the mass fractions can add up to more than 1)
+e.add_propellants_by_mass([(ipa, 1-water_mass_fraction), 
+                           (water, water_mass_fraction), 
+                           (n2o, OF_ratio)])
+
+#Adiabatic combustion using chamber pressure                      
+e.set_state(P = pc/1e5, type='HP')                      
+
+gamma = e.properties.Isex   #I don't know why they use 'Isex' for gamma. 
+cp = 1000*e.properties.Cp   #Cp is given in kJ/kg/K, we want J/kg/K
+Tc = e.properties.T
+
+'''Choose the models we want to use for transport properties of the coolant and exhaust gas'''
+#thermo_coolant = thermo.mixture.Mixture(['ethanol', 'water'], ws = [1 - water_mass_fraction, water_mass_fraction])
+#thermo_coolant = thermo.mixture.Mixture(['propanol', 'water'], ws = [1 - water_mass_fraction, water_mass_fraction])
+thermo_coolant = thermo.chemical.Chemical('ethanol')
+thermo_gas = thermo.mixture.Mixture(['N2', 'H2O', 'CO2'], zs = [e.composition['N2'], e.composition['H2O'], e.composition['CO2']])   
+
+gas_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_gas)
+coolant_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_coolant)
+#coolant_transport = cool.TransportProperties(model = "CoolProp", coolprop_name = f"ETHANOL[{1 - water_mass_fraction}]&WATER[{water_mass_fraction}]")
 
 '''Create the engine object'''
-perfect_gas = bam.PerfectGas(gamma = gamma, molecular_weight = molecular_weight)
-chamber = bam.ChamberConditions(pc, Tc, mdot)
-nozzle = bam.Nozzle.from_engine_components(perfect_gas, chamber, p_amb, type = "rao", length_fraction = 0.8)
-white_dwarf = bam.Engine(perfect_gas, chamber, nozzle)
+perfect_gas = bam.PerfectGas(gamma = gamma, cp = cp)    #Gas for frozen flow
+chamber_conditions = bam.ChamberConditions(pc, Tc, mdot)
+nozzle = bam.Nozzle.from_engine_components(perfect_gas, chamber_conditions, p_amb, type = "rao", length_fraction = 0.8)
+white_dwarf = bam.Engine(perfect_gas, chamber_conditions, nozzle)
+chamber_length = L_star*nozzle.At/Ac
 
-print(nozzle)
-nozzle.plot_nozzle()
+'''Add the cooling system to the engine'''
+white_dwarf.add_geometry(chamber_length, Ac, wall_thickness)
+white_dwarf.add_exhaust_transport(gas_transport)
+
+#Spiral channels
+white_dwarf.add_cooling_jacket(wall_material, inlet_T, pc, coolant_transport, mdot_coolant, 
+                               configuration = "spiral", channel_shape = "semi-circle", channel_diameter = 0.002)
+
+#Or vertical channels
+#white_dwarf.add_cooling_jacket(wall_material, inlet_T, pc, coolant_transport, mdot_coolant, 
+#                               configuration = "vertical", channel_height = 0.002)
+
+'''Run the heating analysis'''
 print(f"Sea level thrust = {white_dwarf.thrust(1e5)/1000} kN")
 print(f"Sea level Isp = {white_dwarf.isp(1e5)} s")
 
-#Estimate apogee based on apprpoximate Martlet 4 vehicle mass and cross sectional area
-apogee_estimate = bam.estimate_apogee(dry_mass = 60, 
-                                      propellant_mass = 50, 
-                                      engine = white_dwarf, 
-                                      cross_sectional_area = 0.03, 
-                                      show_plot = False)
-
-print(f"Apogee estimate = {apogee_estimate/1000} km")
-
-#Run an optimisation program to change the nozzle area ratio, to maximise the apogee obtained (I'm not sure if this is working correctly right now).
-white_dwarf.optimise_for_apogee(dry_mass = 60, propellant_mass = 50, cross_sectional_area = 0.03)
-
-print(white_dwarf.nozzle)
+cooling_data = white_dwarf.steady_heating_analysis(to_json = "data/heating_output.json")
+white_dwarf.plot_geometry()
+bamboo.plot.plot_temperatures(cooling_data, gas_temperature=False)
+plt.show()
