@@ -20,25 +20,15 @@ mdot = 5.4489           #Mass flow rate (kg/s)
 p_amb = 1.01325e5       #Ambient pressure (Pa). 1.01325e5 is sea level atmospheric.
 OF_ratio = 3.5          #Oxidiser/fuel mass ratio
 
-'''We want to investigate adding water to the isopropyl alcohol'''
-water_mass_fraction = 0.10  #Fraction of the fuel that is water, by mass
-
-'''Coolant jacket'''
-wall_material = bam.materials.CopperC700
-mdot_coolant = mdot/(OF_ratio + 1) 
-inlet_T = 298.15                    #Coolant inlet temperature
-
 '''Get combustion properties from pypropep'''
 #Initialise and get propellants
 ppp.init()
 e = ppp.Equilibrium()
 ipa = ppp.PROPELLANTS['ISOPROPYL ALCOHOL']
-water = ppp.PROPELLANTS['WATER']
 n2o = ppp.PROPELLANTS['NITROUS OXIDE']
 
 #Add propellants by mass fractions (note the mass fractions can add up to more than 1)
-e.add_propellants_by_mass([(ipa, 1-water_mass_fraction), 
-                           (water, water_mass_fraction), 
+e.add_propellants_by_mass([(ipa, 1),
                            (n2o, OF_ratio)])
 
 #Adiabatic combustion using chamber pressure                      
@@ -48,15 +38,9 @@ gamma = e.properties.Isex   #I don't know why they use 'Isex' for gamma.
 cp = 1000*e.properties.Cp   #Cp is given in kJ/kg/K, we want J/kg/K
 Tc = e.properties.T
 
-'''Choose the models we want to use for transport properties of the coolant and exhaust gas'''
-#thermo_coolant = thermo.mixture.Mixture(['ethanol', 'water'], ws = [1 - water_mass_fraction, water_mass_fraction])
-#thermo_coolant = thermo.mixture.Mixture(['propanol', 'water'], ws = [1 - water_mass_fraction, water_mass_fraction])
-thermo_coolant = thermo.chemical.Chemical('ethanol')
+'''Choose the models we want to use for transport properties of the exhaust gas'''
 thermo_gas = thermo.mixture.Mixture(['N2', 'H2O', 'CO2'], zs = [e.composition['N2'], e.composition['H2O'], e.composition['CO2']])   
-
 gas_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_gas)
-coolant_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_coolant)
-#coolant_transport = cool.TransportProperties(model = "CoolProp", coolprop_name = f"ETHANOL[{1 - water_mass_fraction}]&WATER[{water_mass_fraction}]")
 
 '''Create the engine object'''
 perfect_gas = bam.PerfectGas(gamma = gamma, cp = cp)    #Gas for frozen flow
@@ -68,20 +52,13 @@ chamber_length = L_star*nozzle.At/Ac
 '''Add the cooling system to the engine'''
 white_dwarf.add_geometry(chamber_length, Ac, wall_thickness)
 white_dwarf.add_exhaust_transport(gas_transport)
-
-#Spiral channels
-white_dwarf.add_cooling_jacket(wall_material, inlet_T, pc, coolant_transport, mdot_coolant, 
-                               configuration = "spiral", channel_shape = "semi-circle", channel_diameter = 0.002)
-
-#Or vertical channels
-#white_dwarf.add_cooling_jacket(wall_material, inlet_T, pc, coolant_transport, mdot_coolant, 
-#                               configuration = "vertical", channel_height = 0.002)
+white_dwarf.add_ablative(bam.materials.Graphite, bam.materials.CopperC700, wall_thickness = 5e-3, regression_rate = 0.0033e-3)
 
 '''Run the heating analysis'''
 print(f"Sea level thrust = {white_dwarf.thrust(1e5)/1000} kN")
 print(f"Sea level Isp = {white_dwarf.isp(1e5)} s")
 
-cooling_data = white_dwarf.steady_heating_analysis(to_json = "data/heating_output.json")
+cooling_data = white_dwarf.transient_heating_analysis(number_of_points = 10, dt = 0.2, t_max = 20, to_json = False)
 white_dwarf.plot_geometry()
-bamboo.plot.plot_temperatures(cooling_data, gas_temperature=False)
+bam.plot.animate_transient_temperatures(cooling_data)
 plt.show()

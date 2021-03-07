@@ -921,6 +921,9 @@ class Engine:
         """
         self.exhaust_transport = transport_properties
 
+    def add_ablative(self, ablative_material, wall_material, wall_thickness, regression_rate, xs = [-1000, 1000]):
+        self.ablative = cool.Ablative(ablative_material, wall_material, wall_thickness, regression_rate, xs)
+
     #Cooling system functions
     def map_liner_profile(self, number_of_points=1000):
         """Maps the provided liner thickness profile to the engine geometry,
@@ -946,26 +949,24 @@ class Engine:
             liner[i] = np.interp(liner_index, range(len(self.geometry.wall_thickness)), self.geometry.wall_thickness)
         return liner
 
-    def thermal_circuit(self, x, h_gas, h_coolant, inner_wall, wall_thickness, T_gas, T_coolant):
+    def regen_thermal_circuit(self, r, h_gas, h_coolant, wall_material, wall_thickness, T_gas, T_coolant):
         """
         q is per unit length along the nozzle wall (axially) - positive when heat is flowing to the coolant.  
         q_Adot is the heat flux per unit area along the nozzle wall.  
         Uses the idea of thermal circuits and resistances - we have three resistors in series.
 
         Args:
-            x (float): x position (m)
+            r (float): Radius to the inner wall of the engine (m)
             h_gas (float): Gas side convective heat transfer coefficient
             h_coolant (float): Coolant side convective heat transfer coefficient
-            inner_wall (Material): Material object for the inner wall, needed for thermal conductivity
+            wall_material (Material): Material object for the inner wall, needed for thermal conductivity
             wall_thickness (float): Thickness of the inner wall at x position (m)
             T_gas (float): Free stream gas temperature (K)
             T_coolant (float): Coolant temperature (K)
 
         Returns:
-            float, float, float, float, float: q_dot, R_gas, R_wall, R_coolant, q_Adot
+            float, float, float, float, float: q_dot, R_gas, R_wall, R_coolant
         """
-
-        r = self.y(x)
         
         r_out = r + wall_thickness
         r_in = r 
@@ -974,16 +975,44 @@ class Engine:
         A_out = 2*np.pi*r_in    #Outer area per unit length (i.e. just the outer circumference)
 
         R_gas = 1/(h_gas*A_in)
-        R_wall = np.log(r_out/r_in)/(2*np.pi*inner_wall.k)
+        R_wall = np.log(r_out/r_in)/(2*np.pi*wall_material.k)
         R_coolant = 1/(h_coolant*A_out)
 
         q_dot = (T_gas - T_coolant)/(R_gas + R_wall + R_coolant)    #Heat flux per unit length
         q_Adot = q_dot / A_in                                       #Heat flux per unit area
 
-        return q_dot, R_gas, R_wall, R_coolant, q_Adot
+        return q_dot, R_gas, R_wall, R_coolant
 
-    def run_heating_analysis(self, number_of_points=1000, h_gas_model = "1", h_coolant_model = "1", to_json = "heating_output.json"):
-        """Run a simulation of the engine cooling system to get wall temperatures, coolant temperatures, etc.
+    def ablative_thermal_circuit(self, r, h_gas, ablative_material, ablative_thickness, T_gas, T_wall):
+        """
+        q is per unit length along the nozzle wall (axially) - positive when heat is flowing to the coolant.  
+        q_Adot is the heat flux per unit area along the nozzle wall.  
+
+        Args:
+            r (float): Radius to the inner wall of the engine (m)
+            h_gas (float): Gas side convective heat transfer coefficient
+            ablative_material (Material): Material object for the ablative material, needed for thermal conductivity
+            ablative_thickness (float): Thickness of the ablative material (m)
+            T_gas (float): Free stream gas temperature (K)
+            T_wall (float): Wall temperature (K)
+
+        Returns:
+            float, float, float, float: q_dot, R_gas, R_ablative
+        """
+        
+        r_out = r + ablative_thickness
+        r_in = r 
+        A_in = 2*np.pi*r_out    #Inner area per unit length (i.e. just the inner circumference)
+
+        R_gas = 1/(h_gas*A_in)
+        R_ablative = np.log(r_out/r_in)/(2*np.pi*ablative_material.k)
+
+        q_dot = (T_gas - T_wall)/(R_gas + R_ablative)    #Heat flux per unit length
+
+        return q_dot, R_gas, R_ablative
+
+    def steady_heating_analysis(self, number_of_points=1000, h_gas_model = "1", h_coolant_model = "1", to_json = "heating_output.json"):
+        """Steady state heating analysis. Can be used for regenarative cooling, or combined regenerative and ablative cooling.
 
         Args:
             number_of_points (int, optional): Number of discrete points to divide the engine into. Defaults to 1000.
@@ -1009,14 +1038,19 @@ class Engine:
         try:
             self.geometry
         except AttributeError:
-            raise AttributeError("Cannot execute run_heating_analysis() without additional geometry definitions. You need to add geometry with the 'Engine.add_geometry()' function.")
+            raise AttributeError("Cannot run heating analysis without additional geometry definitions. You need to add geometry with the 'Engine.add_geometry()' function.")
 
         try:
             self.exhaust_transport
         except AttributeError:
-            raise AttributeError("Cannot execute run_heating_analysis() without an exhaust gas transport properties model. You need to add one with the 'Engine.add_exhaust_transport()' function.")
+            raise AttributeError("Cannot run heating analysis without an exhaust gas transport properties model. You need to add one with the 'Engine.add_exhaust_transport()' function.")
 
-
+        try:
+            self.cooling_jacket
+            regen = True
+        except AttributeError:
+            regen = False
+        
         '''Initialise variables and arrays'''
         #To keep track of any coolant boiling
         boil_off_position = None
@@ -1034,7 +1068,6 @@ class Engine:
         T_coolant = np.zeros(len(discretised_x))    #Coolant temperature
         T_gas = np.zeros(len(discretised_x))        #Freestream gas temperature
         q_dot = np.zeros(len(discretised_x))        #Heat transfer rate per unit length
-        q_Adot = np.zeros(len(discretised_x))       #Heat transfer rate per unit area
         h_gas = np.zeros(len(discretised_x))
         h_coolant = np.zeros(len(discretised_x))
 
@@ -1115,7 +1148,7 @@ class Engine:
                 D_coolant = self.cooling_jacket.D(x)
 
             elif self.cooling_jacket.configuration == 'vertical':
-                A_coolant = 2*np.pi*self.y(x)*self.cooling_jacket.channel_height
+                A_coolant = np.pi*((self.y(x) + self.cooling_jacket.channel_height)**2 - self.y(x)**2)
                 perimeter_coolant = 2*np.pi*self.y(x) + 2*np.pi*(self.y(x) + self.cooling_jacket.channel_height)
                 D_coolant = 4*A_coolant/perimeter_coolant
             
@@ -1134,14 +1167,13 @@ class Engine:
             else:
                 raise AttributeError(f"Could not find the h_coolant_model '{h_coolant_model}'")
             
-            #Check for coolant boil off - a CoolProp uses a phase index of '0' to refer to the liquid state (see http://www.coolprop.org/coolprop/HighLevelAPI.html)
-
+            #Check for coolant boil off 
             if boil_off_position == None and self.cooling_jacket.coolant_transport.check_liquid(T = T_coolant[i], p = self.cooling_jacket.p0(x)) == False:
                 print(f"WARNING: Coolant boiled off at x = {x} m")
                 boil_off_position = x
 
             #Get thermal circuit properties
-            q_dot[i], R_gas, R_wall, R_coolant, q_Adot[i] = self.thermal_circuit(x, h_gas[i], h_coolant[i], self.cooling_jacket.inner_wall, liner[i], T_gas[i], T_coolant[i])
+            q_dot[i], R_gas, R_wall, R_coolant = self.regen_thermal_circuit(self.y(x), h_gas[i], h_coolant[i], self.cooling_jacket.inner_wall, liner[i], T_gas[i], T_coolant[i])
 
             #Calculate wall temperatures
             T_wall_inner[i] = T_gas[i] - q_dot[i]*R_gas
@@ -1154,7 +1186,6 @@ class Engine:
                 "T_coolant" : list(T_coolant),
                 "T_gas" : list(T_gas),
                 "q_dot" : list(q_dot),
-                "q_Adot": list(q_Adot),
                 "h_gas" : list(h_gas),
                 "h_coolant" : list(h_coolant),
                 "boil_off_position" : boil_off_position}
@@ -1166,6 +1197,164 @@ class Engine:
                 print("Exported JSON data to '{}'".format(to_json))
 
         return output_dict
+
+    def transient_heating_analysis(self, number_of_points=1000, dt = 0.1, t_max = 100, wall_starting_T = 298.15, h_gas_model = "1", to_json = "heating_output.json"):
+        """This is used exclusive for pure ablative cooling, without any regenerative cooling jacket.
+
+        Args:
+            number_of_points (int, optional): [description]. Defaults to 1000.
+            dt (float, optional): Timestep (s). Defaults to 0.1.
+            t_max (float, optional): Maximum time to run to (s). Defaults to 100
+            wall_starting_T (float, optional): Starting temperature for the wall (K). Defaults to 298.15.
+            h_gas_model (str, optional): [description]. Defaults to "1".
+            to_json (str, optional): [description]. Defaults to "heating_output.json".
+        """
+        try:
+            self.geometry
+        except AttributeError:
+            raise AttributeError("Cannot run heating analysis without additional geometry definitions. You need to add geometry with the 'Engine.add_geometry()' function.")
+
+        try:
+            self.exhaust_transport
+        except AttributeError:
+            raise AttributeError("Cannot run heating analysis without an exhaust gas transport properties model. You need to add one with the 'Engine.add_exhaust_transport()' function.")
+
+        try:
+            self.ablative
+        except AttributeError:
+            raise AttributeError("Cannot run heating analysis without an exhaust gas transport properties model. You need to add one with the 'Engine.add_exhaust_transport()' function.")
+
+        print("Starting transient heating analysis")
+
+        '''Initialise variables and arrays'''
+        #Discretisation of the nozzle
+        discretised_x = np.linspace(self.geometry.x_max, self.geometry.x_min, number_of_points) #Run from the back end (the nozzle exit) to the front (chamber)
+        discretised_t = np.arange(0, t_max, dt)
+        dx = discretised_x[0] - discretised_x[1]
+
+        #Discretised liner thickness
+        liner = self.map_liner_profile(number_of_points)
+
+        #Temperatures and heat transfer rates - everything is a 2D array, with indexes [time_index, space_index]
+        T_wall = np.zeros([len(discretised_t), len(discretised_x)]) 
+        T_ablative_inner = np.zeros([len(discretised_t), len(discretised_x)]) 
+        T_ablative_outer = np.zeros([len(discretised_t), len(discretised_x)]) 
+        T_gas = np.zeros([len(discretised_t), len(discretised_x)]) 
+        q_dot = np.zeros([len(discretised_t), len(discretised_x)]) 
+        h_gas = np.zeros([len(discretised_t), len(discretised_x)]) 
+
+        '''Main loop'''
+        for i in range(len(discretised_t)):
+            if i%50 == 0:
+                print(f"{100*i/len(discretised_t)}% complete")
+
+            for j in range(len(discretised_x)):
+                t = discretised_t[i]
+                x = discretised_x[j]
+
+                #Freestream gas temperature 
+                T_gas[i, j] = self.T(x)
+
+                #Ablative thickness (currently a placeholder for custom thicknesses)
+                ablative_thickness = self.geometry.chamber_radius - self.y(x)
+
+                #Gas side heat transfer coefficient
+                if h_gas_model == "1":
+                    h_gas[i, j] = cool.h_gas_1(2*self.y(x),
+                                            self.M(x),
+                                            T_gas[i, j],
+                                            self.rho(x),
+                                            self.perfect_gas.gamma,
+                                            self.perfect_gas.R,
+                                            self.exhaust_transport.mu(T = T_gas[i, j], p = self.p(x)),
+                                            self.exhaust_transport.k(T = T_gas[i, j], p = self.p(x)),
+                                            self.exhaust_transport.Pr(T = T_gas[i, j], p = self.p(x)))
+
+                elif h_gas_model == "2":
+                    gamma = self.perfect_gas.gamma
+                    R = self.perfect_gas.R
+                    D = 2*self.y(x)            #Flow diameter
+
+                    #Freestream properties
+                    p_inf = self.p(x)
+                    T_inf = T_gas[i, j]
+                    rho_inf = self.rho(x)
+                    M_inf = self.M(x)
+                    v_inf = M_inf * (gamma*R*T_inf)**0.5    #Gas velocity
+                    mu_inf = self.exhaust_transport.mu(T = T_gas[i, j], p = p_inf)
+                    Pr_inf = self.exhaust_transport.Pr(T = T_gas[i, j], p = p_inf)
+                    cp_inf = self.perfect_gas.cp
+
+                    #Properties at arithmetic mean of T_wall and T_inf
+                    T_am = (T_inf + T_ablative_inner[i, j-1]) / 2
+                    mu_am = self.exhaust_transport.mu(T = T_am, p = p_inf)
+                    rho_am = p_inf/(R*T_am)                                 #p = rho R T - pressure is roughly uniform across the boundary layer so p_inf ~= p_wall
+
+                    #Stagnation properties
+                    p0 = self.chamber_conditions.p0
+                    T0 = self.chamber_conditions.T0
+                    mu0 = self.exhaust_transport.mu(T =  T0, p = p0)
+
+                    h_gas[i, j] = cool.h_gas_2(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0)
+
+                elif h_gas_model == "3":
+                    h_gas[i, j] = cool.h_gas_3(self.c_star,
+                                            self.nozzle.At, 
+                                            self.A(x), 
+                                            self.chamber_conditions.p0, 
+                                            self.chamber_conditions.T0, 
+                                            self.M(x), 
+                                            T_ablative_inner[i, j-1], 
+                                            self.exhaust_transport.mu(T = T_gas[i, j], p = self.p(x)), 
+                                            self.perfect_gas.cp, 
+                                            self.perfect_gas.gamma, 
+                                            self.exhaust_transport.Pr(T = T_gas[i, j], p = self.p(x)))
+
+                else:
+                    raise AttributeError(f"Could not find the h_gas_model '{h_gas_model}'")
+
+                #Get thermal circuit properties
+                q_dot[i, j], R_gas, R_ablative = self.ablative_thermal_circuit(self.y(x), 
+                                                                                   h_gas[i, j], 
+                                                                                   self.ablative.ablative_material, 
+                                                                                   ablative_thickness, 
+                                                                                   T_gas[i, j], 
+                                                                                   T_wall[i-1, j])
+
+                #Calculate wall temperatures
+                T_ablative_inner[i, j] = T_gas[i, j] - q_dot[i, j]*R_gas
+                T_ablative_outer[i, j] = T_ablative_inner[i, j] - q_dot[i, j]*R_ablative
+
+                #Find the rise in wall temperature - assume only radial heat transfer
+                if i == 0:
+                    T_wall[i, j] = wall_starting_T
+
+                else:
+                    dV = np.pi*((self.y(x) + ablative_thickness + self.ablative.wall_thickness)**2 - (self.y(x) + ablative_thickness)**2)*dx         #Volume of wall
+                    dm = dV*self.ablative.wall_material.rho                                    #Mass of wall
+
+                    #q_dot*dx*dt = m*c*dT
+                    T_wall[i, j] = T_wall[i-1, j] + q_dot[i, j]*dx*dt/(self.ablative.wall_material.c*dm)
+
+        '''Return results'''
+        #Dictionary containing results
+        output_dict = {"x" : list(discretised_x),
+                        "t" : list(discretised_t),
+                        "T_wall" : list(T_wall),
+                        "T_ablative_inner" : list(T_ablative_inner),
+                        "T_ablative_outer" : list(T_ablative_outer),
+                        "T_gas" : list(T_gas),
+                        "q_dot" : list(q_dot),
+                        "h_gas" : list(h_gas)}
+
+        #Export a .JSON file if required
+        if to_json != False:
+            with open(to_json, "w+") as write_file:
+                json.dump(output_dict, write_file)
+                print("Exported JSON data to '{}'".format(to_json))
+
+        return output_dict
+
 
     def run_stress_analysis(self, heating_result, type="thermal", condition="steady"):
         """Perform stress analysis on the liner, using a cooling result.

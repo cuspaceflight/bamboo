@@ -146,137 +146,23 @@ class Material:
         alpha (float): Thermal expansion coefficient (strain/K)
         k (float): Thermal conductivity (W/m/K)
 
+    Keyword Args:
+        c (float): Specific heat capacity (J/kg/K)
+        rho (float): Density (kg/m^3)
     """
-    def __init__(self, E, sigma_y, poisson, alpha, k):
+    def __init__(self, E, sigma_y, poisson, alpha, k, **kwargs):
         self.E = E                  
         self.sigma_y = sigma_y      
         self.poisson = poisson      
         self.alpha = alpha          
         self.k = k                  
 
+        if "c" in kwargs:
+            self.c = kwargs["c"]
+        if "rho" in kwargs:
+            self.rho = kwargs["rho"]
+
         self.perf_therm = (1 - self.poisson) * self.k / (self.alpha * self.E)   #Performance coefficient for thermal stress, higher is better
-
-class CoolingJacket:
-    """Container for cooling jacket information - e.g. for regenerative cooling.
-
-    Args:
-        inner_wall (Material): Inner wall material
-        inlet_T (float): Inlet coolant temperature (K)
-        inlet_p0 (float): Inlet coolant stagnation pressure (Pa)
-        coolant_transport (TransportProperties): Container for the coolant transport properties.
-        mdot_coolant (float): Coolant mass flow rate (kg/s)
-        xs (list): x position that the cooling jacket starts and ends at in the form [x_start, x_end]. Defaults to [-1000, 1000].
-        configuration (str, optional): Options include 'spiral' and 'vertical'. Defaults to "vertical".
-    
-    Keyword Args:
-        channel_shape (str, optional): Used if configuration = 'spiral'. Options include 'rectangle', 'semi-circle', and 'custom'. 
-        channel_height (float, optional): If using configuration = 'vertical' or channel_shape = 'rectangle', this is the height of the channels (m).
-        channel_width (float, optional): If using channel_shape = 'rectangle', this is the width of the channels (m).
-        channel_diameter (float, optional): If using channel_shape = 'semi-circle', this is the diameter of the semi circle.
-        custom_effective_diameter (float, optional): If using channel_shape = 'custom', this is the effective diameter you want to use. 
-        custom_flow_area (float, optional): If using channel_shape = 'custom', this is the flow you want to use. 
-    """
-    def __init__(self, inner_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
-
-        self.inner_wall = inner_wall
-        self.coolant_transport = coolant_transport       
-        self.mdot_coolant = mdot_coolant
-        self.xs = xs
-        self.inlet_T = inlet_T
-        self.inlet_p0 = inlet_p0
-        self.configuration = configuration
-        
-        if self.configuration == 'spiral':
-            self.channel_shape = kwargs['channel_shape']
-
-            if self.channel_shape == "rectangle":
-                #Page 317 of RPE 7th Edition
-                self.channel_width = kwargs["rectangle_width"]
-                self.channel_height = kwargs["channel_height"]
-                self.perimeter = 2*self.channel_width + 2*self.channel_height
-                self.flow_area = self.channel_width*self.channel_height
-                self.hydraulic_radius = self.flow_area/self.perimeter
-                self.effective_diameter = 4*self.hydraulic_radius
-
-            if self.channel_shape == "semi-circle":
-                self.channel_diameter = kwargs["channel_diameter"]
-                self.perimeter = self.channel_diameter + np.pi*self.channel_diameter/2
-                self.flow_area = np.pi*self.channel_diameter**2/8
-                self.hydraulic_radius = self.flow_area/self.perimeter
-                self.effective_diameter = 4*self.hydraulic_radius
-
-            if self.channel_shape == "custom":
-                self.flow_area = kwargs["custom_flow_area"]
-                self.effective_diameter = kwargs["custom_effective_diameter"]
-        
-        elif self.configuration == 'vertical':
-            self.channel_height = kwargs["channel_height"]
-
-    def A(self, x=None):
-        """Get coolant channel cross flow cross sectional area.
-
-        Args:
-            x (float, optional): Axial position along the engine. This parameter may have no effect on the output. Defaults to None.
-
-        Returns:
-            float: Cooling channel cross flow area (m^2)
-        """
-        if self.configuration == 'spiral':
-            return self.flow_area
-
-        elif self.configuration == 'vertical':
-            raise AttributeError("The area for 'vertical' style cooling channels depends on the engine geometry, so must be calculated manually.")
-    
-        else:
-            raise ValueError(f"The cooling jacket configuration {self.configuration} is not recognised. Try 'spiral' or 'vertical'. ")
-
-    def D(self, x=None):
-        """Get the 'effective diameter' of the cooling channel. This is equal 4*hydraulic_radius, with hydraulic_radius = channel_area / channel_perimeter.
-
-        Args:
-            x (float, optional): Axial position along the engine. This parameter may have no effect on the output. Defaults to None.
-
-        Returns:
-            float: Effective diameter (m)
-        """
-        if self.configuration == 'spiral':
-            return self.effective_diameter
-
-        elif self.configuration == 'vertical':
-            raise AttributeError("The effective diameter for 'vertical' style cooling channels depends on the engine geometry, so must be calculated manually.")
-
-        else:
-            raise ValueError(f"The cooling jacket configuration {self.configuration} is not recognised. Try 'spiral' or 'vertical'. ")
-
-    def p0(self, x=None):
-        """Get coolant stagnation pressure as a function of position (currently implemented as constant)
-
-        Args:
-            x (float, optional): x position, throat at x = 0, nozzle at x > 0. Defaults to None.
-
-        Returns:
-            float: Coolant stagnation pressure
-        """
-        return self.inlet_p0
-
-    def coolant_velocity(self, x, rho_coolant):
-        """Get coolant velocity using mdot = rho*V*A.
-
-        Args:
-            x (float): Axial position
-            rho_coolant (float): Coolant density (kg/m3)
-
-        Returns:
-            float: Coolant velocity (m/s)
-        """
-        if self.configuration == 'spiral':
-            return self.mdot_coolant/(rho_coolant * self.A(x))
-
-        elif self.configuration == 'vertical':
-            raise AttributeError("The coolant velocity for 'vertical' style cooling channels depends on the engine geometry, so must be calculated manually.")
-    
-        else:
-            raise ValueError(f"The cooling jacket configuration {self.configuration} is not recognised. Try 'spiral' or 'vertical'. ")
 
 class TransportProperties:
     """Container for transport properties of a fluid.
@@ -415,38 +301,132 @@ class TransportProperties:
         elif self.model == "CoolProp":
             return PropsSI("DMASS", "T", T, "P", p, self.coolprop_name)
 
-        """Perform stress analysis on the liner, using a cooling result.
+class CoolingJacket:
+    """Container for cooling jacket information - e.g. for regenerative cooling.
+
+    Args:
+        inner_wall (Material): Inner wall material
+        inlet_T (float): Inlet coolant temperature (K)
+        inlet_p0 (float): Inlet coolant stagnation pressure (Pa)
+        coolant_transport (TransportProperties): Container for the coolant transport properties.
+        mdot_coolant (float): Coolant mass flow rate (kg/s)
+        xs (list): x position that the cooling jacket starts and ends at in the form [x_start, x_end]. Defaults to [-1000, 1000].
+        configuration (str, optional): Options include 'spiral' and 'vertical'. Defaults to "vertical".
+    
+    Keyword Args:
+        channel_shape (str, optional): Used if configuration = 'spiral'. Options include 'rectangle', 'semi-circle', and 'custom'. 
+        channel_height (float, optional): If using configuration = 'vertical' or channel_shape = 'rectangle', this is the height of the channels (m).
+        channel_width (float, optional): If using channel_shape = 'rectangle', this is the width of the channels (m).
+        channel_diameter (float, optional): If using channel_shape = 'semi-circle', this is the diameter of the semi circle.
+        custom_effective_diameter (float, optional): If using channel_shape = 'custom', this is the effective diameter you want to use. 
+        custom_flow_area (float, optional): If using channel_shape = 'custom', this is the flow you want to use. 
+    """
+    def __init__(self, inner_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
+
+        self.inner_wall = inner_wall
+        self.coolant_transport = coolant_transport       
+        self.mdot_coolant = mdot_coolant
+        self.xs = xs
+        self.inlet_T = inlet_T
+        self.inlet_p0 = inlet_p0
+        self.configuration = configuration
+        
+        if self.configuration == 'spiral':
+            self.channel_shape = kwargs['channel_shape']
+
+            if self.channel_shape == "rectangle":
+                #Page 317 of RPE 7th Edition
+                self.channel_width = kwargs["rectangle_width"]
+                self.channel_height = kwargs["channel_height"]
+                self.perimeter = 2*self.channel_width + 2*self.channel_height
+                self.flow_area = self.channel_width*self.channel_height
+                self.hydraulic_radius = self.flow_area/self.perimeter
+                self.effective_diameter = 4*self.hydraulic_radius
+
+            if self.channel_shape == "semi-circle":
+                self.channel_diameter = kwargs["channel_diameter"]
+                self.perimeter = self.channel_diameter + np.pi*self.channel_diameter/2
+                self.flow_area = np.pi*self.channel_diameter**2/8
+                self.hydraulic_radius = self.flow_area/self.perimeter
+                self.effective_diameter = 4*self.hydraulic_radius
+
+            if self.channel_shape == "custom":
+                self.flow_area = kwargs["custom_flow_area"]
+                self.effective_diameter = kwargs["custom_effective_diameter"]
+        
+        elif self.configuration == 'vertical':
+            self.channel_height = kwargs["channel_height"]
+
+    def A(self, x=None):
+        """Get coolant channel cross flow cross sectional area.
+
         Args:
-            heating_result (dict): Requires a heating analysis result to compute stress.
-            type (str, optional): Options are "pressure",  "thermal" and "combined". Defaults to "thermal". (ONLY DEFAULT WORKS)
-            condition (str, optional): Engine state for analysis. Options are "steady", "startup", or "shutdown". Defaults to "steady". (ONLY DEFAULT WORKS)
+            x (float, optional): Axial position along the engine. This parameter may have no effect on the output. Defaults to None.
 
         Returns:
-            dict: Analysis result. 'thermal_stress' is the heat induced stress, 'deltaT_wall' is the wall temperature difference, hot side - cold side
+            float: Cooling channel cross flow area (m^2)
         """
-        length = len(heating_result["x"])
-        wall_stress = np.zeros(length)
-        wall_deltaT = np.zeros(length)
+        if self.configuration == 'spiral':
+            return self.flow_area
 
-        material = self.cooling_jacket.inner_wall
+        elif self.configuration == 'vertical':
+            raise AttributeError("The area for 'vertical' style cooling channels depends on the engine geometry, so must be calculated manually.")
+    
+        else:
+            raise ValueError(f"The cooling jacket configuration {self.configuration} is not recognised. Try 'spiral' or 'vertical'. ")
 
-        for i in range(length):
-            wall_deltaT[i] = heating_result["T_wall_inner"][i] - \
-                heating_result["T_wall_outer"][i]
+    def D(self, x=None):
+        """Get the 'effective diameter' of the cooling channel. This is equal 4*hydraulic_radius, with hydraulic_radius = channel_area / channel_perimeter.
 
-        # Compute wall temperature gradient
-        wall_deltaT = wall_deltaT[::-1]
-        # Makes the data order match with the coolant flow direction, i.e. nozzle exit to injector face
-        # Spent an hour wondering why the throat was cooler than the chamber wall...
+        Args:
+            x (float, optional): Axial position along the engine. This parameter may have no effect on the output. Defaults to None.
 
-        for i in range(length):
-            cur_stress = material.k * \
-                wall_deltaT[i] / (2 * material.perf_therm)
-        # Determine thermal stress using Ref [3], P53:
-        # sigma_thermal = E*alpha*q_w*deltaL/(2*(1-v)k_w) =
-        # E*alpha*deltaT/2(1-v)
+        Returns:
+            float: Effective diameter (m)
+        """
+        if self.configuration == 'spiral':
+            return self.effective_diameter
 
-            wall_stress[i] = cur_stress
+        elif self.configuration == 'vertical':
+            raise AttributeError("The effective diameter for 'vertical' style cooling channels depends on the engine geometry, so must be calculated manually.")
 
-        return {"thermal_stress": wall_stress,
-                "deltaT_wall": wall_deltaT}
+        else:
+            raise ValueError(f"The cooling jacket configuration {self.configuration} is not recognised. Try 'spiral' or 'vertical'. ")
+
+    def p0(self, x=None):
+        """Get coolant stagnation pressure as a function of position (currently implemented as constant)
+
+        Args:
+            x (float, optional): x position, throat at x = 0, nozzle at x > 0. Defaults to None.
+
+        Returns:
+            float: Coolant stagnation pressure
+        """
+        return self.inlet_p0
+
+    def coolant_velocity(self, x, rho_coolant):
+        """Get coolant velocity using mdot = rho*V*A.
+
+        Args:
+            x (float): Axial position
+            rho_coolant (float): Coolant density (kg/m3)
+
+        Returns:
+            float: Coolant velocity (m/s)
+        """
+        if self.configuration == 'spiral':
+            return self.mdot_coolant/(rho_coolant * self.A(x))
+
+        elif self.configuration == 'vertical':
+            raise AttributeError("The coolant velocity for 'vertical' style cooling channels depends on the engine geometry, so must be calculated manually.")
+    
+        else:
+            raise ValueError(f"The cooling jacket configuration {self.configuration} is not recognised. Try 'spiral' or 'vertical'. ")
+
+class Ablative:
+    def __init__(self, ablative_material, wall_material, wall_thickness, regression_rate, xs = [-1000, 1000]):
+        self.ablative_material = ablative_material
+        self.wall_material = wall_material
+        self.wall_thickness = wall_thickness
+        self.regression_rate = regression_rate
+        self.xs = xs

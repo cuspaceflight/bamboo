@@ -2,6 +2,7 @@
 """
 
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 import numpy as np
 
 def plot_temperatures(data_dict, **kwargs):
@@ -79,4 +80,30 @@ def plot_qdot(data_dict, **kwargs):
     q_axs.grid()
     q_axs.set_xlabel("Position (m)")
     q_axs.set_ylabel("Heat transfer rate (W/m)")
-            
+
+def animate_transient_temperatures(data_dict, speed = 1, **kwargs): 
+    xs = data_dict["x"]
+    ts = data_dict["t"]
+
+    fig = plt.figure()
+    ax = plt.axes(xlim=(xs[-1], xs[0]), ylim=(0, 2000))
+    ax.grid()
+    ax.set_xlabel("Position (m)")
+    ax.set_ylabel("Temperature (K)")
+    ax.set_title(f"t = {ts[0]}")
+
+    T_wall_line, = ax.plot([], [], label = "Wall Temperature")
+    ax.legend()
+
+    def init():
+        T_wall_line.set_data(xs, data_dict["T_wall"][0])
+
+        return T_wall_line,
+
+    def animate(i):
+        T_wall_line.set_data(xs, data_dict["T_wall"][i])
+        ax.set_title(f"t = {ts[i]} s")
+        return T_wall_line,
+
+    ani = animation.FuncAnimation(fig, animate, init_func=init, frames=len(ts), interval = (ts[1] - ts[0])*1000/speed)
+    plt.show()
