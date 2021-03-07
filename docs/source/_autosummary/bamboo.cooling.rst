@@ -1,4 +1,4 @@
-bamboo.cooling
+﻿bamboo.cooling
 ==============
 
 .. automodule:: bamboo.cooling
@@ -14,10 +14,10 @@ bamboo.cooling
    .. autosummary::
    
       black_body
-      h_coolant
+      h_coolant_1
       h_gas_1
-      h_gas_bartz_1
-      h_gas_bartz_2
+      h_gas_2
+      h_gas_3
    
    
 
@@ -27,10 +27,10 @@ bamboo.cooling
 
    .. autosummary::
    
+      Ablative
       CoolingJacket
-      EngineGeometry
-      EngineWithCooling
       Material
+      TransportProperties
    
    
 

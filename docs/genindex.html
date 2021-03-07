@@ -164,6 +164,7 @@
  | <a href="#G"><strong>G</strong></a>
  | <a href="#H"><strong>H</strong></a>
  | <a href="#I"><strong>I</strong></a>
+ | <a href="#K"><strong>K</strong></a>
  | <a href="#M"><strong>M</strong></a>
  | <a href="#N"><strong>N</strong></a>
  | <a href="#O"><strong>O</strong></a>
@@ -180,11 +181,27 @@
       <li><a href="index.html#bamboo.cooling.CoolingJacket.A">A() (bamboo.cooling.CoolingJacket method)</a>
 
       <ul>
-        <li><a href="index.html#bamboo.cooling.EngineGeometry.A">(bamboo.cooling.EngineGeometry method)</a>
+        <li><a href="index.html#bamboo.main.Engine.A">(bamboo.main.Engine method)</a>
 </li>
         <li><a href="index.html#bamboo.main.Nozzle.A">(bamboo.main.Nozzle method)</a>
 </li>
       </ul></li>
+      <li><a href="index.html#bamboo.cooling.Ablative">Ablative (class in bamboo.cooling)</a>
+</li>
+      <li><a href="index.html#bamboo.main.Engine.ablative_thermal_circuit">ablative_thermal_circuit() (bamboo.main.Engine method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#bamboo.main.Engine.add_ablative">add_ablative() (bamboo.main.Engine method)</a>
+</li>
+      <li><a href="index.html#bamboo.main.Engine.add_cooling_jacket">add_cooling_jacket() (bamboo.main.Engine method)</a>
+</li>
+      <li><a href="index.html#bamboo.main.Engine.add_exhaust_transport">add_exhaust_transport() (bamboo.main.Engine method)</a>
+</li>
+      <li><a href="index.html#bamboo.main.Engine.add_geometry">add_geometry() (bamboo.main.Engine method)</a>
+</li>
+      <li><a href="index.html#bamboo.plot.animate_transient_temperatures">animate_transient_temperatures() (in module bamboo.plot)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -231,13 +248,23 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#bamboo.main.ChamberConditions">ChamberConditions (class in bamboo.main)</a>
 </li>
+      <li><a href="index.html#bamboo.main.Engine.channel_geometry">channel_geometry() (bamboo.main.Engine method)</a>
+</li>
+      <li><a href="index.html#bamboo.cooling.TransportProperties.check_liquid">check_liquid() (bamboo.cooling.TransportProperties method)</a>
+</li>
       <li><a href="index.html#bamboo.main.Engine.check_separation">check_separation() (bamboo.main.Engine method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#bamboo.cooling.EngineWithCooling.coolant_velocity">coolant_velocity() (bamboo.cooling.EngineWithCooling method)</a>
+      <li><a href="index.html#bamboo.main.Engine.coolant_friction_factor">coolant_friction_factor() (bamboo.main.Engine method)</a>
+</li>
+      <li><a href="index.html#bamboo.main.Engine.coolant_pressure_drop">coolant_pressure_drop() (bamboo.main.Engine method)</a>
+</li>
+      <li><a href="index.html#bamboo.cooling.CoolingJacket.coolant_velocity">coolant_velocity() (bamboo.cooling.CoolingJacket method)</a>
 </li>
       <li><a href="index.html#bamboo.cooling.CoolingJacket">CoolingJacket (class in bamboo.cooling)</a>
+</li>
+      <li><a href="index.html#bamboo.cooling.TransportProperties.cp">cp() (bamboo.cooling.TransportProperties method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -255,11 +282,9 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#bamboo.main.Engine">Engine (class in bamboo.main)</a>
 </li>
-      <li><a href="index.html#bamboo.cooling.EngineGeometry">EngineGeometry (class in bamboo.cooling)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#bamboo.cooling.EngineWithCooling">EngineWithCooling (class in bamboo.cooling)</a>
+      <li><a href="index.html#bamboo.main.EngineGeometry">EngineGeometry (class in bamboo.main)</a>
 </li>
       <li><a href="index.html#bamboo.main.estimate_apogee">estimate_apogee() (in module bamboo.main)</a>
 </li>
@@ -289,30 +314,16 @@
 <h2 id="H">H</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#bamboo.cooling.EngineWithCooling.h_coolant">h_coolant() (bamboo.cooling.EngineWithCooling method)</a>
-
-      <ul>
-        <li><a href="index.html#bamboo.cooling.h_coolant">(in module bamboo.cooling)</a>
-</li>
-      </ul></li>
-      <li><a href="index.html#bamboo.cooling.EngineWithCooling.h_gas">h_gas() (bamboo.cooling.EngineWithCooling method)</a>
+      <li><a href="index.html#bamboo.cooling.h_coolant_1">h_coolant_1() (in module bamboo.cooling)</a>
 </li>
       <li><a href="index.html#bamboo.cooling.h_gas_1">h_gas_1() (in module bamboo.cooling)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#bamboo.cooling.EngineWithCooling.h_gas_bartz_1">h_gas_bartz_1() (bamboo.cooling.EngineWithCooling method)</a>
-
-      <ul>
-        <li><a href="index.html#bamboo.cooling.h_gas_bartz_1">(in module bamboo.cooling)</a>
+      <li><a href="index.html#bamboo.cooling.h_gas_2">h_gas_2() (in module bamboo.cooling)</a>
 </li>
-      </ul></li>
-      <li><a href="index.html#bamboo.cooling.EngineWithCooling.h_gas_bartz_2">h_gas_bartz_2() (bamboo.cooling.EngineWithCooling method)</a>
-
-      <ul>
-        <li><a href="index.html#bamboo.cooling.h_gas_bartz_2">(in module bamboo.cooling)</a>
+      <li><a href="index.html#bamboo.cooling.h_gas_3">h_gas_3() (in module bamboo.cooling)</a>
 </li>
-      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -324,25 +335,29 @@
   </ul></td>
 </tr></table>
 
+<h2 id="K">K</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#bamboo.cooling.TransportProperties.k">k() (bamboo.cooling.TransportProperties method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#bamboo.cooling.EngineWithCooling.M">M() (bamboo.cooling.EngineWithCooling method)</a>
-
-      <ul>
-        <li><a href="index.html#bamboo.main.Engine.M">(bamboo.main.Engine method)</a>
+      <li><a href="index.html#bamboo.main.Engine.M">M() (bamboo.main.Engine method)</a>
 </li>
-      </ul></li>
       <li><a href="index.html#bamboo.main.m_bar">m_bar() (in module bamboo.main)</a>
 </li>
       <li><a href="index.html#bamboo.main.M_from_p">M_from_p() (in module bamboo.main)</a>
 </li>
-      <li><a href="index.html#bamboo.cooling.EngineWithCooling.map_liner_profile">map_liner_profile() (bamboo.cooling.EngineWithCooling method)</a>
+      <li><a href="index.html#bamboo.main.Engine.map_liner_profile">map_liner_profile() (bamboo.main.Engine method)</a>
+</li>
+      <li><a href="index.html#bamboo.cooling.Material">Material (class in bamboo.cooling)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#bamboo.cooling.Material">Material (class in bamboo.cooling)</a>
-</li>
       <li>
     module
 
@@ -356,6 +371,8 @@
         <li><a href="_autosummary/bamboo.plot.html#module-bamboo.plot">bamboo.plot</a>, <a href="index.html#module-bamboo.plot">[1]</a>
 </li>
       </ul></li>
+      <li><a href="index.html#bamboo.cooling.TransportProperties.mu">mu() (bamboo.cooling.TransportProperties method)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -378,11 +395,9 @@
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#bamboo.cooling.EngineWithCooling.p">p() (bamboo.cooling.EngineWithCooling method)</a>
+      <li><a href="index.html#bamboo.main.Engine.p">p() (bamboo.main.Engine method)</a>
 
       <ul>
-        <li><a href="index.html#bamboo.main.Engine.p">(bamboo.main.Engine method)</a>
-</li>
         <li><a href="index.html#bamboo.main.p">(in module bamboo.main)</a>
 </li>
       </ul></li>
@@ -390,17 +405,25 @@
 </li>
       <li><a href="index.html#bamboo.main.PerfectGas">PerfectGas (class in bamboo.main)</a>
 </li>
+      <li><a href="index.html#bamboo.main.Engine.plot_gas_mach">plot_gas_mach() (bamboo.main.Engine method)</a>
+</li>
+      <li><a href="index.html#bamboo.main.Engine.plot_gas_temperature">plot_gas_temperature() (bamboo.main.Engine method)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#bamboo.cooling.EngineGeometry.plot_geometry">plot_geometry() (bamboo.cooling.EngineGeometry method)</a>
+      <li><a href="index.html#bamboo.main.Engine.plot_geometry">plot_geometry() (bamboo.main.Engine method)</a>
 </li>
       <li><a href="index.html#bamboo.plot.plot_h">plot_h() (in module bamboo.plot)</a>
+</li>
+      <li><a href="index.html#bamboo.plot.plot_jacket_pressure">plot_jacket_pressure() (in module bamboo.plot)</a>
 </li>
       <li><a href="index.html#bamboo.main.Nozzle.plot_nozzle">plot_nozzle() (bamboo.main.Nozzle method)</a>
 </li>
       <li><a href="index.html#bamboo.plot.plot_qdot">plot_qdot() (in module bamboo.plot)</a>
 </li>
       <li><a href="index.html#bamboo.plot.plot_temperatures">plot_temperatures() (in module bamboo.plot)</a>
+</li>
+      <li><a href="index.html#bamboo.cooling.TransportProperties.Pr">Pr() (bamboo.cooling.TransportProperties method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -412,13 +435,17 @@
 </li>
       <li><a href="index.html#bamboo.main.rao_theta_n">rao_theta_n() (in module bamboo.main)</a>
 </li>
+      <li><a href="index.html#bamboo.main.Engine.regen_thermal_circuit">regen_thermal_circuit() (bamboo.main.Engine method)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#bamboo.cooling.EngineWithCooling.rho">rho() (bamboo.cooling.EngineWithCooling method)</a>
+      <li><a href="index.html#bamboo.cooling.TransportProperties.rho">rho() (bamboo.cooling.TransportProperties method)</a>
+
+      <ul>
+        <li><a href="index.html#bamboo.main.Engine.rho">(bamboo.main.Engine method)</a>
 </li>
-      <li><a href="index.html#bamboo.cooling.EngineWithCooling.run_heating_analysis">run_heating_analysis() (bamboo.cooling.EngineWithCooling method)</a>
-</li>
-      <li><a href="index.html#bamboo.cooling.EngineWithCooling.run_stress_analysis">run_stress_analysis() (bamboo.cooling.EngineWithCooling method)</a>
+      </ul></li>
+      <li><a href="index.html#bamboo.main.Engine.run_stress_analysis">run_stress_analysis() (bamboo.main.Engine method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -434,9 +461,7 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#bamboo.main.show_conical_shape">show_conical_shape() (in module bamboo.main)</a>
 </li>
-      <li><a href="index.html#bamboo.cooling.EngineWithCooling.show_gas_mach">show_gas_mach() (bamboo.cooling.EngineWithCooling method)</a>
-</li>
-      <li><a href="index.html#bamboo.cooling.EngineWithCooling.show_gas_temperature">show_gas_temperature() (bamboo.cooling.EngineWithCooling method)</a>
+      <li><a href="index.html#bamboo.main.Engine.steady_heating_analysis">steady_heating_analysis() (bamboo.main.Engine method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -444,21 +469,21 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#bamboo.cooling.EngineWithCooling.T">T() (bamboo.cooling.EngineWithCooling method)</a>
+      <li><a href="index.html#bamboo.main.Engine.T">T() (bamboo.main.Engine method)</a>
 
       <ul>
-        <li><a href="index.html#bamboo.main.Engine.T">(bamboo.main.Engine method)</a>
-</li>
         <li><a href="index.html#bamboo.main.T">(in module bamboo.main)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#bamboo.main.T0">T0() (in module bamboo.main)</a>
 </li>
-      <li><a href="index.html#bamboo.cooling.EngineWithCooling.thermal_circuit">thermal_circuit() (bamboo.cooling.EngineWithCooling method)</a>
-</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#bamboo.main.Engine.thrust">thrust() (bamboo.main.Engine method)</a>
+</li>
+      <li><a href="index.html#bamboo.main.Engine.transient_heating_analysis">transient_heating_analysis() (bamboo.main.Engine method)</a>
+</li>
+      <li><a href="index.html#bamboo.cooling.TransportProperties">TransportProperties (class in bamboo.cooling)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -466,7 +491,7 @@
 <h2 id="Y">Y</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#bamboo.cooling.EngineGeometry.y">y() (bamboo.cooling.EngineGeometry method)</a>
+      <li><a href="index.html#bamboo.main.Engine.y">y() (bamboo.main.Engine method)</a>
 
       <ul>
         <li><a href="index.html#bamboo.main.Nozzle.y">(bamboo.main.Nozzle method)</a>

@@ -164,12 +164,18 @@
 <li><p>The EngineWithCooling.rho() function calculates rho by doing p/RT, but it would probably be faster to just use isentropic compressible flow relations.</p></li>
 </ul>
 </dd>
+<dt>Useful:</dt><dd><ul class="simple">
+<li><p>List of CoolProp properties: <a class="reference external" href="http://www.coolprop.org/coolprop/HighLevelAPI.html#table-of-string-inputs-to-propssi-function">http://www.coolprop.org/coolprop/HighLevelAPI.html#table-of-string-inputs-to-propssi-function</a></p></li>
+</ul>
+</dd>
 </dl>
 <p class="rubric">References</p>
 <ul class="simple">
 <li><p>[1] - The Thrust Optimised Parabolic nozzle, AspireSpace, <a class="reference external" href="http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf">http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf</a></p></li>
 <li><p>[2] - Rocket Propulsion Elements, 7th Edition</p></li>
 <li><p>[3] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, <a class="reference external" href="https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf">https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf</a></p></li>
+<li><p>[4] - Modelling ablative and regenerative cooling systems for an ethylene/ethane/nitrous oxide liquid fuel rocket engine, Elizabeth C. Browne, <a class="reference external" href="https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&amp;isAllowed=y">https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&amp;isAllowed=y</a></p></li>
+<li><p>[5] - Thermofluids databook, CUED, <a class="reference external" href="http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf">http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf</a></p></li>
 </ul>
 <p class="rubric">Functions</p>
 <table class="longtable docutils align-default">
@@ -181,16 +187,16 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.black_body" title="bamboo.cooling.black_body"><code class="xref py py-obj docutils literal notranslate"><span class="pre">black_body</span></code></a>(T)</p></td>
 <td><p>Get the black body radiation emitted over a hemisphere, at a given temperature.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_coolant" title="bamboo.cooling.h_coolant"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_coolant</span></code></a>(A, D, mdot, mu, k, c_bar, rho)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_coolant_1" title="bamboo.cooling.h_coolant_1"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_coolant_1</span></code></a>(A, D, mdot, mu, k, c_bar, rho)</p></td>
 <td><p>Get the convective heat transfer coefficient for the coolant side.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_gas_1" title="bamboo.cooling.h_gas_1"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_gas_1</span></code></a>(D, M, T, rho, gamma, R, mu, k, Pr)</p></td>
 <td><p>Get the convective heat transfer coefficient on the gas side.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_gas_bartz_1" title="bamboo.cooling.h_gas_bartz_1"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_gas_bartz_1</span></code></a>(D, cp_inf, mu_inf, Pr_inf, …)</p></td>
-<td><p>Equation (8-23) from page 312 of RPE 7th edition.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_gas_2" title="bamboo.cooling.h_gas_2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_gas_2</span></code></a>(D, cp_inf, mu_inf, Pr_inf, rho_inf, …)</p></td>
+<td><p>Bartz equation, usingEquation (8-23) from page 312 of RPE 7th edition.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_gas_bartz_2" title="bamboo.cooling.h_gas_bartz_2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_gas_bartz_2</span></code></a>(c_star, At, A, pc, Tc, M, Tw, …)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_gas_3" title="bamboo.cooling.h_gas_3"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_gas_3</span></code></a>(c_star, At, A, pc, Tc, M, Tw, mu, …)</p></td>
 <td><p>Alternative equation for Bartz heat transfer coefficient.</p></td>
 </tr>
 </tbody>
@@ -202,17 +208,17 @@
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.CoolingJacket" title="bamboo.cooling.CoolingJacket"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CoolingJacket</span></code></a>(inner_wall, inlet_T, inlet_p0, …)</p></td>
-<td><p>Cooling jacket parameters.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.Ablative" title="bamboo.cooling.Ablative"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Ablative</span></code></a>(ablative_material, wall_material, …)</p></td>
+<td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.EngineGeometry" title="bamboo.cooling.EngineGeometry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EngineGeometry</span></code></a>(nozzle, chamber_length, …)</p></td>
-<td><p>Class for storing and calculating features of the engine’s geometry.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.CoolingJacket" title="bamboo.cooling.CoolingJacket"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CoolingJacket</span></code></a>(inner_wall, inlet_T, inlet_p0, …)</p></td>
+<td><p>Container for cooling jacket information - e.g.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.EngineWithCooling" title="bamboo.cooling.EngineWithCooling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EngineWithCooling</span></code></a>(chamber_conditions, …)</p></td>
-<td><p>Used for running cooling system analyses.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.Material" title="bamboo.cooling.Material"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Material</span></code></a>(E, sigma_y, poisson, alpha, k)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.Material" title="bamboo.cooling.Material"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Material</span></code></a>(E, sigma_y, poisson, alpha, k, **kwargs)</p></td>
 <td><p>Class used to specify a material and its properties.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.TransportProperties" title="bamboo.cooling.TransportProperties"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransportProperties</span></code></a>([model])</p></td>
+<td><p>Container for transport properties of a fluid.</p></td>
 </tr>
 </tbody>
 </table>
