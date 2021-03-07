@@ -951,32 +951,33 @@ class Engine:
 
     def channel_geometry(self, number_of_sections = 1000):
         """Finds the path length of the coolant in the jacket from engine geometry and channel configuration.
+           Number_of_sections must be equal to number_of_points when used in a heating analysis.
         Args:
             number_of_sections (int, optional): Number of sections to split path into. Defaults to 1000.
         Raises:
             AttributeError: Must have either "spiral" or "vertical" channel configuration.
         Returns:
-            float: Coolant path length (m).
+            array: Discretised coolant path length array with "number_of_sections" elements. (m).
         """
         discretised_x = np.linspace(self.geometry.x_max, self.geometry.x_min, number_of_sections)
         axis_length = self.geometry.x_max - self.geometry.x_min # Axial engine length
-        length = 0
+        discretised_length = []
 
         if self.cooling_jacket.configuration == "spiral":
             pitch = self.cooling_jacket.channel_width # No gaps between channels so spiral pitch = width
             section_turns = axis_length/(pitch*number_of_sections) # Number of turns per discrete section
             for i in range(number_of_sections-1):
                 radius_avg = (self.y(discretised_x[i]) + self.y(discretised_x[i+1]))/2
-                length += section_turns * np.sqrt(pitch**2 + (radius_avg*2*np.pi)**2)
+                discretised_length.append(section_turns * np.sqrt(pitch**2 + (radius_avg*2*np.pi)**2))
                 # Find the average radius for this section and use it to determine the spiral section length
-            return length
+            return discretised_length
 
         if self.cooling_jacket.configuration == "vertical":
             dx = discretised_x[0] - discretised_x[1]
             for i in range(number_of_sections-1):
                 dy = np.abs(self.y(discretised_x[i]) - self.y(discretised_x[i+1]))
-                length += np.sqrt(dy**2 + dx**2)
-            return length
+                discretised_length.append(np.sqrt(dy**2 + dx**2))
+            return discretised_length
 
         else:
             raise AttributeError("Invalid cooling channel configuration")
@@ -1134,9 +1135,9 @@ class Engine:
         #Discretised liner thickness
         liner = self.map_liner_profile(number_of_points)
 
-        #Calculation of coolant channel length
+        #Calculation of coolant channel length per "section"
         channel_length = self.channel_geometry(number_of_sections=number_of_points)
-        dl = channel_length/number_of_points
+        # number_of_sections must be equal to number_of_points
 
         #Temperatures and heat transfer rates
         T_wall_inner = np.zeros(len(discretised_x)) #Gas side wall temperature
@@ -1164,7 +1165,7 @@ class Engine:
 
                 #Pressure drop in coolant channel
                 friction_factor = self.coolant_friction_factor(x, self.y(x), T=T_coolant[i], p=p_coolant[i-1])
-                p_coolant[i] = p_coolant[i-1] - self.coolant_pressure_drop(friction_factor, x, self.y(x), dl, T_coolant[i], p_coolant[i-1])   
+                p_coolant[i] = p_coolant[i-1] - self.coolant_pressure_drop(friction_factor, x, self.y(x), channel_length[i-1], T_coolant[i], p_coolant[i-1])   
 
                 if too_low_pressure == False and p_coolant[i] < self.chamber_conditions.p0:
                     too_low_pressure = True
