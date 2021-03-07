@@ -11,6 +11,8 @@ References:
     - [1] - The Thrust Optimised Parabolic nozzle, AspireSpace, http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf   \n
     - [2] - Rocket Propulsion Elements, 7th Edition  \n
     - [3] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf  \n
+    - [4] - Modelling ablative and regenerative cooling systems for an ethylene/ethane/nitrous oxide liquid fuel rocket engine, Elizabeth C. Browne, https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&isAllowed=y  \n
+    - [5] - Thermofluids databook, CUED, http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf    \n
 '''
 
 import bamboo as bam
@@ -316,8 +318,7 @@ class CoolingJacket:
     Keyword Args:
         channel_shape (str, optional): Used if configuration = 'spiral'. Options include 'rectangle', 'semi-circle', and 'custom'. 
         channel_height (float, optional): If using configuration = 'vertical' or channel_shape = 'rectangle', this is the height of the channels (m).
-        channel_width (float, optional): If using channel_shape = 'rectangle', this is the width of the channels (m).
-        channel_diameter (float, optional): If using channel_shape = 'semi-circle', this is the diameter of the semi circle.
+        channel_width (float, optional): If using channel_shape = 'rectangle', this is the width of the channels (m). If using channel_shape = 'semi-circle', this is the diameter of the semi circle (m).
         custom_effective_diameter (float, optional): If using channel_shape = 'custom', this is the effective diameter you want to use. 
         custom_flow_area (float, optional): If using channel_shape = 'custom', this is the flow you want to use. 
     """
@@ -336,7 +337,7 @@ class CoolingJacket:
 
             if self.channel_shape == "rectangle":
                 #Page 317 of RPE 7th Edition
-                self.channel_width = kwargs["rectangle_width"]
+                self.channel_width = kwargs["channel_width"]
                 self.channel_height = kwargs["channel_height"]
                 self.perimeter = 2*self.channel_width + 2*self.channel_height
                 self.flow_area = self.channel_width*self.channel_height
@@ -344,9 +345,9 @@ class CoolingJacket:
                 self.effective_diameter = 4*self.hydraulic_radius
 
             if self.channel_shape == "semi-circle":
-                self.channel_diameter = kwargs["channel_diameter"]
-                self.perimeter = self.channel_diameter + np.pi*self.channel_diameter/2
-                self.flow_area = np.pi*self.channel_diameter**2/8
+                self.channel_width = kwargs["channel_width"]
+                self.perimeter = self.channel_width + np.pi*self.channel_width/2
+                self.flow_area = np.pi*self.channel_width**2/8
                 self.hydraulic_radius = self.flow_area/self.perimeter
                 self.effective_diameter = 4*self.hydraulic_radius
 
@@ -357,29 +358,31 @@ class CoolingJacket:
         elif self.configuration == 'vertical':
             self.channel_height = kwargs["channel_height"]
 
-    def A(self, x=None):
+    def A(self, x = None, y = None,):
         """Get coolant channel cross flow cross sectional area.
 
         Args:
-            x (float, optional): Axial position along the engine. This parameter may have no effect on the output. Defaults to None.
+            x (float, optional): x position - does not currently affect anything.
+            y (float, optional): The radius of the engine (m) (NOT the radius of the cooling channel).  Only required for 'vertical' channels. 
 
         Returns:
-            float: Cooling channel cross flow area (m^2)
+            float: Cooling channel flow area (m^2)
         """
         if self.configuration == 'spiral':
             return self.flow_area
 
         elif self.configuration == 'vertical':
-            raise AttributeError("The area for 'vertical' style cooling channels depends on the engine geometry, so must be calculated manually.")
+            return np.pi*((y + self.channel_height)**2 - y**2)
     
         else:
             raise ValueError(f"The cooling jacket configuration {self.configuration} is not recognised. Try 'spiral' or 'vertical'. ")
 
-    def D(self, x=None):
+    def D(self, x = None, y = None):
         """Get the 'effective diameter' of the cooling channel. This is equal 4*hydraulic_radius, with hydraulic_radius = channel_area / channel_perimeter.
 
         Args:
             x (float, optional): Axial position along the engine. This parameter may have no effect on the output. Defaults to None.
+            y (float, optional): The radius of the engine (m) (NOT the radius of the cooling channel).  Only required for 'vertical' channels. 
 
         Returns:
             float: Effective diameter (m)
@@ -388,40 +391,25 @@ class CoolingJacket:
             return self.effective_diameter
 
         elif self.configuration == 'vertical':
-            raise AttributeError("The effective diameter for 'vertical' style cooling channels depends on the engine geometry, so must be calculated manually.")
+            perimeter = 2*np.pi*y + 2*np.pi*(y + self.channel_height)
+            return 4*self.A(x, y)/perimeter
 
         else:
             raise ValueError(f"The cooling jacket configuration {self.configuration} is not recognised. Try 'spiral' or 'vertical'. ")
 
-    def p0(self, x=None):
-        """Get coolant stagnation pressure as a function of position (currently implemented as constant)
-
-        Args:
-            x (float, optional): x position, throat at x = 0, nozzle at x > 0. Defaults to None.
-
-        Returns:
-            float: Coolant stagnation pressure
-        """
-        return self.inlet_p0
-
-    def coolant_velocity(self, x, rho_coolant):
+    def coolant_velocity(self, rho_coolant, x = None, y = None):
         """Get coolant velocity using mdot = rho*V*A.
 
         Args:
-            x (float): Axial position
-            rho_coolant (float): Coolant density (kg/m3)
+            rho_coolant (float): Coolant density (kg/m^3)
+            x (float, optional): x position - does not currently affect anything.
+            y (float, optional): Is The radius of the engine (m) (NOT the radius of the cooling channel). Only required for 'vertical' channels. 
 
         Returns:
             float: Coolant velocity (m/s)
         """
-        if self.configuration == 'spiral':
-            return self.mdot_coolant/(rho_coolant * self.A(x))
+        return self.mdot_coolant/(rho_coolant * self.A(x, y))
 
-        elif self.configuration == 'vertical':
-            raise AttributeError("The coolant velocity for 'vertical' style cooling channels depends on the engine geometry, so must be calculated manually.")
-    
-        else:
-            raise ValueError(f"The cooling jacket configuration {self.configuration} is not recognised. Try 'spiral' or 'vertical'. ")
 
 class Ablative:
     def __init__(self, ablative_material, wall_material, wall_thickness, regression_rate, xs = [-1000, 1000]):
