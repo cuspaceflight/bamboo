@@ -13,6 +13,7 @@ References:
     - [3] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf  \n
     - [4] - Modelling ablative and regenerative cooling systems for an ethylene/ethane/nitrous oxide liquid fuel rocket engine, Elizabeth C. Browne, https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&isAllowed=y  \n
     - [5] - Thermofluids databook, CUED, http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf    \n
+    - [6] - Comparison of empirical correlations for the estimation of conjugate heat transfer in a thrust chamber, http://www.lifesciencesite.com/lsj/life0904/111_11626life0904_708_716.pdf
 '''
 
 import bamboo as bam
@@ -47,7 +48,7 @@ def black_body(T):
 
 def h_gas_1(D, M, T, rho, gamma, R, mu, k, Pr):
     """Get the convective heat transfer coefficient on the gas side. 
-    Uses Eqn (8-22) on page 312 or RPE 7th edition.
+    Uses Eqn (8-22) on page 312 or RPE 7th edition (Reference [2])
 
     Args:
         D (float): Flow diameter (m)
@@ -70,7 +71,7 @@ def h_gas_1(D, M, T, rho, gamma, R, mu, k, Pr):
 
 def h_gas_2(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0):
     """Bartz equation, 
-    usingEquation (8-23) from page 312 of RPE 7th edition. 'am' refers to the gas being at the 'arithmetic mean' of the wall and freestream temperatures.
+    using Equation (8-23) from page 312 of RPE 7th edition (Reference [2]). 'am' refers to the gas being at the 'arithmetic mean' of the wall and freestream temperatures.
 
     Note:
         Seems to provide questionable results - may have been implemented incorrectly.
@@ -93,7 +94,7 @@ def h_gas_2(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0):
     return (0.026/D**0.2) * (cp_inf*mu_inf**0.2)/(Pr_inf**0.6) * (rho_inf * v_inf)**0.8 * (rho_am/rho_inf) * (mu_am/mu0)**0.2
 
 def h_gas_3(c_star, At, A, pc, Tc, M, Tw, mu, cp, gamma, Pr):
-    """Alternative equation for Bartz heat transfer coefficient.
+    """Alternative equation for Bartz heat transfer coefficient, from page 710 of Reference [6].
 
     Args:
         c_star (float): C* efficiency ( = pc * At / mdot)
