@@ -358,7 +358,7 @@ class CoolingJacket:
         elif self.configuration == 'vertical':
             self.channel_height = kwargs["channel_height"]
 
-    def A(self, x = None, y = None,):
+    def A(self, x = None, y = None):
         """Get coolant channel cross flow cross sectional area.
 
         Args:

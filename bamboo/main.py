@@ -1014,10 +1014,8 @@ class Engine:
         Returns:
             float: Dynamic pressure of coolant (Pa)
         """
-        #rint(note)
-        #print(T, p, x, y)
+
         rho = self.cooling_jacket.coolant_transport.rho(T=T, p=p)
-        #print(rho)
         v = self.cooling_jacket.coolant_velocity(rho, x, y)
 
         return rho*(v**2)/2    
@@ -1253,11 +1251,11 @@ class Engine:
 
             else:
                 raise AttributeError(f"Could not find the h_gas_model '{h_gas_model}'")
-            
+
             #Coolant side heat transfer coefficient
             if h_coolant_model == "1":
-                h_coolant[i] = cool.h_coolant_1(self.cooling_jacket.A(self.y(x), x), 
-                                                self.cooling_jacket.D(self.y(x), x), 
+                h_coolant[i] = cool.h_coolant_1(self.cooling_jacket.A(x=x, y=self.y(x)), 
+                                                self.cooling_jacket.D(x=x, y=self.y(x)), 
                                                 self.cooling_jacket.mdot_coolant, 
                                                 self.cooling_jacket.coolant_transport.mu(T = T_coolant[i], p = p_coolant[i]), 
                                                 self.cooling_jacket.coolant_transport.k(T = T_coolant[i], p = p_coolant[i]), 

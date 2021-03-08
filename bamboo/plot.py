@@ -91,7 +91,7 @@ def plot_jacket_pressure(data_dict, **kwargs):
     """
 
     p_figs, p_axs = plt.subplots()
-    p_axs.plot(data_dict["x"], np.array(data_dict["p_coolant"])/1e5, label = "Coolant pressure (bar)")
+    p_axs.plot(data_dict["x"], np.array(data_dict["p_coolant"])/1e5, label = "Coolant static pressure (bar)")
 
     if data_dict["boil_off_position"] != None:
         p_axs.axvline(data_dict["boil_off_position"], color = 'red', linestyle = '--', label = "Coolant boil-off")

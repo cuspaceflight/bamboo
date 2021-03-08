@@ -71,11 +71,12 @@ white_dwarf.add_geometry(chamber_length, Ac, wall_thickness)
 white_dwarf.add_exhaust_transport(gas_transport)
 
 #Spiral channels
-white_dwarf.add_cooling_jacket(wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, 
-                              configuration = "spiral", channel_shape = "semi-circle", channel_width = 0.02)
+#white_dwarf.add_cooling_jacket(wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, 
+#                              configuration = "spiral", channel_shape = "semi-circle", channel_width = 0.02)
 
 #Or vertical channels
-#white_dwarf.add_cooling_jacket(wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, 
+white_dwarf.add_cooling_jacket(wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, 
+                               configuration = "vertical", channel_height = 0.001)
 
 print(f"Sea level thrust = {white_dwarf.thrust(1e5)/1000} kN")
 print(f"Sea level Isp = {white_dwarf.isp(1e5)} s")     
