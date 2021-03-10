@@ -1040,8 +1040,7 @@ class Engine:
 
     def regen_thermal_circuit(self, r, h_gas, h_coolant, wall_material, wall_thickness, T_gas, T_coolant):
         """
-        q is per unit length along the nozzle wall (axially) - positive when heat is flowing to the coolant.  
-        q_Adot is the heat flux per unit area along the nozzle wall.  
+        q is per unit length along the nozzle wall (axially) - positive when heat is flowing to the coolant.   
         Uses the idea of thermal circuits and resistances - we have three resistors in series.
 
         Args:
@@ -1054,31 +1053,29 @@ class Engine:
             T_coolant (float): Coolant temperature (K)
 
         Returns:
-            float, float, float, float, float: q_dot, R_gas, R_wall, R_coolant
+            float, float, float, float: q_dot, R_gas, R_wall, R_coolant
         """
-        
-        r_out = r + wall_thickness
-        r_in = r 
 
-        A_in = 2*np.pi*r_out    #Inner area per unit length (i.e. just the inner circumference)
-        A_out = 2*np.pi*r_in    #Outer area per unit length (i.e. just the outer circumference)
+        r_in = r   
+        r_out = r_in + wall_thickness
+
+        A_in = 2*np.pi*r_in         #Inner area per unit length (i.e. just the inner circumference)
+        A_out = 2*np.pi*r_out       #Outer area per unit length (i.e. just the outer circumference)
 
         R_gas = 1/(h_gas*A_in)
         R_wall = np.log(r_out/r_in)/(2*np.pi*wall_material.k)
         R_coolant = 1/(h_coolant*A_out)
 
         q_dot = (T_gas - T_coolant)/(R_gas + R_wall + R_coolant)    #Heat flux per unit length
-        q_Adot = q_dot / A_in                                       #Heat flux per unit area
 
         return q_dot, R_gas, R_wall, R_coolant
 
     def ablative_thermal_circuit(self, r, h_gas, ablative_material, ablative_thickness, T_gas, T_wall):
         """
         q is per unit length along the nozzle wall (axially) - positive when heat is flowing to the coolant.  
-        q_Adot is the heat flux per unit area along the nozzle wall.  
 
         Args:
-            r (float): Radius to the inner wall of the engine (m)
+            r (float): Radius to the contour of the engine (m)
             h_gas (float): Gas side convective heat transfer coefficient
             ablative_material (Material): Material object for the ablative material, needed for thermal conductivity
             ablative_thickness (float): Thickness of the ablative material (m)
@@ -1088,10 +1085,11 @@ class Engine:
         Returns:
             float, float, float, float: q_dot, R_gas, R_ablative
         """
-        
-        r_out = r + ablative_thickness
+
         r_in = r 
-        A_in = 2*np.pi*r_out    #Inner area per unit length (i.e. just the inner circumference)
+        r_out = r_in + ablative_thickness
+
+        A_in = 2*np.pi*r_in    #Inner area per unit length (i.e. just the inner circumference)
 
         R_gas = 1/(h_gas*A_in)
         R_ablative = np.log(r_out/r_in)/(2*np.pi*ablative_material.k)
@@ -1099,6 +1097,46 @@ class Engine:
         q_dot = (T_gas - T_wall)/(R_gas + R_ablative)    #Heat flux per unit length
 
         return q_dot, R_gas, R_ablative
+
+    def regen_ablative_thermal_circuit(self, r, h_gas, h_coolant, wall_material, wall_thickness, T_gas, T_coolant, ablative_material, ablative_thickness):
+        """Combined regenerative and ablative cooling thermal circuit.
+        q is per unit length along the nozzle wall (axially) - positive when heat is flowing to the coolant.  
+        q_Adot is the heat flux per unit area along the nozzle wall.  
+        Uses the idea of thermal circuits and resistances - we have three resistors in series.
+
+        Args:
+            r (float): Radius to the contour of the engine (m)
+            h_gas (float): Gas side convective heat transfer coefficient
+            h_coolant (float): Coolant side convective heat transfer coefficient
+            wall_material (Material): Material object for the inner wall, needed for thermal conductivity
+            wall_thickness (float): Thickness of the inner wall at x position (m)
+            T_gas (float): Free stream gas temperature (K)
+            T_coolant (float): Coolant temperature (K)
+            ablative_material (Material): Material object for the ablative material, needed for thermal conductivity
+            ablative_thickness (float): Thickness of the ablative material (m)
+
+        Returns:
+            float, float, float, float, float: q_dot, R_gas, R_ablative, R_wall, R_coolant
+        """
+        
+        r_ablative_in = r 
+        r_ablative_out = r_ablative_in + ablative_thickness
+
+        r_wall_in = r_ablative_out
+        r_wall_out = r_wall_in + wall_thickness
+
+        A_wall_in = 2*np.pi*r_wall_in       #Inner area per unit length (i.e. just the inner circumference)
+        A_wall_out = 2*np.pi*r_wall_out     #Outer area per unit length (i.e. just the outer circumference)
+
+        R_gas = 1/(h_gas*A_wall_in)
+        R_wall = np.log(r_wall_out/r_wall_in)/(2*np.pi*wall_material.k)
+        R_coolant = 1/(h_coolant*A_wall_out)
+        R_ablative = np.log(r_ablative_out/r_ablative_in)/(2*np.pi*ablative_material.k)
+
+        q_dot = (T_gas - T_coolant)/(R_gas + R_ablative + R_wall + R_coolant)    #Heat flux per unit length
+
+        return q_dot, R_gas, R_ablative, R_wall, R_coolant,
+
 
     def steady_heating_analysis(self, number_of_points=1000, h_gas_model = "1", h_coolant_model = "1", to_json = "heating_output.json"):
         """Steady state heating analysis. Can be used for regenarative cooling, or combined regenerative and ablative cooling.
@@ -1134,11 +1172,16 @@ class Engine:
         except AttributeError:
             raise AttributeError("Cannot run heating analysis without an exhaust gas transport properties model. You need to add one with the 'Engine.add_exhaust_transport()' function.")
 
-        try:
-            self.cooling_jacket
-            regen = True
-        except AttributeError:
-            regen = False
+        if hasattr(self, 'cooling_jacket'):
+            has_cooling_jacket = True
+        else:
+            has_cooling_jacket = False
+
+        if hasattr(self, 'ablative'):
+            has_ablative = True
+        else:
+            has_ablative = False
+        
         
         '''Initialise variables and arrays'''
         #To keep track of any coolant boiling
@@ -1157,125 +1200,152 @@ class Engine:
         # number_of_sections must be equal to number_of_points
 
         #Temperatures and heat transfer rates
-        T_wall_inner = np.zeros(len(discretised_x)) #Gas side wall temperature
-        T_wall_outer = np.zeros(len(discretised_x)) #Coolant side wall temperature
-        T_coolant = np.zeros(len(discretised_x))    #Coolant temperature
-        T_gas = np.zeros(len(discretised_x))        #Freestream gas temperature
-        q_dot = np.zeros(len(discretised_x))        #Heat transfer rate per unit length
-        h_gas = np.zeros(len(discretised_x))
-        h_coolant = np.zeros(len(discretised_x))
-        p_coolant = np.zeros(len(discretised_x))    #Coolant static pressure
-        p0_coolant = np.zeros(len(discretised_x))   #Coolant Bernoulli constant / stagnation pressure, not returned
+        T_wall_inner = np.full(len(discretised_x), float('NaN')) #Gas side wall temperature
+        T_wall_outer = np.full(len(discretised_x), float('NaN')) #Coolant side wall temperature
+        T_coolant = np.full(len(discretised_x), float('NaN'))    #Coolant temperature
+        T_gas = np.full(len(discretised_x), float('NaN'))        #Freestream gas temperature
+        q_dot = np.full(len(discretised_x), float('NaN'))        #Heat transfer rate per unit length
+        h_gas = np.full(len(discretised_x), float('NaN'))
+        h_coolant = np.full(len(discretised_x), float('NaN'))
+        p_coolant = np.full(len(discretised_x), float('NaN'))    #Coolant static pressure
+        p0_coolant = np.full(len(discretised_x), float('NaN'))   #Coolant Bernoulli constant / stagnation pressure, not returned
 
         '''Main loop'''
         for i in range(len(discretised_x)):
             x = discretised_x[i]
             T_gas[i] = self.T(x)
 
-            #Calculate the current coolant temperature
-            if i == 0:
-                T_coolant[i] = self.cooling_jacket.inlet_T
-                p0_coolant[i] = self.cooling_jacket.inlet_p0
-                p_coolant[i] = p0_coolant[i] - self.Q_coolant(T=T_coolant[i], p=p0_coolant[i], x=x, y=self.y(x))
+            if has_cooling_jacket and self.cooling_jacket.xs[0] <= x <= self.cooling_jacket.xs[1]:
+                #Gas side heat transfer coefficient
+                if h_gas_model == "1":
+                    h_gas[i] = cool.h_gas_1(2*self.y(x),
+                                            self.M(x),
+                                            T_gas[i],
+                                            self.rho(x),
+                                            self.perfect_gas.gamma,
+                                            self.perfect_gas.R,
+                                            self.exhaust_transport.mu(T = T_gas[i], p = self.p(x)),
+                                            self.exhaust_transport.k(T = T_gas[i], p = self.p(x)),
+                                            self.exhaust_transport.Pr(T = T_gas[i], p = self.p(x)))
 
-            else:
-                #Increase in coolant temperature, q*dx = mdot*Cp*dT
-                T_coolant[i] = T_coolant[i-1] + (q_dot[i-1]*dx)/(self.cooling_jacket.mdot_coolant*cp_coolant) 
+                elif h_gas_model == "2":
+                    gamma = self.perfect_gas.gamma
+                    R = self.perfect_gas.R
+                    D = 2*self.y(x)            #Flow diameter
 
-                #Pressure drop in coolant channel
-                friction_factor = self.coolant_friction_factor(T=T_coolant[i], p=p_coolant[i-1], x=x, y=self.y(x))
-                p0_coolant[i] = p0_coolant[i-1] - self.coolant_p0_drop(friction_factor, dl=channel_length[i-1], T=T_coolant[i], p=p_coolant[i-1], x=x, y=self.y(x))
-                p_coolant[i] = p0_coolant[i] - self.Q_coolant(T=T_coolant[i], p=p_coolant[i-1], x=x, y=self.y(x)) # Update static pressure of coolant
+                    #Freestream properties
+                    p_inf = self.p(x)
+                    T_inf = T_gas[i]
+                    rho_inf = self.rho(x)
+                    M_inf = self.M(x)
+                    v_inf = M_inf * (gamma*R*T_inf)**0.5    #Gas velocity
+                    mu_inf = self.exhaust_transport.mu(T = T_gas[i], p = p_inf)
+                    Pr_inf = self.exhaust_transport.Pr(T = T_gas[i], p = p_inf)
+                    cp_inf = self.perfect_gas.cp
 
-                if too_low_pressure == False and p0_coolant[i] < self.chamber_conditions.p0:
-                    too_low_pressure = True
-                    print(f"Coolant static pressure dropped below chamber pressure ({self.chamber_conditions.p0/1e5} bar) at x = {x}, the coolant would not flow in real life.")
+                    #Properties at arithmetic mean of T_wall and T_inf
+                    T_am = (T_inf + T_wall_inner[i-1]) / 2
+                    mu_am = self.exhaust_transport.mu(T = T_am, p = p_inf)
+                    rho_am = p_inf/(R*T_am)                                 #p = rho R T - pressure is roughly uniform across the boundary layer so p_inf ~= p_wall
+
+                    #Stagnation properties
+                    p0 = self.chamber_conditions.p0
+                    T0 = self.chamber_conditions.T0
+                    mu0 = self.exhaust_transport.mu(T =  T0, p = p0)
+
+                    h_gas[i] = cool.h_gas_2(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0)
+
+                elif h_gas_model == "3":
+                    h_gas[i] = cool.h_gas_3(self.c_star,
+                                            self.nozzle.At, 
+                                            self.A(x), 
+                                            self.chamber_conditions.p0, 
+                                            self.chamber_conditions.T0, 
+                                            self.M(x), 
+                                            T_wall_inner[i-1], 
+                                            self.exhaust_transport.mu(T = T_gas[i], p = self.p(x)), 
+                                            self.perfect_gas.cp, 
+                                            self.perfect_gas.gamma, 
+                                            self.exhaust_transport.Pr(T = T_gas[i], p = self.p(x)))
+
+                else:
+                    raise AttributeError(f"Could not find the h_gas_model '{h_gas_model}'")
+
+                #Calculate the current coolant temperature
+                if i == 0:
+                    T_coolant[i] = self.cooling_jacket.inlet_T
+                    p0_coolant[i] = self.cooling_jacket.inlet_p0
+                    p_coolant[i] = p0_coolant[i] - self.Q_coolant(T=T_coolant[i], p=p0_coolant[i], x=x, y=self.y(x))
+
+                else:
+                    #Increase in coolant temperature, q*dx = mdot*Cp*dT
+                    T_coolant[i] = T_coolant[i-1] + (q_dot[i-1]*dx)/(self.cooling_jacket.mdot_coolant*cp_coolant) 
+
+                    #Pressure drop in coolant channel
+                    friction_factor = self.coolant_friction_factor(T=T_coolant[i], p=p_coolant[i-1], x=x, y=self.y(x))
+                    p0_coolant[i] = p0_coolant[i-1] - self.coolant_p0_drop(friction_factor, dl=channel_length[i-1], T=T_coolant[i], p=p_coolant[i-1], x=x, y=self.y(x))
+                    p_coolant[i] = p0_coolant[i] - self.Q_coolant(T=T_coolant[i], p=p_coolant[i-1], x=x, y=self.y(x)) # Update static pressure of coolant
+
+                    if too_low_pressure == False and p0_coolant[i] < self.chamber_conditions.p0:
+                        too_low_pressure = True
+                        print(f"Coolant stagnation pressure dropped below chamber pressure ({self.chamber_conditions.p0/1e5} bar) at x = {x}, the coolant would not flow in real life.")
+                    
+                    if p0_coolant[i] < 0:
+                        raise ValueError("Coolant stagnation pressure dropped below 0 bar - your coolant velocities may be too high.")
+
+                #Update coolant heat capacity
+                cp_coolant = self.cooling_jacket.coolant_transport.cp(T = T_coolant[i], p = p_coolant[i])
+
+                #Coolant side heat transfer coefficient
+                if h_coolant_model == "1":
+                    h_coolant[i] = cool.h_coolant_1(self.cooling_jacket.A(x=x, y=self.y(x)), 
+                                                    self.cooling_jacket.D(x=x, y=self.y(x)), 
+                                                    self.cooling_jacket.mdot_coolant, 
+                                                    self.cooling_jacket.coolant_transport.mu(T = T_coolant[i], p = p_coolant[i]), 
+                                                    self.cooling_jacket.coolant_transport.k(T = T_coolant[i], p = p_coolant[i]), 
+                                                    cp_coolant, 
+                                                    self.cooling_jacket.coolant_transport.rho(T = T_coolant[i], p = p_coolant[i]))
+
+                else:
+                    raise AttributeError(f"Could not find the h_coolant_model '{h_coolant_model}'")
                 
-                if p0_coolant[i] < 0:
-                    raise ValueError("Coolant static pressure dropped below 0 bar - your coolant velocities may be too high.")
+                #Check for coolant boil off 
+                if boil_off_position == None and self.cooling_jacket.coolant_transport.check_liquid(T = T_coolant[i], p = p_coolant[i]) == False:
+                    print(f"WARNING: Coolant boiled off at x = {x} m")
+                    boil_off_position = x
 
-            #Update coolant heat capacity
-            cp_coolant = self.cooling_jacket.coolant_transport.cp(T = T_coolant[i], p = p_coolant[i])
+                #Get thermal circuit properties
+                if has_ablative and self.ablative.xs[0] <= x <= self.ablative.xs[1]:
+                    ablative_thickness = self.geometry.chamber_radius - self.y(x)
+                    q_dot[i], R_gas, R_ablative, R_wall, R_coolant = self.regen_ablative_thermal_circuit(self.y(x), 
+                                                                                                            h_gas[i], 
+                                                                                                            h_coolant[i], 
+                                                                                                            self.cooling_jacket.inner_wall, 
+                                                                                                            liner[i], 
+                                                                                                            T_gas[i], 
+                                                                                                            T_coolant[i], 
+                                                                                                            self.ablative.ablative_material, 
+                                                                                                            ablative_thickness)
+                    
+                    #Calculate wall temperatures
+                    T_wall_inner[i] = T_gas[i] - q_dot[i]*(R_gas + R_ablative)
+                    T_wall_outer[i] = T_wall_inner[i] - q_dot[i]*R_wall
+                
+                else:
+                    q_dot[i], R_gas, R_wall, R_coolant = self.regen_thermal_circuit(self.y(x), 
+                                                                                    h_gas[i], 
+                                                                                    h_coolant[i], 
+                                                                                    self.cooling_jacket.inner_wall, 
+                                                                                    liner[i], 
+                                                                                    T_gas[i], 
+                                                                                    T_coolant[i])
 
-            #Gas side heat transfer coefficient
-            if h_gas_model == "1":
-                h_gas[i] = cool.h_gas_1(2*self.y(x),
-                                        self.M(x),
-                                        T_gas[i],
-                                        self.rho(x),
-                                        self.perfect_gas.gamma,
-                                        self.perfect_gas.R,
-                                        self.exhaust_transport.mu(T = T_gas[i], p = self.p(x)),
-                                        self.exhaust_transport.k(T = T_gas[i], p = self.p(x)),
-                                        self.exhaust_transport.Pr(T = T_gas[i], p = self.p(x)))
-
-            elif h_gas_model == "2":
-                gamma = self.perfect_gas.gamma
-                R = self.perfect_gas.R
-                D = 2*self.y(x)            #Flow diameter
-
-                #Freestream properties
-                p_inf = self.p(x)
-                T_inf = T_gas[i]
-                rho_inf = self.rho(x)
-                M_inf = self.M(x)
-                v_inf = M_inf * (gamma*R*T_inf)**0.5    #Gas velocity
-                mu_inf = self.exhaust_transport.mu(T = T_gas[i], p = p_inf)
-                Pr_inf = self.exhaust_transport.Pr(T = T_gas[i], p = p_inf)
-                cp_inf = self.perfect_gas.cp
-
-                #Properties at arithmetic mean of T_wall and T_inf
-                T_am = (T_inf + T_wall_inner[i-1]) / 2
-                mu_am = self.exhaust_transport.mu(T = T_am, p = p_inf)
-                rho_am = p_inf/(R*T_am)                                 #p = rho R T - pressure is roughly uniform across the boundary layer so p_inf ~= p_wall
-
-                #Stagnation properties
-                p0 = self.chamber_conditions.p0
-                T0 = self.chamber_conditions.T0
-                mu0 = self.exhaust_transport.mu(T =  T0, p = p0)
-
-                h_gas[i] = cool.h_gas_2(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0)
-
-            elif h_gas_model == "3":
-                h_gas[i] = cool.h_gas_3(self.c_star,
-                                        self.nozzle.At, 
-                                        self.A(x), 
-                                        self.chamber_conditions.p0, 
-                                        self.chamber_conditions.T0, 
-                                        self.M(x), 
-                                        T_wall_inner[i-1], 
-                                        self.exhaust_transport.mu(T = T_gas[i], p = self.p(x)), 
-                                        self.perfect_gas.cp, 
-                                        self.perfect_gas.gamma, 
-                                        self.exhaust_transport.Pr(T = T_gas[i], p = self.p(x)))
-
+                    #Calculate wall temperatures
+                    T_wall_inner[i] = T_gas[i] - q_dot[i]*R_gas
+                    T_wall_outer[i] = T_wall_inner[i] - q_dot[i]*R_wall
             else:
-                raise AttributeError(f"Could not find the h_gas_model '{h_gas_model}'")
-
-            #Coolant side heat transfer coefficient
-            if h_coolant_model == "1":
-                h_coolant[i] = cool.h_coolant_1(self.cooling_jacket.A(x=x, y=self.y(x)), 
-                                                self.cooling_jacket.D(x=x, y=self.y(x)), 
-                                                self.cooling_jacket.mdot_coolant, 
-                                                self.cooling_jacket.coolant_transport.mu(T = T_coolant[i], p = p_coolant[i]), 
-                                                self.cooling_jacket.coolant_transport.k(T = T_coolant[i], p = p_coolant[i]), 
-                                                cp_coolant, 
-                                                self.cooling_jacket.coolant_transport.rho(T = T_coolant[i], p = p_coolant[i]))
-
-            else:
-                raise AttributeError(f"Could not find the h_coolant_model '{h_coolant_model}'")
-            
-            #Check for coolant boil off 
-            if boil_off_position == None and self.cooling_jacket.coolant_transport.check_liquid(T = T_coolant[i], p = p_coolant[i]) == False:
-                print(f"WARNING: Coolant boiled off at x = {x} m")
-                boil_off_position = x
-
-            #Get thermal circuit properties
-            q_dot[i], R_gas, R_wall, R_coolant = self.regen_thermal_circuit(self.y(x), h_gas[i], h_coolant[i], self.cooling_jacket.inner_wall, liner[i], T_gas[i], T_coolant[i])
-
-            #Calculate wall temperatures
-            T_wall_inner[i] = T_gas[i] - q_dot[i]*R_gas
-            T_wall_outer[i] = T_wall_inner[i] - q_dot[i]*R_wall
+                T_wall_inner[i] = T_gas[i]
+                T_wall_outer[i] = T_gas[i]
 
         #Dictionary containing results
         output_dict = {"x" : list(discretised_x),
