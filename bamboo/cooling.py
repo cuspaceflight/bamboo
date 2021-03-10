@@ -167,19 +167,26 @@ class Material:
 
         self.perf_therm = (1 - self.poisson) * self.k / (self.alpha * self.E)   #Performance coefficient for thermal stress, higher is better
 
+
 class TransportProperties:
-    """Container for transport properties of a fluid.
+    """Container for transport properties of a fluid. 
+    
+    Note:
+        Sometimes 'thermo' uses a questionable choice of phase when calculating transport properties for mixtures (and sometimes pure chemicals), 
+        If you are getting questionable data, it may be useful to try out the 'force_phase' argument.
 
     Args:
-        model (str, optional): The module to use for modelling. Intended to offer 'thermo', 'CoolProp' and 'cantera', but only thermo works as of now. Defaults to "thermo".
-        
+        model (str, optional): The module to use for modelling. Options include 'thermo' and 'CoolProp'.
+        force_phase (str, optional): 'l' for liquid or 'g' for gas. Forces thermo to use transport properties in the given phase. Does not affect other models. Defaults to None.
+    
     Keywords Args:
         thermo_object (thermo.chemical.Chemical or thermo.mixture.Mixture): An object from the 'thermo' Python module.
         coolprop_name (str): Name of the chemcial or mixture for the CoolProp module. See http://www.coolprop.org/ for a list of available fluids.
     """
 
-    def __init__(self, model = "thermo", **kwargs):
+    def __init__(self, model = "thermo", force_phase = None, **kwargs):
         self.model = model
+        self.force_phase = force_phase
 
         if model == "thermo":
             self.thermo_object = kwargs["thermo_object"]
@@ -228,8 +235,14 @@ class TransportProperties:
             float: Thermal conductivity
         """
         if self.model == "thermo":
-            self.thermo_object.calculate(T = T, P = p) 
-            return self.thermo_object.k
+            self.thermo_object.calculate(T = T, P = p)
+
+            if self.force_phase == 'l':
+                return self.thermo_object.kl
+            elif self.force_phase == 'g':
+                return self.thermo_object.kg
+            else:
+                return self.thermo_object.k
             
         elif self.model == "CoolProp":
             return PropsSI("CONDUCTIVITY", "T", T, "P", p, self.coolprop_name)
@@ -246,7 +259,13 @@ class TransportProperties:
         """
         if self.model == "thermo":
             self.thermo_object.calculate(T = T, P = p) 
-            return self.thermo_object.mu
+
+            if self.force_phase == 'l':
+                return self.thermo_object.mul
+            elif self.force_phase == 'g':
+                return self.thermo_object.mug
+            else:
+                return self.thermo_object.mu
 
         elif self.model == "CoolProp":
             return PropsSI("VISCOSITY", "T", T, "P", p, self.coolprop_name)
@@ -263,7 +282,13 @@ class TransportProperties:
         """
         if self.model == "thermo":
             self.thermo_object.calculate(T = T, P = p) 
-            return self.thermo_object.Pr
+
+            if self.force_phase == 'l':
+                return self.thermo_object.Prl
+            elif self.force_phase == 'g':
+                return self.thermo_object.Prg
+            else:
+                return self.thermo_object.Pr
 
         elif self.model == "CoolProp":
             return PropsSI("PRANDTL", "T", T, "P", p, self.coolprop_name)
@@ -281,7 +306,13 @@ class TransportProperties:
         """
         if self.model == "thermo":
             self.thermo_object.calculate(T = T, P = p) 
-            return self.thermo_object.Cp
+
+            if self.force_phase == 'l':
+                return self.thermo_object.Cpl
+            elif self.force_phase == 'g':
+                return self.thermo_object.Cpg
+            else:
+                return self.thermo_object.Cp
         
         elif self.model == "CoolProp":
             return PropsSI("CPMASS", "T", T, "P", p, self.coolprop_name)
@@ -299,10 +330,17 @@ class TransportProperties:
         """
         if self.model == "thermo":
             self.thermo_object.calculate(T = T, P = p) 
-            return self.thermo_object.rho
+
+            if self.force_phase == 'l':
+                return self.thermo_object.rhol
+            elif self.force_phase == 'g':
+                return self.thermo_object.rhog
+            else:
+                return self.thermo_object.rho
         
         elif self.model == "CoolProp":
             return PropsSI("DMASS", "T", T, "P", p, self.coolprop_name)
+
 
 class CoolingJacket:
     """Container for cooling jacket information - e.g. for regenerative cooling.

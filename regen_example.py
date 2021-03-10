@@ -51,12 +51,12 @@ Tc = e.properties.T
 
 '''Choose the models we want to use for transport properties of the coolant and exhaust gas'''
 #thermo_coolant = thermo.mixture.Mixture(['ethanol', 'water'], ws = [1 - water_mass_fraction, water_mass_fraction])
-#thermo_coolant = thermo.mixture.Mixture(['propanol', 'water'], ws = [1 - water_mass_fraction, water_mass_fraction])
-thermo_coolant = thermo.chemical.Chemical('ethanol')
+thermo_coolant = thermo.mixture.Mixture(['isopropanol', 'water'], ws = [1 - water_mass_fraction, water_mass_fraction])
+#thermo_coolant = thermo.chemical.Chemical('water')
 thermo_gas = thermo.mixture.Mixture(['N2', 'H2O', 'CO2'], zs = [e.composition['N2'], e.composition['H2O'], e.composition['CO2']])   
 
-gas_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_gas)
-coolant_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_coolant)
+gas_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_gas, force_phase = 'g')
+coolant_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_coolant, force_phase = 'l')
 #coolant_transport = cool.TransportProperties(model = "CoolProp", coolprop_name = f"ETHANOL[{1 - water_mass_fraction}]&WATER[{water_mass_fraction}]")
 
 '''Create the engine object'''
