@@ -4,23 +4,26 @@
 	<h3 align="center">Cambridge University Spaceflight</h3>
 </p>
 
-Liquid rocket engine modelling package, using 1D compressible flow relations and assuming perfect gases where possible.
+Bamboo is a Python tool that provides functions and classes for modelling the cooling systems of liquid rocket engines. Alongside this, it contains a range of other miscellaneous tools to aid with general engine design.
 
 ## Installation
 `pip install git+https://github.com/cuspaceflight/bamboo.git`
 
-## Currently includes
+## General engine tools available
 - Nozzle shape calculator for Rao bell nozzles.
 - Get thrust and specific impulse.
 - Get gas properties (temperature and pressure) as a function of position in the nozzle.
 - Estimate apogee using a simple 1D trajectory simulator.
 - Optimise nozzle area ratio based on the simple trajectory simulator.
-- Tools for modelling engine cooling systems.
-- Tools for modelling stress in the engine walls.
+
+## Tools for cooling system modelling
+- Add a regenerative cooling jacket to the engine.
+- Add a refractory (e.g. a graphite insert) into the engine.
+- Steady state heating simulations for cooling jackets on their own, or cooling jackets with refractories.
 
 ## Incomplete
-- Ablative cooling system modelling
-- Time dependent cooling analysis
+- Ablative cooling system modelling.
+- Time dependent cooling analysis.
 
 ## Documentation
 (may be outdated)
