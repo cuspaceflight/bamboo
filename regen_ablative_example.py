@@ -58,7 +58,8 @@ data = white_dwarf.steady_heating_analysis()
 bam.plot.plot_temperatures(data)
 
 '''Run a second simulation with an ablative added'''
-white_dwarf.add_ablative(bam.materials.Graphite, bam.materials.CopperC700, wall_thickness = 5e-3, regression_rate = 0.0033e-3, xs = [-0.1, 0.1])
+#Setting ablative_thickness = None tells the program to make the ablative thickness equal to (chamber_radius - y(x))
+white_dwarf.add_ablative(bam.materials.Graphite, bam.materials.CopperC700, regression_rate = 0.0033e-3, xs = [-0.05, 0.05], ablative_thickness = None)
 data = white_dwarf.steady_heating_analysis()
 bam.plot.plot_temperatures(data)
 

@@ -351,7 +351,7 @@ class CoolingJacket:
         inlet_p0 (float): Inlet coolant stagnation pressure (Pa)
         coolant_transport (TransportProperties): Container for the coolant transport properties.
         mdot_coolant (float): Coolant mass flow rate (kg/s)
-        xs (list): x position that the cooling jacket starts and ends at in the form [x_start, x_end]. Defaults to [-1000, 1000].
+        xs (list): x positions that the cooling jacket starts and ends at, [x_min, x_max]. Defaults to [-1000, 1000].
         configuration (str, optional): Options include 'spiral' and 'vertical'. Defaults to "vertical".
     
     Keyword Args:
@@ -449,11 +449,20 @@ class CoolingJacket:
         """
         return self.mdot_coolant/(rho_coolant * self.A(x, y))
 
-
 class Ablative:
-    def __init__(self, ablative_material, wall_material, wall_thickness, regression_rate, xs = [-1000, 1000]):
+    """Container for refractory or ablative properties. 
+
+    Args:
+        ablative_material (Material): [description]
+        wall_material (Material): Wall material on the outside of the ablative.
+        regression_rate (float): (m/s)
+        xs (list, optional): x positions that the ablative is present between, [xmin, xmax]. Defaults to [-1000, 1000].
+        ablative_thickness (float or list): Thickness of ablative. If a list is given, it must correspond to thickness at regular x intervals, 
+        which will be stretched out over the inverval of 'xs'. Defaults to None (in which case the ablative extends from the engine contour to combustion chamber radius).
+    """
+    def __init__(self, ablative_material, wall_material, regression_rate, xs = [-1000, 1000], ablative_thickness = None):
         self.ablative_material = ablative_material
         self.wall_material = wall_material
-        self.wall_thickness = wall_thickness
         self.regression_rate = regression_rate
         self.xs = xs
+        self.ablative_thickness = ablative_thickness

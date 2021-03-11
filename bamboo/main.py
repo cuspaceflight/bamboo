@@ -485,7 +485,9 @@ class EngineGeometry:
         nozzle (float): Nozzle of the engine.
         chamber_length (float): Length of the combustion chamber (m)
         chamber_area (float): Cross sectional area of the combustion chamber (m^2)
-        wall_thickness (float or array): Thickness of the inner liner wall (m). Can be constant (float), or variable (array).
+        wall_thickness (float or array): Thickness of the inner liner wall (m). Can be constant (float), or variable (array). 
+        If an array, must be thicknesses at equally spaced x positions. This will be stretched to fill the engine length.
+        E.g. [1e-3, 5e-3] will have 1mm thick walls at chamber entrance, 5mm thick at nozzle exit.
         style (str, optional): Geometry style to use. Currently the only option is 'auto'. Defaults to "auto".
 
     """
@@ -493,7 +495,7 @@ class EngineGeometry:
         self.chamber_length = chamber_length
         self.chamber_area = chamber_area
         self.chamber_radius = (chamber_area/np.pi)**0.5 
-        if type(wall_thickness) is (float or int):
+        if type(wall_thickness) is float or type(wall_thickness) is int:
             self.wall_thickness = [wall_thickness]  #Convert into a list so the interpolation works
         else:
             self.wall_thickness = wall_thickness
@@ -795,21 +797,35 @@ class Engine:
 
 
     #Plotting functions
-    def plot_geometry(self, number_of_points = 1000):
+    def plot_geometry(self, number_of_points = 1000, minimal = False):
         """Plots the engine geometry. Note that to see the plot, you will need to run matplotlib.pyplot.show().
 
         Args:
             number_of_points (int, optional): Numbers of discrete points to plot. Defaults to 1000.
+            minimal (bool, optional): If True, the engine contour is plotted as a single line. If False, the line's thickness will vary to show wall thickness,
+            and other geometry details will be shown. Defaults to False.
         """
+        try:
+            self.geometry
+        except AttributeError:
+            raise AttributeError("Geometry has not been added, so can't run Engine.plot_geometry(). You need to add geometry with the 'Engine.add_geometry()' function.")
+        
         x = np.linspace(self.geometry.x_min, self.geometry.x_max, number_of_points)
         y = np.zeros(len(x))
+        
 
         for i in range(len(x)):
             y[i] = self.y(x[i])
 
         fig, axs = plt.subplots()
-        axs.plot(x, y, color="blue")
-        axs.plot(x, -y, color="blue")
+        if minimal:
+            axs.plot(x, y, color="blue")
+            axs.plot(x, -y, color="blue")
+        else:
+            mapped_wall_thickness = self.map_thickness_profile(self.geometry.wall_thickness, len(x))
+            axs.fill_between(x, y, y + mapped_wall_thickness, color="blue")
+            axs.fill_between(x, -y, -y - mapped_wall_thickness, color="blue")
+            
         axs.grid()
         axs.set_aspect('equal')
         plt.xlabel("x position (m)")
@@ -921,33 +937,34 @@ class Engine:
         """
         self.exhaust_transport = transport_properties
 
-    def add_ablative(self, ablative_material, wall_material, wall_thickness, regression_rate, xs = [-1000, 1000]):
-        self.ablative = cool.Ablative(ablative_material, wall_material, wall_thickness, regression_rate, xs)
+    def add_ablative(self, ablative_material, wall_material, regression_rate, xs = [-1000, 1000], ablative_thickness = None):
+        self.ablative = cool.Ablative(ablative_material, wall_material, regression_rate, xs, ablative_thickness)
 
     #Cooling system functions
-    def map_liner_profile(self, number_of_points=1000):
-        """Maps the provided liner thickness profile to the engine geometry,
-           so each element in cooling analysis has a thickness value.
+    def map_thickness_profile(self, thickness, number_of_points):
+        """Stretches an array of any size so that it has the required 'number_of_points', whilst maintaining the same values at indexes [0] and [-1]. 
+        All indexes inbetween are filled in with interpolation.
            
            Args:
+                thickness (list or array): Thickness distribution. Must contains thicknesses at equally spaced x positions.
                 number_of_points (int): Number of discrete liner positions
 
            Returns:
-                liner (array): Interpolated liner thickness profile
+                mapped_thickness (array): Interpolated thickness profile
            """
+        mapped_thickness = np.zeros(number_of_points)
 
-        try:
-            self.geometry
-        except AttributeError:
-            raise AttributeError("Geometry is not defined for x < 0. You need to add geometry with the 'Engine.add_geometry()' function.")
-
-        liner = np.zeros(number_of_points)
         for i in range(number_of_points):
-            x_pos = i*self.geometry.chamber_length/number_of_points
-            # How far along the engine is the current point
-            liner_index = x_pos * len(self.geometry.wall_thickness)
-            liner[i] = np.interp(liner_index, range(len(self.geometry.wall_thickness)), self.geometry.wall_thickness)
-        return liner
+            #Fraction of the way along the engine
+            pos_fraction = i/(number_of_points-1)
+
+            #Index we want from our thickness array (may be non-integer)
+            thickness_index = pos_fraction * (len(thickness)-1)
+
+            #Get the thickness at that index
+            mapped_thickness[i] = np.interp(thickness_index, range(len(thickness)), thickness)
+
+        return mapped_thickness
 
     def channel_geometry(self, number_of_sections = 1000):
         """Finds the path length of the coolant in the jacket from engine geometry and channel configuration.
@@ -1137,7 +1154,6 @@ class Engine:
 
         return q_dot, R_gas, R_ablative, R_wall, R_coolant,
 
-
     def steady_heating_analysis(self, number_of_points=1000, h_gas_model = "1", h_coolant_model = "1", to_json = "heating_output.json"):
         """Steady state heating analysis. Can be used for regenarative cooling, or combined regenerative and ablative cooling.
 
@@ -1171,7 +1187,9 @@ class Engine:
             self.exhaust_transport
         except AttributeError:
             raise AttributeError("Cannot run heating analysis without an exhaust gas transport properties model. You need to add one with the 'Engine.add_exhaust_transport()' function.")
+        
 
+        '''Check if we have a cooling jacket or ablative'''
         if hasattr(self, 'cooling_jacket'):
             has_cooling_jacket = True
         else:
@@ -1179,6 +1197,10 @@ class Engine:
 
         if hasattr(self, 'ablative'):
             has_ablative = True
+            if self.ablative.ablative_thickness == None:
+                pass
+            else:
+                ablative_thickness_xs = np.linspace(self.ablative.xs[0], self.ablative.xs[1], len(self.ablative.ablative_thickness))
         else:
             has_ablative = False
         
@@ -1193,7 +1215,7 @@ class Engine:
         dx = discretised_x[0] - discretised_x[1]
 
         #Discretised liner thickness
-        liner = self.map_liner_profile(number_of_points)
+        liner = self.map_thickness_profile(self.geometry.wall_thickness, number_of_points)
 
         #Calculation of coolant channel length per "section"
         channel_length = self.channel_geometry(number_of_sections=number_of_points)
@@ -1316,7 +1338,12 @@ class Engine:
 
                 #Get thermal circuit properties
                 if has_ablative and self.ablative.xs[0] <= x <= self.ablative.xs[1]:
-                    ablative_thickness = self.geometry.chamber_radius - self.y(x)
+                    #Get the ablative thickness
+                    if self.ablative.ablative_thickness == None:
+                        ablative_thickness = self.geometry.chamber_radius - self.y(x)
+                    else:
+                        ablative_thickness = np.interp(x, ablative_thickness_xs, self.ablative.ablative_thickness)
+
                     q_dot[i], R_gas, R_ablative, R_wall, R_coolant = self.regen_ablative_thermal_circuit(self.y(x), 
                                                                                                             h_gas[i], 
                                                                                                             h_coolant[i], 
@@ -1402,7 +1429,7 @@ class Engine:
         dx = discretised_x[0] - discretised_x[1]
 
         #Discretised liner thickness
-        liner = self.map_liner_profile(number_of_points)
+        liner = self.map_thickness_profile(self.geometry.wall_thickness, number_of_points)
 
         #Temperatures and heat transfer rates - everything is a 2D array, with indexes [time_index, space_index]
         T_wall = np.zeros([len(discretised_t), len(discretised_x)]) 
