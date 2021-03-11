@@ -35,6 +35,7 @@ import scipy.optimize
 import ambiance
 import bamboo.cooling as cool
 import json
+import matplotlib.patches
 
 R_BAR = 8.3144621e3         #Universal gas constant (J/K/kmol)
 g0 = 9.80665                #Standard gravitational acceleration (m/s^2)
@@ -797,13 +798,16 @@ class Engine:
 
 
     #Plotting functions
-    def plot_geometry(self, number_of_points = 1000, minimal = False):
-        """Plots the engine geometry. Note that to see the plot, you will need to run matplotlib.pyplot.show().
+    def plot_geometry(self, number_of_points = 1000, minimal = False, legend = True):
+        """Plots the engine geometry. Note that all spiral cooling jacket geometry is shown with equally spaced rectangles, 
+        even if irregularly spaced non-rectangular shapes are used. The rectangles have a width equal to the channel effective diameter,
+        and an area equal to the channel flow area.
+        To see the plot, you will need to run matplotlib.pyplot.show().
 
         Args:
             number_of_points (int, optional): Numbers of discrete points to plot. Defaults to 1000.
-            minimal (bool, optional): If True, the engine contour is plotted as a single line. If False, the line's thickness will vary to show wall thickness,
-            and other geometry details will be shown. Defaults to False.
+            minimal (bool, optional): If True, the engine contour is plotted as a single line. If False, the line's thickness will vary to show wall thickness, and other geometry details will be shown. Defaults to False.
+            legend (bool, optional): If True a legend is shown. If False, it isn't. Defaults to True.
         """
         try:
             self.geometry
@@ -821,11 +825,91 @@ class Engine:
         if minimal:
             axs.plot(x, y, color="blue")
             axs.plot(x, -y, color="blue")
+
         else:
             mapped_wall_thickness = self.map_thickness_profile(self.geometry.wall_thickness, len(x))
-            axs.fill_between(x, y, y + mapped_wall_thickness, color="blue")
-            axs.fill_between(x, -y, -y - mapped_wall_thickness, color="blue")
+
+            if hasattr(self, 'ablative'):
+                #Range of xs that the ablative is between
+                if self.geometry.x_min > self.ablative.xs[0]:
+                    xmin = self.geometry.x_min
+                else:
+                    xmin = self.ablative.xs[0]
+
+                if self.geometry.x_max < self.ablative.xs[1]:
+                    xmax = self.geometry.x_max
+                else:
+                    xmax = self.ablative.xs[1]
+
+
+                if self.ablative.ablative_thickness == None:
+                    abl_xs = np.linspace(xmin, xmax, 1000)
+                    abl_thickness = np.zeros(len(abl_xs))
+                    abl_ys = np.linspace(xmin, xmax, 1000)
+
+                    for i in range(len(abl_xs)):
+                        abl_thickness[i] = self.geometry.chamber_radius - self.y(abl_xs[i])
+                        abl_ys[i] = self.geometry.chamber_radius
+                else:
+                    abl_xs = np.linspace(xmin, xmax, len(self.ablative.ablative_thickness))
+                    abl_thickness = self.ablative.ablative_thickness
+                    abl_ys = np.linspace(xmin, xmax, len(abl_xs))
+
+                    for i in range(len(abl_xs)):
+                        abl_ys[i] = self.y(abl_xs[i]) + abl_thickness[i]
+                
+                mapped_abl_thickness = self.map_thickness_profile(abl_thickness, len(x))
+                wall_y_in = y+mapped_abl_thickness
+                wall_y_out = y+mapped_abl_thickness+mapped_wall_thickness
+
+                axs.fill_between(abl_xs, abl_ys-abl_thickness, abl_ys, color="grey", label = 'Ablative')
+                axs.fill_between(abl_xs, -abl_ys+abl_thickness, -abl_ys, color="grey")
             
+            else:  
+                wall_y_in = y
+                wall_y_out = y+mapped_wall_thickness
+
+            axs.fill_between(x, wall_y_in, wall_y_out, color="blue", label = 'Engine liner')
+            axs.fill_between(x, -wall_y_in, -wall_y_out, color="blue")
+
+            if hasattr(self, 'cooling_jacket'):
+                #Range of xs that the jacket is between
+                if self.geometry.x_min > self.cooling_jacket.xs[0]:
+                    xmin = self.geometry.x_min
+                else:
+                    xmin = self.cooling_jacket.xs[0]
+
+                if self.geometry.x_max < self.cooling_jacket.xs[1]:
+                    xmax = self.geometry.x_max
+                else:
+                    xmax = self.cooling_jacket.xs[1]
+
+                if self.cooling_jacket.configuration == 'spiral':
+                    D = self.cooling_jacket.D(x[0], y[0])
+                    A = self.cooling_jacket.A(x[0], y[0])
+
+                    regen_xs = np.linspace(xmin, xmax, int((xmax - xmin)/D))
+
+                    if len(regen_xs) > 5000:
+                        print(f"WARNING: Large number of channels to plot for the cooling jacket ({len(regen_xs)}) - this may take a while.")
+
+                    axs.plot(0, 0, color = 'green', label = 'Cooling channels')  #Just for the legend
+
+                    for i in range(len(regen_xs) - 1):
+                        y_jacket_inner = np.interp(regen_xs[i], x, wall_y_out)
+                        axs.add_patch(matplotlib.patches.Rectangle([regen_xs[i], y_jacket_inner], D, A/D, color = 'green', fill = False))
+                        axs.add_patch(matplotlib.patches.Rectangle([regen_xs[i], -y_jacket_inner-A/D], D, A/D, color = 'green', fill = False))
+
+                if self.cooling_jacket.configuration == 'vertical':
+                    regen_xs = np.linspace(xmin, xmax, 1000)
+                    channel_inner_mapped = np.interp(regen_xs, x, wall_y_out)
+
+                    axs.fill_between(regen_xs, channel_inner_mapped, channel_inner_mapped+self.cooling_jacket.channel_height, color="green", label = 'Cooling channel')
+                    axs.fill_between(regen_xs, -channel_inner_mapped, -channel_inner_mapped-self.cooling_jacket.channel_height, color="green")
+            
+            if legend:
+                axs.legend()
+
         axs.grid()
         axs.set_aspect('equal')
         plt.xlabel("x position (m)")

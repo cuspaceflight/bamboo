@@ -465,4 +465,8 @@ class Ablative:
         self.wall_material = wall_material
         self.regression_rate = regression_rate
         self.xs = xs
-        self.ablative_thickness = ablative_thickness
+        
+        if type(ablative_thickness) is float or type(ablative_thickness) is int:
+            self.ablative_thickness = [ablative_thickness]  #Convert into a list so the interpolation works
+        else:
+            self.ablative_thickness = ablative_thickness
