@@ -572,6 +572,11 @@ Data obtained by using <a class="reference external" href="http://www.graphreade
 <li><p><strong>chamber_length</strong> (<em>float</em>) – Length of the combustion chamber (m)</p></li>
 <li><p><strong>chamber_area</strong> (<em>float</em>) – Cross sectional area of the combustion chamber (m^2)</p></li>
 <li><p><strong>wall_thickness</strong> (<em>float</em><em> or </em><em>array</em>) – Thickness of the inner liner wall (m). Can be constant (float), or variable (array).</p></li>
+<li><p><strong>an array</strong> (<em>If</em>) – </p></li>
+<li><p><strong>be thicknesses at equally spaced x positions. This will be stretched to fill the engine length.</strong> (<em>must</em>) – </p></li>
+<li><p><strong>[</strong><strong>1e-3</strong> (<em>E.g.</em>) – </p></li>
+<li><p><strong>will have 1mm thick walls at chamber entrance</strong> (<em>5e-3</em><em>]</em>) – </p></li>
+<li><p><strong>thick at nozzle exit.</strong> (<em>5mm</em>) – </p></li>
 <li><p><strong>style</strong> (<em>str</em><em>, </em><em>optional</em>) – Geometry style to use. Currently the only option is ‘auto’. Defaults to “auto”.</p></li>
 </ul>
 </dd>
@@ -797,11 +802,15 @@ separation occurs when P_wall/P_amb = 0.583 * (P_amb/P_chamber)^(0.195).</p>
 
 <dl class="py method">
 <dt id="bamboo.main.Engine.plot_geometry">
-<code class="sig-name descname"><span class="pre">plot_geometry</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.plot_geometry" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">plot_geometry</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minimal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.plot_geometry" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots the engine geometry. Note that to see the plot, you will need to run matplotlib.pyplot.show().</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>number_of_points</strong> (<em>int</em><em>, </em><em>optional</em>) – Numbers of discrete points to plot. Defaults to 1000.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>number_of_points</strong> (<em>int</em><em>, </em><em>optional</em>) – Numbers of discrete points to plot. Defaults to 1000.</p></li>
+<li><p><strong>minimal</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, the engine contour is plotted as a single line. If False, the line’s thickness will vary to show wall thickness,</p></li>
+<li><p><strong>other geometry details will be shown. Defaults to False.</strong> (<em>and</em>) – </p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -887,49 +896,51 @@ separation occurs when P_wall/P_amb = 0.583 * (P_amb/P_chamber)^(0.195).</p>
 
 <dl class="py method">
 <dt id="bamboo.main.Engine.add_ablative">
-<code class="sig-name descname"><span class="pre">add_ablative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ablative_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[-</span> <span class="pre">1000,</span> <span class="pre">1000]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.add_ablative" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">add_ablative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ablative_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[-</span> <span class="pre">1000,</span> <span class="pre">1000]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ablative_thickness</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.add_ablative" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt id="bamboo.main.Engine.map_liner_profile">
-<code class="sig-name descname"><span class="pre">map_liner_profile</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.map_liner_profile" title="Permalink to this definition">¶</a></dt>
-<dd><p>Maps the provided liner thickness profile to the engine geometry,
-so each element in cooling analysis has a thickness value.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>number_of_points</strong> (<em>int</em>) – Number of discrete liner positions</p>
+<dt id="bamboo.main.Engine.map_thickness_profile">
+<code class="sig-name descname"><span class="pre">map_thickness_profile</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.map_thickness_profile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stretches an array of any size so that it has the required ‘number_of_points’, whilst maintaining the same values at indexes [0] and [-1].
+All indexes inbetween are filled in with interpolation.</p>
+<blockquote>
+<div><dl class="simple">
+<dt>Args:</dt><dd><p>thickness (list or array): Thickness distribution. Must contains thicknesses at equally spaced x positions.
+number_of_points (int): Number of discrete liner positions</p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Interpolated liner thickness profile</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>liner (array)</p>
+<dt>Returns:</dt><dd><p>mapped_thickness (array): Interpolated thickness profile</p>
 </dd>
 </dl>
+</div></blockquote>
 </dd></dl>
 
 <dl class="py method">
 <dt id="bamboo.main.Engine.channel_geometry">
 <code class="sig-name descname"><span class="pre">channel_geometry</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_sections</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.channel_geometry" title="Permalink to this definition">¶</a></dt>
-<dd><p>Finds the path length of the coolant in the jacket from engine geometry and channel configuration.
-:param number_of_sections: Number of sections to split path into. Defaults to 1000.
-:type number_of_sections: int, optional</p>
+<dd><dl class="simple">
+<dt>Finds the path length of the coolant in the jacket from engine geometry and channel configuration.</dt><dd><p>Number_of_sections must be equal to number_of_points when used in a heating analysis.</p>
+</dd>
+</dl>
 <dl class="field-list simple">
-<dt class="field-odd">Raises</dt>
-<dd class="field-odd"><p><strong>AttributeError</strong> – Must have either “spiral” or “vertical” channel configuration.</p>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>number_of_sections</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of sections to split path into. Defaults to 1000.</p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Coolant path length (m).</p>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>AttributeError</strong> – Must have either “spiral” or “vertical” channel configuration.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Discretised coolant path length array with “number_of_sections” elements. (m).</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>array</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt id="bamboo.main.Engine.coolant_friction_factor">
-<code class="sig-name descname"><span class="pre">coolant_friction_factor</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.coolant_friction_factor" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">coolant_friction_factor</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.coolant_friction_factor" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="simple">
 <dt>Determine the friction factor of the coolant at the current position.</dt><dd><p>Formula from reference [5] page 29.</p>
 </dd>
@@ -953,24 +964,46 @@ so each element in cooling analysis has a thickness value.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="bamboo.main.Engine.coolant_pressure_drop">
-<code class="sig-name descname"><span class="pre">coolant_pressure_drop</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">friction_factor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.coolant_pressure_drop" title="Permalink to this definition">¶</a></dt>
-<dd><p>Determine the coolant pressure drop using the friction factor.
+<dt id="bamboo.main.Engine.Q_coolant">
+<code class="sig-name descname"><span class="pre">Q_coolant</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.Q_coolant" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine dynamic pressure of coolant.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>float</em><em>, </em><em>optional</em>) – Axial position. Only required for ‘vertical’ channels.</p></li>
+<li><p><strong>y</strong> (<em>float</em><em>, </em><em>optional</em>) – The radius of the engine (m) (NOT the radius of the cooling channel). Only required for ‘vertical’ channels.</p></li>
+<li><p><strong>T</strong> (<em>float</em>) – Coolant temperature at x</p></li>
+<li><p><strong>p</strong> (<em>float</em>) – Coolant pressure at x</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dynamic pressure of coolant (Pa)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.coolant_p0_drop">
+<code class="sig-name descname"><span class="pre">coolant_p0_drop</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">friction_factor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.coolant_p0_drop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the drop in the Bernoulli constant (stagnation pressure) using the friction factor.
 :param friction_factor: Dimensionless friction factor
 :type friction_factor: float
-:param x: Axial position
-:type x: float
-:param y: The radius of the engine (m) (NOT the radius of the cooling channel).  Only required for ‘vertical’ channels.
+:param x: Axial position. Only required for ‘vertical’ channels.
+:type x: float, optional
+:param y: The radius of the engine (m) (NOT the radius of the cooling channel). Only required for ‘vertical’ channels.
 :type y: float, optional
 :param dl: Length to evaluate pressure drop over - an increment along the channel, not the engine axis
 :type dl: float
-:param T: Coolant temperature at x
+:param T: Coolant temperature
 :type T: float
-:param p: Coolant pressure at x
+:param p: Coolant pressure
 :type p: float</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>Pressure drop (Pa)</p>
+<dd class="field-odd"><p>Stagnation pressure drop (Pa)</p>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p>float</p>
@@ -982,7 +1015,6 @@ so each element in cooling analysis has a thickness value.</p>
 <dt id="bamboo.main.Engine.regen_thermal_circuit">
 <code class="sig-name descname"><span class="pre">regen_thermal_circuit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_gas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_coolant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_gas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_coolant</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.regen_thermal_circuit" title="Permalink to this definition">¶</a></dt>
 <dd><p>q is per unit length along the nozzle wall (axially) - positive when heat is flowing to the coolant.
-q_Adot is the heat flux per unit area along the nozzle wall.
 Uses the idea of thermal circuits and resistances - we have three resistors in series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1000,7 +1032,7 @@ Uses the idea of thermal circuits and resistances - we have three resistors in s
 <dd class="field-even"><p>q_dot, R_gas, R_wall, R_coolant</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float, float, float, float, float</p>
+<dd class="field-odd"><p>float, float, float, float</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1008,12 +1040,11 @@ Uses the idea of thermal circuits and resistances - we have three resistors in s
 <dl class="py method">
 <dt id="bamboo.main.Engine.ablative_thermal_circuit">
 <code class="sig-name descname"><span class="pre">ablative_thermal_circuit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_gas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ablative_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ablative_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_gas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_wall</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.ablative_thermal_circuit" title="Permalink to this definition">¶</a></dt>
-<dd><p>q is per unit length along the nozzle wall (axially) - positive when heat is flowing to the coolant.
-q_Adot is the heat flux per unit area along the nozzle wall.</p>
+<dd><p>q is per unit length along the nozzle wall (axially) - positive when heat is flowing to the coolant.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>r</strong> (<em>float</em>) – Radius to the inner wall of the engine (m)</p></li>
+<li><p><strong>r</strong> (<em>float</em>) – Radius to the contour of the engine (m)</p></li>
 <li><p><strong>h_gas</strong> (<em>float</em>) – Gas side convective heat transfer coefficient</p></li>
 <li><p><strong>ablative_material</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Material object for the ablative material, needed for thermal conductivity</p></li>
 <li><p><strong>ablative_thickness</strong> (<em>float</em>) – Thickness of the ablative material (m)</p></li>
@@ -1026,6 +1057,36 @@ q_Adot is the heat flux per unit area along the nozzle wall.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>float, float, float, float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.regen_ablative_thermal_circuit">
+<code class="sig-name descname"><span class="pre">regen_ablative_thermal_circuit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_gas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_coolant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_gas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_coolant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ablative_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ablative_thickness</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.regen_ablative_thermal_circuit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Combined regenerative and ablative cooling thermal circuit.
+q is per unit length along the nozzle wall (axially) - positive when heat is flowing to the coolant.
+q_Adot is the heat flux per unit area along the nozzle wall.
+Uses the idea of thermal circuits and resistances - we have three resistors in series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>r</strong> (<em>float</em>) – Radius to the contour of the engine (m)</p></li>
+<li><p><strong>h_gas</strong> (<em>float</em>) – Gas side convective heat transfer coefficient</p></li>
+<li><p><strong>h_coolant</strong> (<em>float</em>) – Coolant side convective heat transfer coefficient</p></li>
+<li><p><strong>wall_material</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Material object for the inner wall, needed for thermal conductivity</p></li>
+<li><p><strong>wall_thickness</strong> (<em>float</em>) – Thickness of the inner wall at x position (m)</p></li>
+<li><p><strong>T_gas</strong> (<em>float</em>) – Free stream gas temperature (K)</p></li>
+<li><p><strong>T_coolant</strong> (<em>float</em>) – Coolant temperature (K)</p></li>
+<li><p><strong>ablative_material</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Material object for the ablative material, needed for thermal conductivity</p></li>
+<li><p><strong>ablative_thickness</strong> (<em>float</em>) – Thickness of the ablative material (m)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>q_dot, R_gas, R_ablative, R_wall, R_coolant</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float, float, float, float, float</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1129,6 +1190,7 @@ q_Adot is the heat flux per unit area along the nozzle wall.</p>
 <li><p>[3] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, <a class="reference external" href="https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf">https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf</a></p></li>
 <li><p>[4] - Modelling ablative and regenerative cooling systems for an ethylene/ethane/nitrous oxide liquid fuel rocket engine, Elizabeth C. Browne, <a class="reference external" href="https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&amp;isAllowed=y">https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&amp;isAllowed=y</a></p></li>
 <li><p>[5] - Thermofluids databook, CUED, <a class="reference external" href="http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf">http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf</a></p></li>
+<li><p>[6] - Comparison of empirical correlations for the estimation of conjugate heat transfer in a thrust chamber, <a class="reference external" href="http://www.lifesciencesite.com/lsj/life0904/111_11626life0904_708_716.pdf">http://www.lifesciencesite.com/lsj/life0904/111_11626life0904_708_716.pdf</a></p></li>
 </ul>
 <dl class="py function">
 <dt id="bamboo.cooling.black_body">
@@ -1151,7 +1213,7 @@ q_Adot is the heat flux per unit area along the nozzle wall.</p>
 <dt id="bamboo.cooling.h_gas_1">
 <code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">h_gas_1</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">D</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">R</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.h_gas_1" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the convective heat transfer coefficient on the gas side.
-Uses Eqn (8-22) on page 312 or RPE 7th edition.</p>
+Uses Eqn (8-22) on page 312 or RPE 7th edition (Reference [2])</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1179,7 +1241,7 @@ Uses Eqn (8-22) on page 312 or RPE 7th edition.</p>
 <dt id="bamboo.cooling.h_gas_2">
 <code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">h_gas_2</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">D</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cp_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_am</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_am</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.h_gas_2" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bartz equation,
-usingEquation (8-23) from page 312 of RPE 7th edition. ‘am’ refers to the gas being at the ‘arithmetic mean’ of the wall and freestream temperatures.</p>
+using Equation (8-23) from page 312 of RPE 7th edition (Reference [2]). ‘am’ refers to the gas being at the ‘arithmetic mean’ of the wall and freestream temperatures.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Seems to provide questionable results - may have been implemented incorrectly.</p>
@@ -1210,7 +1272,7 @@ usingEquation (8-23) from page 312 of RPE 7th edition. ‘am’ refers to the ga
 <dl class="py function">
 <dt id="bamboo.cooling.h_gas_3">
 <code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">h_gas_3</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c_star</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">At</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Tc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Tw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.h_gas_3" title="Permalink to this definition">¶</a></dt>
-<dd><p>Alternative equation for Bartz heat transfer coefficient.</p>
+<dd><p>Alternative equation for Bartz heat transfer coefficient, from page 710 of Reference [6].</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1289,12 +1351,20 @@ Used specifically for defining the inner liner of an engine.</p>
 
 <dl class="py class">
 <dt id="bamboo.cooling.TransportProperties">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">TransportProperties</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'thermo'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">TransportProperties</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'thermo'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_phase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Container for transport properties of a fluid.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Sometimes ‘thermo’ uses a questionable choice of phase when calculating transport properties for mixtures (and sometimes pure chemicals),
+If you are getting questionable data, it may be useful to try out the ‘force_phase’ argument.</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>model</strong> (<em>str</em><em>, </em><em>optional</em>) – The module to use for modelling. Intended to offer ‘thermo’, ‘CoolProp’ and ‘cantera’, but only thermo works as of now. Defaults to “thermo”.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>str</em><em>, </em><em>optional</em>) – The module to use for modelling. Options include ‘thermo’ and ‘CoolProp’.</p></li>
+<li><p><strong>force_phase</strong> (<em>str</em><em>, </em><em>optional</em>) – ‘l’ for liquid or ‘g’ for gas. Forces thermo to use transport properties in the given phase. Does not affect other models. Defaults to None.</p></li>
+</ul>
 </dd>
 </dl>
 <dl class="simple">
@@ -1437,7 +1507,7 @@ coolprop_name (str): Name of the chemcial or mixture for the CoolProp module. Se
 <li><p><strong>inlet_p0</strong> (<em>float</em>) – Inlet coolant stagnation pressure (Pa)</p></li>
 <li><p><strong>coolant_transport</strong> (<a class="reference internal" href="#bamboo.cooling.TransportProperties" title="bamboo.cooling.TransportProperties"><em>TransportProperties</em></a>) – Container for the coolant transport properties.</p></li>
 <li><p><strong>mdot_coolant</strong> (<em>float</em>) – Coolant mass flow rate (kg/s)</p></li>
-<li><p><strong>xs</strong> (<em>list</em>) – x position that the cooling jacket starts and ends at in the form [x_start, x_end]. Defaults to [-1000, 1000].</p></li>
+<li><p><strong>xs</strong> (<em>list</em>) – x positions that the cooling jacket starts and ends at, [x_min, x_max]. Defaults to [-1000, 1000].</p></li>
 <li><p><strong>configuration</strong> (<em>str</em><em>, </em><em>optional</em>) – Options include ‘spiral’ and ‘vertical’. Defaults to “vertical”.</p></li>
 </ul>
 </dd>
@@ -1516,8 +1586,21 @@ coolprop_name (str): Name of the chemcial or mixture for the CoolProp module. Se
 
 <dl class="py class">
 <dt id="bamboo.cooling.Ablative">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">Ablative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ablative_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[-</span> <span class="pre">1000,</span> <span class="pre">1000]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.Ablative" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">Ablative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ablative_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[-</span> <span class="pre">1000,</span> <span class="pre">1000]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ablative_thickness</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.Ablative" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Container for refractory or ablative properties.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ablative_material</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – [description]</p></li>
+<li><p><strong>wall_material</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Wall material on the outside of the ablative.</p></li>
+<li><p><strong>regression_rate</strong> (<em>float</em>) – (m/s)</p></li>
+<li><p><strong>xs</strong> (<em>list</em><em>, </em><em>optional</em>) – x positions that the ablative is present between, [xmin, xmax]. Defaults to [-1000, 1000].</p></li>
+<li><p><strong>ablative_thickness</strong> (<em>float</em><em> or </em><em>list</em>) – Thickness of ablative. If a list is given, it must correspond to thickness at regular x intervals,</p></li>
+<li><p><strong>will be stretched out over the inverval of 'xs'. Defaults to None</strong> (<em>which</em>) – </p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </div>

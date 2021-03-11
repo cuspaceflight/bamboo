@@ -176,6 +176,7 @@
 <li><p>[3] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, <a class="reference external" href="https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf">https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf</a></p></li>
 <li><p>[4] - Modelling ablative and regenerative cooling systems for an ethylene/ethane/nitrous oxide liquid fuel rocket engine, Elizabeth C. Browne, <a class="reference external" href="https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&amp;isAllowed=y">https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&amp;isAllowed=y</a></p></li>
 <li><p>[5] - Thermofluids databook, CUED, <a class="reference external" href="http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf">http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf</a></p></li>
+<li><p>[6] - Comparison of empirical correlations for the estimation of conjugate heat transfer in a thrust chamber, <a class="reference external" href="http://www.lifesciencesite.com/lsj/life0904/111_11626life0904_708_716.pdf">http://www.lifesciencesite.com/lsj/life0904/111_11626life0904_708_716.pdf</a></p></li>
 </ul>
 <p class="rubric">Functions</p>
 <table class="longtable docutils align-default">
@@ -194,10 +195,10 @@
 <td><p>Get the convective heat transfer coefficient on the gas side.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_gas_2" title="bamboo.cooling.h_gas_2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_gas_2</span></code></a>(D, cp_inf, mu_inf, Pr_inf, rho_inf, …)</p></td>
-<td><p>Bartz equation, usingEquation (8-23) from page 312 of RPE 7th edition.</p></td>
+<td><p>Bartz equation, using Equation (8-23) from page 312 of RPE 7th edition (Reference [2]).</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_gas_3" title="bamboo.cooling.h_gas_3"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_gas_3</span></code></a>(c_star, At, A, pc, Tc, M, Tw, mu, …)</p></td>
-<td><p>Alternative equation for Bartz heat transfer coefficient.</p></td>
+<td><p>Alternative equation for Bartz heat transfer coefficient, from page 710 of Reference [6].</p></td>
 </tr>
 </tbody>
 </table>
@@ -209,7 +210,7 @@
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.Ablative" title="bamboo.cooling.Ablative"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Ablative</span></code></a>(ablative_material, wall_material, …)</p></td>
-<td><p></p></td>
+<td><p>Container for refractory or ablative properties.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.CoolingJacket" title="bamboo.cooling.CoolingJacket"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CoolingJacket</span></code></a>(inner_wall, inlet_T, inlet_p0, …)</p></td>
 <td><p>Container for cooling jacket information - e.g.</p></td>
@@ -217,7 +218,7 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.Material" title="bamboo.cooling.Material"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Material</span></code></a>(E, sigma_y, poisson, alpha, k, **kwargs)</p></td>
 <td><p>Class used to specify a material and its properties.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.TransportProperties" title="bamboo.cooling.TransportProperties"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransportProperties</span></code></a>([model])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.TransportProperties" title="bamboo.cooling.TransportProperties"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransportProperties</span></code></a>([model, force_phase])</p></td>
 <td><p>Container for transport properties of a fluid.</p></td>
 </tr>
 </tbody>
