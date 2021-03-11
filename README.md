@@ -12,7 +12,7 @@ Bamboo is a Python tool that provides functions and classes for modelling the co
 ## General engine tools available
 - Nozzle shape calculator for Rao bell nozzles.
 - Get thrust and specific impulse.
-- Get gas properties (temperature and pressure) as a function of position in the nozzle, using isentropic 1D compressible flow relations.
+- Get gas properties (temperature and pressure) as a function of position in the nozzle.
 - Estimate apogee using a simple 1D trajectory simulator.
 - Optimise nozzle area ratio based on the simple trajectory simulator.
 
