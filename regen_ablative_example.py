@@ -18,7 +18,7 @@ gamma = 1.264               #Ratio of specific heats cp/cv
 molecular_weight = 21.627   #Molecular weight of the exhaust gas (kg/kmol) (only used to calculate R, and hence cp)
 
 '''Engine operating points'''
-p_tank = 20e5           #Tank / inlet coolant stagnation pressure (Pa) - used for cooling jacket
+p_tank = 25e5           #Tank / inlet coolant stagnation pressure (Pa) - used for cooling jacket
 pc = 10e5           #Chamber pressure (Pa)
 Tc = 2458.89        #Chamber temperature (K) - obtained from ProPEP 3
 mdot = 4.757        #Mass flow rate (kg/s)
@@ -51,16 +51,19 @@ gas_transport = cool.TransportProperties(model = "thermo", thermo_object = therm
 '''Cooling system setup'''
 white_dwarf.add_geometry(chamber_length, Ac, wall_thickness)
 white_dwarf.add_exhaust_transport(gas_transport)
-white_dwarf.add_cooling_jacket(wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, configuration = "vertical", channel_height = 0.001, xs = [-100, 100])
+#white_dwarf.add_cooling_jacket(wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, configuration = "vertical", channel_height = 0.001, xs = [-100, 100])
+white_dwarf.add_cooling_jacket(wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, configuration = "spiral", channel_shape = "semi-circle", channel_width = 0.020)
 
 '''Run a steady state simulation'''
-data = white_dwarf.steady_heating_analysis()
-bam.plot.plot_temperatures(data)
+#data = white_dwarf.steady_heating_analysis()
+#bam.plot.plot_temperatures(data)
 
 '''Run a second simulation with an ablative added'''
 #Setting ablative_thickness = None tells the program to make the ablative thickness equal to (chamber_radius - y(x))
-white_dwarf.add_ablative(bam.materials.Graphite, bam.materials.CopperC700, regression_rate = 0.0033e-3, xs = [-0.05, 0.05], ablative_thickness = None)
+white_dwarf.add_ablative(bam.materials.Graphite, bam.materials.CopperC700, regression_rate = 0.0033e-3, xs = [-100, 100], ablative_thickness = None)
 data = white_dwarf.steady_heating_analysis()
 bam.plot.plot_temperatures(data)
+bam.plot.plot_jacket_pressure(data)
+white_dwarf.plot_geometry()
 
 plt.show()
