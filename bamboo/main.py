@@ -387,12 +387,13 @@ class Nozzle:
             self.Ey = self.Re                                                                   #Exit y-value (same as Re)
             self.length = self.Ex                                                               #Nozzle length
 
-            #Page 2 of Reference [3]. Set up the matrix problem to get the coefficients for x = ay^2 + by + c
-            A = np.array([[2*self.Ny, 1, 0],
-                          [2*self.Ey, 1, 0],
-                          [self.Ny**2, self.Ny, 1]], dtype='float')
+            #Similar to page 2 of Reference [3]. Set up the matrix problem to get the coefficients for x = ay^2 + by + c
+            #We will fit the quadratic using the inflection point and exit coordinates, and the exit gradient. The inflection gradient is ignored.
+            A = np.array([[2*self.Ey, 1, 0],
+                          [self.Ny**2, self.Ny, 1],
+                          [self.Ey**2, self.Ey, 1]], dtype='float')
             
-            b = np.array([1/np.tan(self.theta_n), 1/np.tan(self.theta_e), self.Nx], dtype='float')
+            b = np.array([1/np.tan(self.theta_e), self.Nx, self.Ex], dtype='float')
 
             self.a, self.b, self.c = np.linalg.solve(A, b)
 

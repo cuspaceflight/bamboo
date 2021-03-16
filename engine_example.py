@@ -9,6 +9,7 @@ Subscripts:
 import bamboo as bam
 import numpy as np
 import time
+import matplotlib.pyplot as plt
 
 '''Gas properties - obtained from ProPEP 3'''
 gamma = 1.264               #Ratio of specific heats cp/cv
@@ -24,23 +25,27 @@ p_amb = 1.01325e5   #Ambient pressure (Pa). 1.01325e5 is sea level atmospheric.
 perfect_gas = bam.PerfectGas(gamma = gamma, molecular_weight = molecular_weight)
 chamber = bam.ChamberConditions(pc, Tc, mdot)
 nozzle = bam.Nozzle.from_engine_components(perfect_gas, chamber, p_amb, type = "rao", length_fraction = 0.8)
-white_dwarf = bam.Engine(perfect_gas, chamber, nozzle)
+engine = bam.Engine(perfect_gas, chamber, nozzle)
 
 print(nozzle)
+print(f"Sea level thrust = {engine.thrust(1e5)/1000} kN")
+print(f"Sea level Isp = {engine.isp(1e5)} s")
+
 nozzle.plot_nozzle()
-print(f"Sea level thrust = {white_dwarf.thrust(1e5)/1000} kN")
-print(f"Sea level Isp = {white_dwarf.isp(1e5)} s")
+plt.show()
 
 #Estimate apogee based on apprpoximate Martlet 4 vehicle mass and cross sectional area
+'''
 apogee_estimate = bam.estimate_apogee(dry_mass = 60, 
                                       propellant_mass = 50, 
-                                      engine = white_dwarf, 
+                                      engine = engine, 
                                       cross_sectional_area = 0.03, 
                                       show_plot = False)
 
 print(f"Apogee estimate = {apogee_estimate/1000} km")
 
 #Run an optimisation program to change the nozzle area ratio, to maximise the apogee obtained (I'm not sure if this is working correctly right now).
-white_dwarf.optimise_for_apogee(dry_mass = 60, propellant_mass = 50, cross_sectional_area = 0.03)
+engine.optimise_for_apogee(dry_mass = 60, propellant_mass = 50, cross_sectional_area = 0.03)
 
-print(white_dwarf.nozzle)
+print(engine.nozzle)
+'''
