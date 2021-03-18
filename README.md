@@ -6,6 +6,8 @@
 
 Bamboo is a Python tool that provides functions and classes for modelling the cooling systems of liquid rocket engines. Alongside this, it contains a range of other miscellaneous tools to aid with general engine design.
 
+An introduction to the package can be found in the 'Introduction to Bamboo.ipynb' Jupyter Notebook.
+
 ## Installation
 `pip install git+https://github.com/cuspaceflight/bamboo.git`
 
