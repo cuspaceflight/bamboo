@@ -18,9 +18,9 @@ gamma = 1.264               #Ratio of specific heats cp/cv
 molecular_weight = 21.627   #Molecular weight of the exhaust gas (kg/kmol) (only used to calculate R, and hence cp)
 
 '''Engine operating points'''
-p_tank = 25e5           #Tank / inlet coolant stagnation pressure (Pa) - used for cooling jacket
+p_tank = 25e5       #Tank / inlet coolant stagnation pressure (Pa) - used for cooling jacket
 pc = 10e5           #Chamber pressure (Pa)
-Tc = 2458.89        #Chamber temperature (K) - obtained from ProPEP 3
+Tc = 2800.0           #Chamber temperature (K) - obtained from ProPEP 3
 mdot = 4.757        #Mass flow rate (kg/s)
 p_amb = 1.01325e5   #Ambient pressure (Pa). 1.01325e5 is sea level atmospheric.
 OF_ratio = 3.5      #Oxidiser/fuel mass ratio
@@ -45,7 +45,7 @@ engine = bam.Engine(perfect_gas, chamber, nozzle)
 chamber_length = L_star*nozzle.At/Ac
 
 '''Choose the models we want to use for transport properties of the exhaust gas'''
-thermo_gas = thermo.mixture.Mixture(['N2', 'H2O', 'CO2'], zs = [1, 0.2, 0.2])            #Very crude exhaust gas model
+thermo_gas = thermo.mixture.Mixture(['N2', 'H2O', 'CO2'], ws = [0.49471, 0.14916, 0.07844])            #Very crude exhaust gas model - using weight fractions from CEA.
 gas_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_gas, force_phase = 'g')
 
 '''Cooling system setup'''
@@ -61,6 +61,9 @@ engine.add_cooling_jacket(wall_material, inlet_T, p_tank, coolant_transport, mdo
 '''Run a second simulation with an ablative added'''
 #Add a graphite refractory, and override the copper cooling jacket with a stainless steel layer.
 engine.add_ablative(bam.materials.Graphite, bam.materials.StainlessSteel304, regression_rate = 0.0033e-3, xs = [engine.geometry.x_chamber_end, 100], ablative_thickness = None)
+
+print(nozzle)
+
 data = engine.steady_heating_analysis()
 bam.plot.plot_temperatures(data)
 bam.plot.plot_jacket_pressure(data)
