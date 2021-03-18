@@ -13,7 +13,8 @@ def plot_temperatures(data_dict, **kwargs):
         data_dict (dict): Dictionary contaning the cooling analysis results.
     
     Keyword Args:
-        gas_temperature (bool): If True, the exhaust gas freestream temperatures will be shown.
+        show_gas (bool): If True, the exhaust gas freestream temperatures will be shown. Defaults to False.
+        show_ablative (bool): If False, the ablative temperatures will not be shown. Defaults to True.
     """
     fig, ax_T = plt.subplots()
     ax_T.plot(data_dict["x"], np.array(data_dict["T_wall_inner"]) - 273.15, label = "Wall (Inner)")
@@ -23,9 +24,16 @@ def plot_temperatures(data_dict, **kwargs):
     if data_dict["boil_off_position"] != None:
         ax_T.axvline(data_dict["boil_off_position"], color = 'red', linestyle = '--', label = "Coolant boil-off")
 
-    if "gas_temperature" in kwargs:
-        if kwargs["gas_temperature"] == True:
+    if "show_gas" in kwargs:
+        if kwargs["show_gas"] == True:
             ax_T.plot(data_dict["x"], np.array(data_dict["T_gas"]) - 273.15, label = "Exhaust gas")
+
+    if "show_ablative" in kwargs:
+        if kwargs["show_ablative"] == False:
+            pass
+        else:
+            ax_T.plot(data_dict["x"], np.array(data_dict["T_ablative_inner"]) - 273.15, label = "Ablative (inner)")
+
 
     ax_T.grid()
     ax_T.set_xlabel("Position (m)")
@@ -101,8 +109,97 @@ def plot_jacket_pressure(data_dict, **kwargs):
     p_axs.set_xlabel("Position (m)")
     p_axs.set_ylabel("Coolant pressure (bar)")
 
+def plot_resistances(data_dict, **kwargs):
+    """Given the output dictionary from a engine cooling analysis, plot the thermal resistances of all the components.
+
+    Args:
+        data_dict (dict): Dictionary contaning the cooling analysis results.
+
+    """
+    figs, axs = plt.subplots()
+    axs.plot(data_dict["x"], data_dict["R_gas"], label = "Gas")
+    axs.plot(data_dict["x"], data_dict["R_ablative"], label = "Ablative")
+    axs.plot(data_dict["x"], data_dict["R_wall"], label = "Wall")
+    axs.plot(data_dict["x"], data_dict["R_coolant"], label = "Coolant")
+
+    axs.legend()
+    axs.grid()
+    axs.set_xlabel("Position (m)")
+    axs.set_ylabel("Thermal resistance (K/W)")
+ 
+def plot_exhaust_properties(data_dict, **kwargs):
+    """Given the output dictionary from a engine cooling analysis, plot the exhaust gas transport properties
+
+    Args:
+        data_dict (dict): Dictionary contaning the cooling analysis results.
+
+    """
+    fig, axs = plt.subplots(2,2)
+    axs[0,0].plot(data_dict["x"], data_dict["mu_gas"])
+    axs[0,0].set_title('Exhaust Gas Absolute Viscosity')
+    axs[0,0].set_ylabel('Absolute Viscosity (Pa s)')
+
+    axs[0,1].plot(data_dict["x"], data_dict["k_gas"])
+    axs[0,1].set_title('Exhaust Gas Thermal Conductivity')
+    axs[0,1].set_ylabel('Thermal Conductivity (W/m/K)')
+
+    axs[1,0].plot(data_dict["x"], data_dict["Pr_gas"])
+    axs[1,0].set_title('Exhaust Gas Prandtl Number')
+    axs[1,0].set_ylabel('Prandtl Number')
+
+    axs[1,1].set_title('(empty chart)')
+
+    for i in range(len(axs)):
+        for j in range(len(axs[i])):
+            axs[i, j].grid()
+            axs[i, j].set_xlabel("Position (m)")
+
+    fig.tight_layout()
+
+def plot_coolant_properties(data_dict, **kwargs):
+    """Given the output dictionary from a engine cooling analysis, plot the coolant transport properties
+
+    Args:
+        data_dict (dict): Dictionary contaning the cooling analysis results.
+
+    """
+    fig, axs = plt.subplots(2,2)
+    axs[0,0].plot(data_dict["x"], data_dict["mu_coolant"])
+    axs[0,0].set_title('Coolant Viscosity')
+    axs[0,0].set_ylabel('Absolute Viscosity (Pa s)')
+
+    axs[0,1].plot(data_dict["x"], data_dict["k_gas"])
+    axs[0,1].set_title('Coolant Thermal Conductivity')
+    axs[0,1].set_ylabel('Thermal Conductivity (W/m/K)')
+
+    axs[1,0].plot(data_dict["x"], data_dict["cp_coolant"])
+    axs[1,0].set_title('Coolant Specific Heat Capacity')
+    axs[1,0].set_ylabel('Specific heat capacity (J/kg/K)')
+
+    axs[1,1].plot(data_dict["x"], data_dict["rho_coolant"])
+    axs[1,1].set_title('Coolant Density')
+    axs[1,1].set_ylabel('Density (kg/m^3)')
+
+    for i in range(len(axs)):
+        for j in range(len(axs[i])):
+            axs[i, j].grid()
+            axs[i, j].set_xlabel("Position (m)")
+
+    fig.tight_layout()
 
 def animate_transient_temperatures(data_dict, speed = 1, **kwargs): 
+    """Animates transient heating analysis data.
+
+    Note:
+        Transient analysis modelling is currently incomplete.
+
+    Args:
+        data_dict ([type]): [description]
+        speed (int, optional): [description]. Defaults to 1.
+
+    Returns:
+        [type]: [description]
+    """
     xs = data_dict["x"]
     ts = data_dict["t"]
 

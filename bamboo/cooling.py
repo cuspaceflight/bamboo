@@ -348,7 +348,7 @@ class CoolingJacket:
     """Container for cooling jacket information - e.g. for regenerative cooling.
 
     Args:
-        inner_wall (Material): Inner wall material
+        inner_wall (Material): Wall material on the inner side of the cooling jacket.
         inlet_T (float): Inlet coolant temperature (K)
         inlet_p0 (float): Inlet coolant stagnation pressure (Pa)
         coolant_transport (TransportProperties): Container for the coolant transport properties.
@@ -455,14 +455,13 @@ class Ablative:
     """Container for refractory or ablative properties. 
 
     Args:
-        ablative_material (Material): [description]
-        wall_material (Material): Wall material on the outside of the ablative.
-        regression_rate (float): (m/s)
+        ablative_material (Material): Ablative material.
+        regression_rate (float): (Not currently used) (m/s)
         xs (list, optional): x positions that the ablative is present between, [xmin, xmax]. Defaults to [-1000, 1000].
-        ablative_thickness (float or list): Thickness of ablative. If a list is given, it must correspond to thickness at regular x intervals, 
-        which will be stretched out over the inverval of 'xs'. Defaults to None (in which case the ablative extends from the engine contour to combustion chamber radius).
+        wall_material (Material): Wall material on the outside of the ablative (will override the cooling jacket wall material).
+        ablative_thickness (float or list): Thickness of ablative. If a list is given, it must correspond to thickness at regular x intervals, which will be stretched out over the inverval of 'xs'. Defaults to None (in which case the ablative extends from the engine contour to combustion chamber radius).
     """
-    def __init__(self, ablative_material, wall_material, regression_rate, xs = [-1000, 1000], ablative_thickness = None):
+    def __init__(self, ablative_material, wall_material, xs = [-1000, 1000], ablative_thickness = None, regression_rate = 0.0):
         self.ablative_material = ablative_material
         self.wall_material = wall_material
         self.regression_rate = regression_rate

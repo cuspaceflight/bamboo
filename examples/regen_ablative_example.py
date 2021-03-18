@@ -41,7 +41,7 @@ coolant_transport = cool.TransportProperties(model = "thermo", thermo_object = t
 perfect_gas = bam.PerfectGas(gamma = gamma, molecular_weight = molecular_weight)
 chamber = bam.ChamberConditions(pc, Tc, mdot)
 nozzle = bam.Nozzle.from_engine_components(perfect_gas, chamber, p_amb, type = "rao", length_fraction = 0.8)
-white_dwarf = bam.Engine(perfect_gas, chamber, nozzle)
+engine = bam.Engine(perfect_gas, chamber, nozzle)
 chamber_length = L_star*nozzle.At/Ac
 
 '''Choose the models we want to use for transport properties of the exhaust gas'''
@@ -49,21 +49,25 @@ thermo_gas = thermo.mixture.Mixture(['N2', 'H2O', 'CO2'], zs = [1, 0.2, 0.2])   
 gas_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_gas, force_phase = 'g')
 
 '''Cooling system setup'''
-white_dwarf.add_geometry(chamber_length, Ac, wall_thickness)
-white_dwarf.add_exhaust_transport(gas_transport)
-#white_dwarf.add_cooling_jacket(wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, configuration = "vertical", channel_height = 0.001, xs = [-100, 100])
-white_dwarf.add_cooling_jacket(wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, configuration = "spiral", channel_shape = "semi-circle", channel_width = 0.020)
+engine.add_geometry(chamber_length, Ac, wall_thickness)
+engine.add_exhaust_transport(gas_transport)
+#engine.add_cooling_jacket(wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, configuration = "vertical", channel_height = 0.001, xs = [-100, 100])
+engine.add_cooling_jacket(wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, configuration = "spiral", channel_shape = "semi-circle", channel_width = 0.020)
 
 '''Run a steady state simulation'''
-#data = white_dwarf.steady_heating_analysis()
+#data = engine.steady_heating_analysis()
 #bam.plot.plot_temperatures(data)
 
 '''Run a second simulation with an ablative added'''
-#Setting ablative_thickness = None tells the program to make the ablative thickness equal to (chamber_radius - y(x))
-white_dwarf.add_ablative(bam.materials.Graphite, bam.materials.CopperC700, regression_rate = 0.0033e-3, xs = [-100, 100], ablative_thickness = None)
-data = white_dwarf.steady_heating_analysis()
+#Add a graphite refractory, and override the copper cooling jacket with a stainless steel layer.
+engine.add_ablative(bam.materials.Graphite, bam.materials.StainlessSteel304, regression_rate = 0.0033e-3, xs = [engine.geometry.x_chamber_end, 100], ablative_thickness = None)
+data = engine.steady_heating_analysis()
 bam.plot.plot_temperatures(data)
 bam.plot.plot_jacket_pressure(data)
-white_dwarf.plot_geometry()
 
+bam.plot.plot_resistances(data)
+bam.plot.plot_exhaust_properties(data)
+bam.plot.plot_coolant_properties(data)
+
+engine.plot_geometry()
 plt.show()
