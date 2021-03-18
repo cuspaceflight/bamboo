@@ -2,18 +2,20 @@
 Extra tools for modelling the cooling system of a liquid rocket engine.
 
 Room for improvement:
-    - My equation for h_gas is the less accurate version, with the Bartz correction factors (this was just to avoid needing the extra parameters for the Bartz equation)
-    - The EngineWithCooling.rho() function calculates rho by doing p/RT, but it would probably be faster to just use isentropic compressible flow relations.
+    - Run some more thorough tests on the different h_gas() methods to try and validate/compare them.
+    - The EngineWithCooling.rho() function calculates rho by doing p/RT, but it might be faster to just use isentropic compressible flow relations.
 
 Useful:
     - List of CoolProp properties: http://www.coolprop.org/coolprop/HighLevelAPI.html#table-of-string-inputs-to-propssi-function
+    
 References:
     - [1] - The Thrust Optimised Parabolic nozzle, AspireSpace, http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf   \n
     - [2] - Rocket Propulsion Elements, 7th Edition  \n
-    - [3] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf  \n
+    - [3] - Design and analysis of contour bell nozzle and comparison with dual bell nozzle https://core.ac.uk/download/pdf/154060575.pdf 
     - [4] - Modelling ablative and regenerative cooling systems for an ethylene/ethane/nitrous oxide liquid fuel rocket engine, Elizabeth C. Browne, https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&isAllowed=y  \n
     - [5] - Thermofluids databook, CUED, http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf    \n
     - [6] - Comparison of empirical correlations for the estimation of conjugate heat transfer in a thrust chamber, http://www.lifesciencesite.com/lsj/life0904/111_11626life0904_708_716.pdf
+    - [7] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf  \n
 '''
 
 import bamboo as bam
@@ -115,7 +117,7 @@ def h_gas_3(c_star, At, A, pc, Tc, M, Tw, mu, cp, gamma, Pr):
 
     Dt = (At *4/np.pi)**0.5
     sigma = (0.5 * (Tw/Tc) * (1 + (gamma-1)/2 * M**2) + 0.5)**0.68 * (1 + (gamma-1)/2 * M**2)**(-0.12)
-    
+
     return (0.026)/(Dt**0.2) * (mu**0.2*cp/Pr**0.6) * (pc/c_star)**0.8 * (At/A)**0.9 * sigma
 
 def h_coolant_1(A, D, mdot, mu, k, c_bar, rho):

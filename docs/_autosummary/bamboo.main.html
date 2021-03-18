@@ -170,10 +170,13 @@
 </ul>
 </dd>
 <dt>Known issues:</dt><dd><ul class="simple">
-<li><p>A hardcoded fix is in place for using area ratios outside the Rao angle data range (it tricks the code into making a 15 degree cone). A more robust fix would be better.</p></li>
+<li><p>A hardcoded fix is in place for using area ratios outside the Rao angle data range (it tricks the code into making something close to a 15 degree cone). A more robust fix would be better.</p></li>
+<li><p>h_gas_model = ‘2’ doesn’t seem to work very well (if at all) right now.</p></li>
 </ul>
 </dd>
 <dt>Room for improvement:</dt><dd><ul class="simple">
+<li><p>Should check if the Engine.channel_geometry() function is working as intended.</p></li>
+<li><p>Unsure if the first step (i = 0) in Engine.steady_heating_analysis() is dealt with correctly when using h_gas_model == ‘3’.</p></li>
 <li><p>Rao bell nozzle data is currently obtained rather crudely (by using an image-of-graph-to-data converter). Would be nicer to have more exact data values.</p></li>
 <li><p>Cone nozzles are not currently implemented.</p></li>
 </ul>
@@ -190,8 +193,12 @@
 <p class="rubric">References</p>
 <ul class="simple">
 <li><p>[1] - The Thrust Optimised Parabolic nozzle, AspireSpace, <a class="reference external" href="http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf">http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf</a></p></li>
-<li><p>[2] - Liquid rocket engine nozzles, NASA, <a class="reference external" href="https://ntrs.nasa.gov/api/citations/19770009165/downloads/19770009165.pdf">https://ntrs.nasa.gov/api/citations/19770009165/downloads/19770009165.pdf</a></p></li>
+<li><p>[2] - Rocket Propulsion Elements, 7th Edition</p></li>
 <li><p>[3] - Design and analysis of contour bell nozzle and comparison with dual bell nozzle <a class="reference external" href="https://core.ac.uk/download/pdf/154060575.pdf">https://core.ac.uk/download/pdf/154060575.pdf</a></p></li>
+<li><p>[4] - Modelling ablative and regenerative cooling systems for an ethylene/ethane/nitrous oxide liquid fuel rocket engine, Elizabeth C. Browne, <a class="reference external" href="https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&amp;isAllowed=y">https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&amp;isAllowed=y</a></p></li>
+<li><p>[5] - Thermofluids databook, CUED, <a class="reference external" href="http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf">http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf</a></p></li>
+<li><p>[6] - Comparison of empirical correlations for the estimation of conjugate heat transfer in a thrust chamber, <a class="reference external" href="http://www.lifesciencesite.com/lsj/life0904/111_11626life0904_708_716.pdf">http://www.lifesciencesite.com/lsj/life0904/111_11626life0904_708_716.pdf</a></p></li>
+<li><p>[7] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, <a class="reference external" href="https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf">https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf</a></p></li>
 </ul>
 <p class="rubric">Functions</p>
 <table class="longtable docutils align-default">

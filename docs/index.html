@@ -190,10 +190,13 @@ Use the ‘home’ buttons (with the small image of a house) to navigate back to
 </ul>
 </dd>
 <dt>Known issues:</dt><dd><ul class="simple">
-<li><p>A hardcoded fix is in place for using area ratios outside the Rao angle data range (it tricks the code into making a 15 degree cone). A more robust fix would be better.</p></li>
+<li><p>A hardcoded fix is in place for using area ratios outside the Rao angle data range (it tricks the code into making something close to a 15 degree cone). A more robust fix would be better.</p></li>
+<li><p>h_gas_model = ‘2’ doesn’t seem to work very well (if at all) right now.</p></li>
 </ul>
 </dd>
 <dt>Room for improvement:</dt><dd><ul class="simple">
+<li><p>Should check if the Engine.channel_geometry() function is working as intended.</p></li>
+<li><p>Unsure if the first step (i = 0) in Engine.steady_heating_analysis() is dealt with correctly when using h_gas_model == ‘3’.</p></li>
 <li><p>Rao bell nozzle data is currently obtained rather crudely (by using an image-of-graph-to-data converter). Would be nicer to have more exact data values.</p></li>
 <li><p>Cone nozzles are not currently implemented.</p></li>
 </ul>
@@ -210,8 +213,12 @@ Use the ‘home’ buttons (with the small image of a house) to navigate back to
 <p class="rubric">References</p>
 <ul class="simple">
 <li><p>[1] - The Thrust Optimised Parabolic nozzle, AspireSpace, <a class="reference external" href="http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf">http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf</a></p></li>
-<li><p>[2] - Liquid rocket engine nozzles, NASA, <a class="reference external" href="https://ntrs.nasa.gov/api/citations/19770009165/downloads/19770009165.pdf">https://ntrs.nasa.gov/api/citations/19770009165/downloads/19770009165.pdf</a></p></li>
+<li><p>[2] - Rocket Propulsion Elements, 7th Edition</p></li>
 <li><p>[3] - Design and analysis of contour bell nozzle and comparison with dual bell nozzle <a class="reference external" href="https://core.ac.uk/download/pdf/154060575.pdf">https://core.ac.uk/download/pdf/154060575.pdf</a></p></li>
+<li><p>[4] - Modelling ablative and regenerative cooling systems for an ethylene/ethane/nitrous oxide liquid fuel rocket engine, Elizabeth C. Browne, <a class="reference external" href="https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&amp;isAllowed=y">https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&amp;isAllowed=y</a></p></li>
+<li><p>[5] - Thermofluids databook, CUED, <a class="reference external" href="http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf">http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf</a></p></li>
+<li><p>[6] - Comparison of empirical correlations for the estimation of conjugate heat transfer in a thrust chamber, <a class="reference external" href="http://www.lifesciencesite.com/lsj/life0904/111_11626life0904_708_716.pdf">http://www.lifesciencesite.com/lsj/life0904/111_11626life0904_708_716.pdf</a></p></li>
+<li><p>[7] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, <a class="reference external" href="https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf">https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf</a></p></li>
 </ul>
 <dl class="py function">
 <dt id="bamboo.main.m_bar">
@@ -490,6 +497,61 @@ Data obtained by using <a class="reference external" href="http://www.graphreade
 </ul>
 </dd>
 </dl>
+<dl class="py attribute">
+<dt id="bamboo.main.Nozzle.length">
+<code class="sig-name descname"><span class="pre">length</span></code><a class="headerlink" href="#bamboo.main.Nozzle.length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Length of the diverging section (distance between throat and nozzle exit) (m).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="bamboo.main.Nozzle.At">
+<code class="sig-name descname"><span class="pre">At</span></code><a class="headerlink" href="#bamboo.main.Nozzle.At" title="Permalink to this definition">¶</a></dt>
+<dd><p>Throat area (m^2)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="bamboo.main.Nozzle.Ae">
+<code class="sig-name descname"><span class="pre">Ae</span></code><a class="headerlink" href="#bamboo.main.Nozzle.Ae" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exit area (m^2)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="bamboo.main.Nozzle.Rt">
+<code class="sig-name descname"><span class="pre">Rt</span></code><a class="headerlink" href="#bamboo.main.Nozzle.Rt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Throat radius (m)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="bamboo.main.Nozzle.Re">
+<code class="sig-name descname"><span class="pre">Re</span></code><a class="headerlink" href="#bamboo.main.Nozzle.Re" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exit radius (m)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt id="bamboo.main.Nozzle.y">
 <code class="sig-name descname"><span class="pre">y</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Nozzle.y" title="Permalink to this definition">¶</a></dt>
@@ -537,12 +599,12 @@ Data obtained by using <a class="reference external" href="http://www.graphreade
 
 <dl class="py method">
 <dt id="bamboo.main.Nozzle.from_engine_components">
-<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">from_engine_components</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chamber_conditions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_amb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rao'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.8</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Nozzle.from_engine_components" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">from_engine_components</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">perfect_gas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chamber_conditions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_amb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rao'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.8</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Nozzle.from_engine_components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate nozzle based on given gas properties and combustion chamber conditions</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>gas</strong> (<em>Gas</em>) – Gas object for the exhaust gases.</p></li>
+<li><p><strong>perfect_gas</strong> (<a class="reference internal" href="#bamboo.main.PerfectGas" title="bamboo.main.PerfectGas"><em>PerfectGas</em></a>) – PerfectGas object for the exhaust gases.</p></li>
 <li><p><strong>chamber_conditions</strong> (<em>CombustionChamber</em>) – CombustionChamber object.</p></li>
 <li><p><strong>p_amb</strong> (<em>float</em>) – Ambient pressure (Pa). The nozzle will be designed to have this pressure at exit.</p></li>
 <li><p><strong>type</strong> (<em>str</em><em>, </em><em>optional</em>) – Nozzle type. Can be “rao” or “conical”. Conical is not currently implemented. Defaults to “rao”.</p></li>
@@ -565,6 +627,11 @@ Data obtained by using <a class="reference external" href="http://www.graphreade
 <em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.main.</span></code><code class="sig-name descname"><span class="pre">EngineGeometry</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nozzle</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chamber_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chamber_area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">style</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.EngineGeometry" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Container for additional engine geometry parameters (mostly chamber geometry). Used internally for heating analyses.</p>
+<dl class="simple">
+<dt>Using the ‘wall_thickness’ argument:</dt><dd><p>If an array, must be thicknesses at equally spaced x positions. This will be stretched to fill the engine length.
+E.g. [1e-3, 5e-3] will have 1mm thick walls at chamber entrance, 5mm thick at nozzle exit.</p>
+</dd>
+</dl>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -572,15 +639,87 @@ Data obtained by using <a class="reference external" href="http://www.graphreade
 <li><p><strong>chamber_length</strong> (<em>float</em>) – Length of the combustion chamber (m)</p></li>
 <li><p><strong>chamber_area</strong> (<em>float</em>) – Cross sectional area of the combustion chamber (m^2)</p></li>
 <li><p><strong>wall_thickness</strong> (<em>float</em><em> or </em><em>array</em>) – Thickness of the inner liner wall (m). Can be constant (float), or variable (array).</p></li>
-<li><p><strong>an array</strong> (<em>If</em>) – </p></li>
-<li><p><strong>be thicknesses at equally spaced x positions. This will be stretched to fill the engine length.</strong> (<em>must</em>) – </p></li>
-<li><p><strong>[</strong><strong>1e-3</strong> (<em>E.g.</em>) – </p></li>
-<li><p><strong>will have 1mm thick walls at chamber entrance</strong> (<em>5e-3</em><em>]</em>) – </p></li>
-<li><p><strong>thick at nozzle exit.</strong> (<em>5mm</em>) – </p></li>
 <li><p><strong>style</strong> (<em>str</em><em>, </em><em>optional</em>) – Geometry style to use. Currently the only option is ‘auto’. Defaults to “auto”.</p></li>
 </ul>
 </dd>
 </dl>
+<dl class="py attribute">
+<dt id="bamboo.main.EngineGeometry.x_min">
+<code class="sig-name descname"><span class="pre">x_min</span></code><a class="headerlink" href="#bamboo.main.EngineGeometry.x_min" title="Permalink to this definition">¶</a></dt>
+<dd><p>Minimum x position (m).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="bamboo.main.EngineGeometry.x_max">
+<code class="sig-name descname"><span class="pre">x_max</span></code><a class="headerlink" href="#bamboo.main.EngineGeometry.x_max" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maximum x position (m).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="bamboo.main.EngineGeometry.x_chamber_end">
+<code class="sig-name descname"><span class="pre">x_chamber_end</span></code><a class="headerlink" href="#bamboo.main.EngineGeometry.x_chamber_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>x position where the combustion chamber ends (m).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="bamboo.main.EngineGeometry.x_curved_converging_start">
+<code class="sig-name descname"><span class="pre">x_curved_converging_start</span></code><a class="headerlink" href="#bamboo.main.EngineGeometry.x_curved_converging_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>x position where the curved part of the converging section begins (m).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="bamboo.main.EngineGeometry.chamber_length">
+<code class="sig-name descname"><span class="pre">chamber_length</span></code><a class="headerlink" href="#bamboo.main.EngineGeometry.chamber_length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Chamber length (m).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="bamboo.main.EngineGeometry.chamber_area">
+<code class="sig-name descname"><span class="pre">chamber_area</span></code><a class="headerlink" href="#bamboo.main.EngineGeometry.chamber_area" title="Permalink to this definition">¶</a></dt>
+<dd><p>Chamber area (m^2).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="bamboo.main.EngineGeometry.chamber_radius">
+<code class="sig-name descname"><span class="pre">chamber_radius</span></code><a class="headerlink" href="#bamboo.main.EngineGeometry.chamber_radius" title="Permalink to this definition">¶</a></dt>
+<dd><p>Chamber radius (m).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -597,16 +736,41 @@ Data obtained by using <a class="reference external" href="http://www.graphreade
 </ul>
 </dd>
 </dl>
+<dl class="py attribute">
+<dt id="bamboo.main.Engine.c_star">
+<code class="sig-name descname"><span class="pre">c_star</span></code><a class="headerlink" href="#bamboo.main.Engine.c_star" title="Permalink to this definition">¶</a></dt>
+<dd><p>C* for the engine (m/s).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="bamboo.main.Engine.geometry">
+<code class="sig-name descname"><span class="pre">geometry</span></code><a class="headerlink" href="#bamboo.main.Engine.geometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>EngineGeometry object (if added).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#bamboo.main.EngineGeometry" title="bamboo.main.EngineGeometry">EngineGeometry</a></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt id="bamboo.main.Engine.y">
-<code class="sig-name descname"><span class="pre">y</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.y" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the radius of the engine contour for a given x position.</p>
+<code class="sig-name descname"><span class="pre">y</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">up_to</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'contour'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.y" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get y position up to a specified part of the engine (e.g. inner contour, ablative inner or outer wall, etc.)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>x</strong> (<em>float</em>) – x position (m). x = 0 is the throat, x &gt; 0 is the nozzle diverging section.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>float</em>) – x position (m). x = 0 is the throat, x &gt; 0 is the nozzle diverging section.</p></li>
+<li><p><strong>up_to</strong> (<em>str</em>) – The engine component you want the radius up to. Options include ‘contour’, ‘ablative in’, ‘ablative out’, ‘wall in’, ‘wall out’. Defaults to ‘contour’.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Radius of the engine contour (m).</p>
+<dd class="field-even"><p>Radius up to the given component (m).</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>float</p>
@@ -624,6 +788,26 @@ Data obtained by using <a class="reference external" href="http://www.graphreade
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Cross sectional area (m^2)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.main.Engine.thickness">
+<code class="sig-name descname"><span class="pre">thickness</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.thickness" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the thickness of the engine wall, or ablative, at a specific point.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>float</em>) – x position (m)</p></li>
+<li><p><strong>layer</strong> (<em>str</em>) – ‘ablative’ or ‘wall’</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Thickness at the given value of x (m)</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>float</p>
@@ -802,14 +986,17 @@ separation occurs when P_wall/P_amb = 0.583 * (P_amb/P_chamber)^(0.195).</p>
 
 <dl class="py method">
 <dt id="bamboo.main.Engine.plot_geometry">
-<code class="sig-name descname"><span class="pre">plot_geometry</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minimal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.plot_geometry" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plots the engine geometry. Note that to see the plot, you will need to run matplotlib.pyplot.show().</p>
+<code class="sig-name descname"><span class="pre">plot_geometry</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minimal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.plot_geometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the engine geometry. Note that all spiral cooling jacket geometry is shown with equally spaced rectangles,
+even if irregularly spaced non-rectangular shapes are used. The rectangles have a width equal to the channel effective diameter,
+and an area equal to the channel flow area.
+To see the plot, you will need to run matplotlib.pyplot.show().</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>number_of_points</strong> (<em>int</em><em>, </em><em>optional</em>) – Numbers of discrete points to plot. Defaults to 1000.</p></li>
-<li><p><strong>minimal</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, the engine contour is plotted as a single line. If False, the line’s thickness will vary to show wall thickness,</p></li>
-<li><p><strong>other geometry details will be shown. Defaults to False.</strong> (<em>and</em>) – </p></li>
+<li><p><strong>minimal</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, the engine contour is plotted as a single line. If False, the line’s thickness will vary to show wall thickness, and other geometry details will be shown. Defaults to False.</p></li>
+<li><p><strong>legend</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True a legend is shown. If False, it isn’t. Defaults to True.</p></li>
 </ul>
 </dd>
 </dl>
@@ -922,18 +1109,19 @@ number_of_points (int): Number of discrete liner positions</p>
 <dt>Finds the path length of the coolant in the jacket from engine geometry and channel configuration.</dt><dd><p>Number_of_sections must be equal to number_of_points when used in a heating analysis.</p>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Recently changed the system for finding the engine contour - would be useful to run some proper tests on this function to see if the values it returns still make sense.</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>number_of_sections</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of sections to split path into. Defaults to 1000.</p>
 </dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>AttributeError</strong> – Must have either “spiral” or “vertical” channel configuration.</p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Discretised coolant path length array with “number_of_sections” elements. (m).</p>
 </dd>
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>Discretised coolant path length array with “number_of_sections” elements. (m).</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>array</p>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1104,8 +1292,14 @@ Uses the idea of thermal circuits and resistances - we have three resistors in s
 <li><p><strong>to_json</strong> (<em>str</em><em> or </em><em>bool</em><em>, </em><em>optional</em>) – Directory to export a .JSON file to, containing simulation results. If False, no .JSON file is saved. Defaults to ‘heating_output.json’.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><dl class="simple">
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>h_gas_model = ‘2’ seems to provide questionable results (if it works at all) - use it with caution.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><dl class="simple">
 <dt>Results of the simulation. Contains the following dictionary keys:</dt><dd><ul class="simple">
 <li><p>”x” : x positions corresponding to the rest of the data (m)</p></li>
 <li><p>”T_wall_inner” : Exhaust gas side wall temperature (K)</p></li>
@@ -1122,8 +1316,8 @@ Uses the idea of thermal circuits and resistances - we have three resistors in s
 </dl>
 </p>
 </dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>dict</p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>dict</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1132,6 +1326,10 @@ Uses the idea of thermal circuits and resistances - we have three resistors in s
 <dt id="bamboo.main.Engine.transient_heating_analysis">
 <code class="sig-name descname"><span class="pre">transient_heating_analysis</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_starting_T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">298.15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_gas_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_json</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'heating_output.json'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.transient_heating_analysis" title="Permalink to this definition">¶</a></dt>
 <dd><p>This is used exclusive for pure ablative cooling, without any regenerative cooling jacket.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This function is outdated and does not incorporate many new features that have been added to Bamboo.</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1174,8 +1372,8 @@ Uses the idea of thermal circuits and resistances - we have three resistors in s
 <p>Extra tools for modelling the cooling system of a liquid rocket engine.</p>
 <dl class="simple">
 <dt>Room for improvement:</dt><dd><ul class="simple">
-<li><p>My equation for h_gas is the less accurate version, with the Bartz correction factors (this was just to avoid needing the extra parameters for the Bartz equation)</p></li>
-<li><p>The EngineWithCooling.rho() function calculates rho by doing p/RT, but it would probably be faster to just use isentropic compressible flow relations.</p></li>
+<li><p>Run some more thorough tests on the different h_gas() methods to try and validate/compare them.</p></li>
+<li><p>The EngineWithCooling.rho() function calculates rho by doing p/RT, but it might be faster to just use isentropic compressible flow relations.</p></li>
 </ul>
 </dd>
 <dt>Useful:</dt><dd><ul class="simple">
@@ -1187,10 +1385,11 @@ Uses the idea of thermal circuits and resistances - we have three resistors in s
 <ul class="simple">
 <li><p>[1] - The Thrust Optimised Parabolic nozzle, AspireSpace, <a class="reference external" href="http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf">http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf</a></p></li>
 <li><p>[2] - Rocket Propulsion Elements, 7th Edition</p></li>
-<li><p>[3] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, <a class="reference external" href="https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf">https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf</a></p></li>
+<li><p>[3] - Design and analysis of contour bell nozzle and comparison with dual bell nozzle <a class="reference external" href="https://core.ac.uk/download/pdf/154060575.pdf">https://core.ac.uk/download/pdf/154060575.pdf</a></p></li>
 <li><p>[4] - Modelling ablative and regenerative cooling systems for an ethylene/ethane/nitrous oxide liquid fuel rocket engine, Elizabeth C. Browne, <a class="reference external" href="https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&amp;isAllowed=y">https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&amp;isAllowed=y</a></p></li>
 <li><p>[5] - Thermofluids databook, CUED, <a class="reference external" href="http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf">http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf</a></p></li>
 <li><p>[6] - Comparison of empirical correlations for the estimation of conjugate heat transfer in a thrust chamber, <a class="reference external" href="http://www.lifesciencesite.com/lsj/life0904/111_11626life0904_708_716.pdf">http://www.lifesciencesite.com/lsj/life0904/111_11626life0904_708_716.pdf</a></p></li>
+<li><p>[7] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, <a class="reference external" href="https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf">https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf</a></p></li>
 </ul>
 <dl class="py function">
 <dt id="bamboo.cooling.black_body">

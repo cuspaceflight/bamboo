@@ -10,9 +10,12 @@ Conventions:
     - Position (x) along the nozzle is defined by: x = 0 at the throat, x < 0 in the combustion chamber, x > 0 in the diverging section of the nozzle.
 
 Known issues:
-    - A hardcoded fix is in place for using area ratios outside the Rao angle data range (it tricks the code into making a 15 degree cone). A more robust fix would be better.
+    - A hardcoded fix is in place for using area ratios outside the Rao angle data range (it tricks the code into making something close to a 15 degree cone). A more robust fix would be better.
+    - h_gas_model = '2' doesn't seem to work very well (if at all) right now.
 
 Room for improvement:
+    - Should check if the Engine.channel_geometry() function is working as intended.
+    - Unsure if the first step (i = 0) in Engine.steady_heating_analysis() is dealt with correctly when using h_gas_model == '3'.
     - Rao bell nozzle data is currently obtained rather crudely (by using an image-of-graph-to-data converter). Would be nicer to have more exact data values.
     - Cone nozzles are not currently implemented.
 
@@ -24,9 +27,13 @@ Subscripts:
     - amb - Atmopsheric/ambient condition
 
 References:
-    - [1] - The Thrust Optimised Parabolic nozzle, AspireSpace, http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf 
-    - [2] - Liquid rocket engine nozzles, NASA, https://ntrs.nasa.gov/api/citations/19770009165/downloads/19770009165.pdf   
+    - [1] - The Thrust Optimised Parabolic nozzle, AspireSpace, http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf   \n
+    - [2] - Rocket Propulsion Elements, 7th Edition  \n
     - [3] - Design and analysis of contour bell nozzle and comparison with dual bell nozzle https://core.ac.uk/download/pdf/154060575.pdf 
+    - [4] - Modelling ablative and regenerative cooling systems for an ethylene/ethane/nitrous oxide liquid fuel rocket engine, Elizabeth C. Browne, https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&isAllowed=y  \n
+    - [5] - Thermofluids databook, CUED, http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf    \n
+    - [6] - Comparison of empirical correlations for the estimation of conjugate heat transfer in a thrust chamber, http://www.lifesciencesite.com/lsj/life0904/111_11626life0904_708_716.pdf
+    - [7] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf  \n
 '''
 
 import numpy as np
@@ -366,7 +373,13 @@ class Nozzle:
         Ae (float): Exit plane area (m^2)
         type (str, optional): Desired shape, can be "rao" or "conical". Conical is not currently implemented. Defaults to "rao".
         length_fraction (float): Length fraction if a Rao nozzle is used. Defaults to 0.8.
-        
+    
+    Attributes:
+        length (float): Length of the diverging section (distance between throat and nozzle exit) (m).
+        At (float): Throat area (m^2)
+        Ae (float): Exit area (m^2)
+        Rt (float): Throat radius (m)
+        Re (float): Exit radius (m)
     """
     def __init__(self, At, Ae, type = "rao", length_fraction = 0.8):
         self.At = At
@@ -463,11 +476,11 @@ class Nozzle:
             plt.ylabel("y position (m)")
 
     @staticmethod
-    def from_engine_components(gas, chamber_conditions, p_amb, type = "rao", length_fraction = 0.8):
+    def from_engine_components(perfect_gas, chamber_conditions, p_amb, type = "rao", length_fraction = 0.8):
         """Generate nozzle based on given gas properties and combustion chamber conditions
 
         Args:
-            gas (Gas): Gas object for the exhaust gases.
+            perfect_gas (PerfectGas): PerfectGas object for the exhaust gases.
             chamber_conditions (CombustionChamber): CombustionChamber object.
             p_amb (float): Ambient pressure (Pa). The nozzle will be designed to have this pressure at exit.
             type (str, optional): Nozzle type. Can be "rao" or "conical". Conical is not currently implemented. Defaults to "rao".
@@ -476,21 +489,33 @@ class Nozzle:
         Returns:
             [Nozzle]: The nozzle object.
         """
-        return Nozzle(At = get_throat_area(gas, chamber_conditions), 
-                    Ae = get_exit_area(gas, chamber_conditions, p_amb), 
+        return Nozzle(At = get_throat_area(perfect_gas, chamber_conditions), 
+                    Ae = get_exit_area(perfect_gas, chamber_conditions, p_amb), 
                     type = type, length_fraction = length_fraction)
 
 class EngineGeometry:
     """Container for additional engine geometry parameters (mostly chamber geometry). Used internally for heating analyses.
+
+    Using the 'wall_thickness' argument:
+        If an array, must be thicknesses at equally spaced x positions. This will be stretched to fill the engine length.
+        E.g. [1e-3, 5e-3] will have 1mm thick walls at chamber entrance, 5mm thick at nozzle exit.
 
     Args:
         nozzle (float): Nozzle of the engine.
         chamber_length (float): Length of the combustion chamber (m)
         chamber_area (float): Cross sectional area of the combustion chamber (m^2)
         wall_thickness (float or array): Thickness of the inner liner wall (m). Can be constant (float), or variable (array). 
-        If an array, must be thicknesses at equally spaced x positions. This will be stretched to fill the engine length.
-        E.g. [1e-3, 5e-3] will have 1mm thick walls at chamber entrance, 5mm thick at nozzle exit.
         style (str, optional): Geometry style to use. Currently the only option is 'auto'. Defaults to "auto".
+
+    Attributes:
+        x_min (float): Minimum x position (m).
+        x_max (float): Maximum x position (m).
+        x_chamber_end (float): x position where the combustion chamber ends (m).
+        x_curved_converging_start (float): x position where the curved part of the converging section begins (m).
+        chamber_length (float): Chamber length (m).
+        chamber_area (float): Chamber area (m^2).
+        chamber_radius (float): Chamber radius (m).
+        
 
     """
     def __init__(self, nozzle, chamber_length, chamber_area, wall_thickness, style="auto"):
@@ -538,14 +563,22 @@ class Engine:
         gas (PerfectGas): Gas representing the exhaust gas for the engine.
         chamber_conditions (CombustionChamber): CombustionChamber for the engine.
         nozzle (Nozzle): Nozzle for the engine.
+
+    Attributes:
+        c_star (float): C* for the engine (m/s).
+        geometry (EngineGeometry): EngineGeometry object (if added).
     """
     def __init__(self, perfect_gas, chamber_conditions, nozzle):
         self.perfect_gas = perfect_gas
         self.chamber_conditions = chamber_conditions
         self.nozzle = nozzle
 
-        #Extra calculations
+        #Extra attributes
         self.c_star = self.chamber_conditions.p0 * self.nozzle.At / self.chamber_conditions.mdot
+        self.has_exhaust_transport = False
+        self.has_cooling_jacket = False
+        self.has_ablative = False
+        self.has_exhaust_transport = False
 
         #Check if the nozzle is choked
         max_throat_area = get_throat_area(perfect_gas, chamber_conditions)
@@ -553,49 +586,78 @@ class Engine:
             raise ValueError(f"The nozzle throat is not choked. You need to reduce the throat area to at least {max_throat_area} m^2")
 
     #Engine geometry functions
-    def y(self, x):
-        """Get the radius of the engine contour for a given x position.
+    def y(self, x, up_to = 'contour'):
+        """Get y position up to a specified part of the engine (e.g. inner contour, ablative inner or outer wall, etc.)
 
         Args:
             x (float): x position (m). x = 0 is the throat, x > 0 is the nozzle diverging section.
+            up_to (str): The engine component you want the radius up to. Options include 'contour', 'ablative in', 'ablative out', 'wall in', 'wall out'. Defaults to 'contour'.
 
         Returns:
-            float: Radius of the engine contour (m).
+            float: Radius up to the given component (m).
         """
-        #In the diverging section of the nozzle
-        if x >= 0:
-            return self.nozzle.y(x)
+        if up_to == 'contour':
+            #In the diverging section of the nozzle
+            if x >= 0:
+                return self.nozzle.y(x)
 
-        #Converging section and combustion chamber
+            #Converging section and combustion chamber
+            else:
+                try:
+                    self.geometry
+                except AttributeError:
+                    raise AttributeError("Geometry is not defined for x < 0. You need to add geometry with the 'Engine.add_geometry()' function.")
+
+                if self.geometry.style == "auto":
+                    #Curved converging section
+                    if x < 0 and x > self.geometry.x_curved_converging_start:
+                        theta = -np.arccos(x/(1.5*self.nozzle.Rt))
+                        return 1.5*self.nozzle.Rt*np.sin(theta) + 1.5*self.nozzle.Rt + self.nozzle.Rt
+
+                    #Before the curved part of the converging section
+                    elif x <= self.geometry.x_curved_converging_start:
+
+                        #Inside the chamber
+                        if x < self.geometry.x_chamber_end and x >= self.geometry.x_min:
+                            return self.geometry.chamber_radius
+
+                        #Inside the converging section
+                        elif x >= self.geometry.x_chamber_end:
+                            return np.interp(x, 
+                                            [self.geometry.x_chamber_end, self.geometry.x_curved_converging_start], 
+                                            [self.geometry.chamber_radius, self.geometry.y_curved_converging_start])
+
+                        #Outside of the engine
+                        else:
+                            return ValueError(f"x is beyond the front of the engine. You tried to input {x} but the minimum value you're allowed is {self.geometry.x_chamber_end - self.geometry.chamber_length}")
+        
+        elif up_to == 'ablative in':
+            if self.has_ablative == False:
+                raise AttributeError("There is no ablative attached to this engine")
+            else:
+                return self.y(x)
+        
+        elif up_to == 'ablative out':
+            if self.has_ablative == False:
+                raise AttributeError("There is no ablative attached to this engine")
+            else:
+                return self.y(x) + self.thickness(x, layer = 'ablative')
+        
+        elif up_to == 'wall in':
+            if self.has_ablative:
+                return self.y(x, up_to = 'ablative out')
+            else:
+                return self.y(x)
+        
+        elif up_to == 'wall out':
+            if self.has_ablative:
+                return self.y(x, up_to = 'ablative out') + self.thickness(x, layer = 'wall')
+            else:
+                return self.y(x) + self.thickness(x, layer = 'wall')
+
         else:
-            try:
-                self.geometry
-            except AttributeError:
-                raise AttributeError("Geometry is not defined for x < 0. You need to add geometry with the 'Engine.add_geometry()' function.")
+            raise ValueError(f"'{up_to}' is not a valid part of the engine. Try 'contour', 'ablative in', 'ablative out', 'wall in' or 'wall out'")
 
-            if self.geometry.style == "auto":
-                #Curved converging section
-                if x < 0 and x > self.geometry.x_curved_converging_start:
-                    theta = -np.arccos(x/(1.5*self.nozzle.Rt))
-                    return 1.5*self.nozzle.Rt*np.sin(theta) + 1.5*self.nozzle.Rt + self.nozzle.Rt
-
-                #Before the curved part of the converging section
-                elif x <= self.geometry.x_curved_converging_start:
-
-                    #Inside the chamber
-                    if x < self.geometry.x_chamber_end and x >= self.geometry.x_min:
-                        return self.geometry.chamber_radius
-
-                    #Inside the converging section
-                    elif x >= self.geometry.x_chamber_end:
-                        return np.interp(x, 
-                                        [self.geometry.x_chamber_end, self.geometry.x_curved_converging_start], 
-                                        [self.geometry.chamber_radius, self.geometry.y_curved_converging_start])
-
-                    #Outside of the engine
-                    else:
-                        return ValueError(f"x is beyond the front of the engine. You tried to input {x} but the minimum value you're allowed is {self.geometry.x_chamber_end - self.geometry.chamber_length}")
-                
     def A(self, x):
         """Get the engine cross sectional area at a given x position.
 
@@ -607,6 +669,38 @@ class Engine:
         """
         return np.pi*self.y(x)**2
 
+    def thickness(self, x, layer):
+        """Get the thickness of the engine wall, or ablative, at a specific point.
+
+        Args:
+            x (float): x position (m)
+            layer (str): 'ablative' or 'wall'
+
+        Returns:
+            float: Thickness at the given value of x (m)
+        """
+        if layer == 'wall':
+            #Stretch the wall_thickness array across the engine, and interpolate to get our desired thickness
+            wall_thickness_xs = np.linspace(self.geometry.x_min, self.geometry.x_max, len(self.geometry.wall_thickness))
+            return np.interp(x, wall_thickness_xs, self.geometry.wall_thickness)
+        
+        if layer == 'ablative':
+            if self.has_ablative == False:
+                raise AttributeError("This engine does not have an ablative attached")
+
+            #Check if there is ablative in this region of the engine
+            if self.ablative.xs[0] < x < self.ablative.xs[1]:
+                if self.ablative.ablative_thickness == None:
+                    #If self.ablative_thickness == None, fill up the distance between the nozzle contour and the chamber radius with ablative
+                    return self.geometry.chamber_radius - self.y(x)
+
+                else:
+                    #Stretch the ablative_thickness array over the range that ablatives are present, and interpolate to get our desired thickness
+                    ablative_thickness_xs = np.linspace(self.ablative.xs[0], self.ablative.xs[1], len(self.ablative.ablative_thickness))
+                    return np.interp(x, ablative_thickness_xs, self.ablative.ablative_thickness)
+            else:
+                #If we're outside the region where the ablative is present, return zero thickness.
+                return 0.0
 
     #Thermodynamic properties as a function of position
     def M(self, x):
@@ -816,64 +910,49 @@ class Engine:
             raise AttributeError("Geometry has not been added, so can't run Engine.plot_geometry(). You need to add geometry with the 'Engine.add_geometry()' function.")
         
         x = np.linspace(self.geometry.x_min, self.geometry.x_max, number_of_points)
-        y = np.zeros(len(x))
-        
-
-        for i in range(len(x)):
-            y[i] = self.y(x[i])
 
         fig, axs = plt.subplots()
+
+        #Minimalistic plotting - only show the engine contour, without any extra features
         if minimal:
+            y = np.zeros(len(x))
+            for i in range(len(x)):
+                y[i] = self.y(x[i])
+
             axs.plot(x, y, color="blue")
             axs.plot(x, -y, color="blue")
 
+        #Normal plotting - show any wall thickness to scale, display any ablatives, and show a representation of the cooling jacket
         else:
-            mapped_wall_thickness = self.map_thickness_profile(self.geometry.wall_thickness, len(x))
+            #Initialise arrays
+            if self.has_ablative:
+                ablative_inner = np.zeros(len(x))
+                ablative_outer = np.zeros(len(x))
 
-            if hasattr(self, 'ablative'):
-                #Range of xs that the ablative is between
-                if self.geometry.x_min > self.ablative.xs[0]:
-                    xmin = self.geometry.x_min
-                else:
-                    xmin = self.ablative.xs[0]
-
-                if self.geometry.x_max < self.ablative.xs[1]:
-                    xmax = self.geometry.x_max
-                else:
-                    xmax = self.ablative.xs[1]
-
-
-                if self.ablative.ablative_thickness == None:
-                    abl_xs = np.linspace(xmin, xmax, 1000)
-                    abl_thickness = np.zeros(len(abl_xs))
-                    abl_ys = np.linspace(xmin, xmax, 1000)
-
-                    for i in range(len(abl_xs)):
-                        abl_thickness[i] = self.geometry.chamber_radius - self.y(abl_xs[i])
-                        abl_ys[i] = self.geometry.chamber_radius
-                else:
-                    abl_xs = np.linspace(xmin, xmax, len(self.ablative.ablative_thickness))
-                    abl_thickness = self.ablative.ablative_thickness
-                    abl_ys = np.linspace(xmin, xmax, len(abl_xs))
-
-                    for i in range(len(abl_xs)):
-                        abl_ys[i] = self.y(abl_xs[i]) + abl_thickness[i]
-                
-                mapped_abl_thickness = self.map_thickness_profile(abl_thickness, len(x))
-                wall_y_in = y+mapped_abl_thickness
-                wall_y_out = y+mapped_abl_thickness+mapped_wall_thickness
-
-                axs.fill_between(abl_xs, abl_ys-abl_thickness, abl_ys, color="grey", label = 'Ablative')
-                axs.fill_between(abl_xs, -abl_ys+abl_thickness, -abl_ys, color="grey")
+            wall_inner = np.zeros(len(x))
+            wall_outer = np.zeros(len(x))
             
-            else:  
-                wall_y_in = y
-                wall_y_out = y+mapped_wall_thickness
+            for i in range(len(x)):
+                if self.has_ablative:
+                    #Get the ablative y values at each x
+                    ablative_inner[i] = self.y(x[i], up_to = 'ablative in')
+                    ablative_outer[i] = self.y(x[i], up_to = 'ablative out')
 
-            axs.fill_between(x, wall_y_in, wall_y_out, color="blue", label = 'Engine liner')
-            axs.fill_between(x, -wall_y_in, -wall_y_out, color="blue")
+                #Get the wall y values at each x
+                wall_inner[i] = self.y(x[i], up_to = 'wall in')
+                wall_outer[i] = self.y(x[i], up_to = 'wall out')
 
-            if hasattr(self, 'cooling_jacket'):
+            if self.has_ablative:
+                #Show the ablative to scale
+                axs.fill_between(x, ablative_inner, ablative_outer, color="grey", label = 'Ablative')
+                axs.fill_between(x, -ablative_inner, -ablative_outer, color="grey")
+                
+            #Show the engine wall thickness to scale
+            axs.fill_between(x, wall_inner, wall_outer, color="blue", label = 'Engine liner')
+            axs.fill_between(x, -wall_inner, -wall_outer, color="blue")
+
+            #Show the cooling jacket - is a bit rough right now
+            if self.has_cooling_jacket:
                 #Range of xs that the jacket is between
                 if self.geometry.x_min > self.cooling_jacket.xs[0]:
                     xmin = self.geometry.x_min
@@ -885,9 +964,10 @@ class Engine:
                 else:
                     xmax = self.cooling_jacket.xs[1]
 
+                #If using a spiral cooling jacket
                 if self.cooling_jacket.configuration == 'spiral':
-                    D = self.cooling_jacket.D(x[0], y[0])
-                    A = self.cooling_jacket.A(x[0], y[0])
+                    D = self.cooling_jacket.D(x[0], wall_outer[0])
+                    A = self.cooling_jacket.A(x[0], wall_outer[0])
 
                     regen_xs = np.linspace(xmin, xmax, int((xmax - xmin)/D))
 
@@ -897,14 +977,18 @@ class Engine:
                     axs.plot(0, 0, color = 'green', label = 'Cooling channels')  #Just for the legend
 
                     for i in range(len(regen_xs) - 1):
-                        y_jacket_inner = np.interp(regen_xs[i], x, wall_y_out)
+                        y_jacket_inner = np.interp(regen_xs[i], x, wall_outer)
+
+                        #We'll show the coolant channels as rectangles, with a diameter equal to the equivelant diameter, and area equal to the flow area.
                         axs.add_patch(matplotlib.patches.Rectangle([regen_xs[i], y_jacket_inner], D, A/D, color = 'green', fill = False))
                         axs.add_patch(matplotlib.patches.Rectangle([regen_xs[i], -y_jacket_inner-A/D], D, A/D, color = 'green', fill = False))
 
+                #If using a vertical channels cooling jacket
                 if self.cooling_jacket.configuration == 'vertical':
                     regen_xs = np.linspace(xmin, xmax, 1000)
-                    channel_inner_mapped = np.interp(regen_xs, x, wall_y_out)
+                    channel_inner_mapped = np.interp(regen_xs, x, wall_outer)
 
+                    #Show the channel thickness to scale
                     axs.fill_between(regen_xs, channel_inner_mapped, channel_inner_mapped+self.cooling_jacket.channel_height, color="green", label = 'Cooling channel')
                     axs.fill_between(regen_xs, -channel_inner_mapped, -channel_inner_mapped-self.cooling_jacket.channel_height, color="green")
             
@@ -984,6 +1068,7 @@ class Engine:
 
         """
         self.geometry = EngineGeometry(self.nozzle, chamber_length, chamber_area, wall_thickness, style)
+        self.has_geometry = True
 
     def add_cooling_jacket(self, inner_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
         """Container for cooling jacket information - e.g. for regenerative cooling.
@@ -1013,6 +1098,7 @@ class Engine:
                                                 xs, 
                                                 configuration, 
                                                 **kwargs)
+        self.has_cooling_jacket = True
 
     def add_exhaust_transport(self, transport_properties):
         """Add a model for the exhaust gas transport properties (e.g. viscosity, thermal doncutivity, etc.). This is needed to run cooling system analyses.
@@ -1021,9 +1107,11 @@ class Engine:
             transport_properties (TransportProperties): Container for the exhaust gas transport properties.
         """
         self.exhaust_transport = transport_properties
+        self.has_exhaust_transport = True
 
     def add_ablative(self, ablative_material, wall_material, regression_rate, xs = [-1000, 1000], ablative_thickness = None):
         self.ablative = cool.Ablative(ablative_material, wall_material, regression_rate, xs, ablative_thickness)
+        self.has_ablative = True
 
     #Cooling system functions
     def map_thickness_profile(self, thickness, number_of_points):
@@ -1054,31 +1142,39 @@ class Engine:
     def channel_geometry(self, number_of_sections = 1000):
         """Finds the path length of the coolant in the jacket from engine geometry and channel configuration.
            Number_of_sections must be equal to number_of_points when used in a heating analysis.
+
+        Note:
+            Recently changed the system for finding the engine contour - would be useful to run some proper tests on this function to see if the values it returns still make sense.
+
         Args:
             number_of_sections (int, optional): Number of sections to split path into. Defaults to 1000.
-        Raises:
-            AttributeError: Must have either "spiral" or "vertical" channel configuration.
+
+
         Returns:
             array: Discretised coolant path length array with "number_of_sections" elements. (m).
         """
         discretised_x = np.linspace(self.geometry.x_max, self.geometry.x_min, number_of_sections)
-        axis_length = self.geometry.x_max - self.geometry.x_min # Axial engine length
+        axis_length = self.geometry.x_max - self.geometry.x_min     # Axial engine length
         discretised_length = []
 
         if self.cooling_jacket.configuration == "spiral":
-            pitch = self.cooling_jacket.channel_width # No gaps between channels so spiral pitch = width
-            section_turns = axis_length/(pitch*number_of_sections) # Number of turns per discrete section
+            pitch = self.cooling_jacket.channel_width               # No gaps between channels so spiral pitch = width
+            section_turns = axis_length/(pitch*number_of_sections)  # Number of turns per discrete section
+
             for i in range(number_of_sections-1):
-                radius_avg = (self.y(discretised_x[i]) + self.y(discretised_x[i+1]))/2
+                radius_avg = (self.y(discretised_x[i], up_to = 'wall out') + self.y(discretised_x[i+1], up_to = 'wall out'))/2
                 discretised_length.append(section_turns * np.sqrt(pitch**2 + (radius_avg*2*np.pi)**2))
                 # Find the average radius for this section and use it to determine the spiral section length
+
             return discretised_length
 
         if self.cooling_jacket.configuration == "vertical":
             dx = discretised_x[0] - discretised_x[1]
+
             for i in range(number_of_sections-1):
-                dy = np.abs(self.y(discretised_x[i]) - self.y(discretised_x[i+1]))
+                dy = np.abs(self.y(discretised_x[i], up_to = 'wall out') - self.y(discretised_x[i+1], up_to = 'wall out'))
                 discretised_length.append(np.sqrt(dy**2 + dx**2))
+
             return discretised_length
 
         else:
@@ -1248,6 +1344,9 @@ class Engine:
             h_coolant_model (str, optional): Equation to use for the coolant side convective heat transfer coefficients, currently the only option is '1'. Defaults to "1".
             to_json (str or bool, optional): Directory to export a .JSON file to, containing simulation results. If False, no .JSON file is saved. Defaults to 'heating_output.json'.
 
+        Note:
+            h_gas_model = '2' seems to provide questionable results (if it works at all) - use it with caution.
+
         Returns:
             dict: Results of the simulation. Contains the following dictionary keys: 
                 - "x" : x positions corresponding to the rest of the data (m)
@@ -1273,23 +1372,6 @@ class Engine:
         except AttributeError:
             raise AttributeError("Cannot run heating analysis without an exhaust gas transport properties model. You need to add one with the 'Engine.add_exhaust_transport()' function.")
         
-
-        '''Check if we have a cooling jacket or ablative'''
-        if hasattr(self, 'cooling_jacket'):
-            has_cooling_jacket = True
-        else:
-            has_cooling_jacket = False
-
-        if hasattr(self, 'ablative'):
-            has_ablative = True
-            if self.ablative.ablative_thickness == None:
-                pass
-            else:
-                ablative_thickness_xs = np.linspace(self.ablative.xs[0], self.ablative.xs[1], len(self.ablative.ablative_thickness))
-        else:
-            has_ablative = False
-        
-        
         '''Initialise variables and arrays'''
         #To keep track of any coolant boiling
         boil_off_position = None
@@ -1299,12 +1381,8 @@ class Engine:
         discretised_x = np.linspace(self.geometry.x_max, self.geometry.x_min, number_of_points) #Run from the back end (the nozzle exit) to the front (chamber)
         dx = discretised_x[0] - discretised_x[1]
 
-        #Discretised liner thickness
-        liner = self.map_thickness_profile(self.geometry.wall_thickness, number_of_points)
-
         #Calculation of coolant channel length per "section"
-        channel_length = self.channel_geometry(number_of_sections=number_of_points)
-        # number_of_sections must be equal to number_of_points
+        channel_length = self.channel_geometry(number_of_sections=number_of_points)     #number_of_sections must be equal to number_of_points
 
         #Temperatures and heat transfer rates
         T_wall_inner = np.full(len(discretised_x), float('NaN')) #Gas side wall temperature
@@ -1322,7 +1400,7 @@ class Engine:
             x = discretised_x[i]
             T_gas[i] = self.T(x)
 
-            if has_cooling_jacket and self.cooling_jacket.xs[0] <= x <= self.cooling_jacket.xs[1]:
+            if self.has_cooling_jacket and self.cooling_jacket.xs[0] <= x <= self.cooling_jacket.xs[1]:
                 #Gas side heat transfer coefficient
                 if h_gas_model == "1":
                     h_gas[i] = cool.h_gas_1(2*self.y(x),
@@ -1363,20 +1441,34 @@ class Engine:
                     h_gas[i] = cool.h_gas_2(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0)
 
                 elif h_gas_model == "3":
-                    h_gas[i] = cool.h_gas_3(self.c_star,
-                                            self.nozzle.At, 
-                                            self.A(x), 
-                                            self.chamber_conditions.p0, 
-                                            self.chamber_conditions.T0, 
-                                            self.M(x), 
-                                            T_wall_inner[i-1], 
-                                            self.exhaust_transport.mu(T = T_gas[i], p = self.p(x)), 
-                                            self.perfect_gas.cp, 
-                                            self.perfect_gas.gamma, 
-                                            self.exhaust_transport.Pr(T = T_gas[i], p = self.p(x)))
+                    #We need the previous wall temperature to use h_gas_3. If we're on the first step, then just use h_gas_1()
+                    if i == 0:
+                        h_gas[i] = cool.h_gas_1(2*self.y(x),
+                                                self.M(x),
+                                                T_gas[i],
+                                                self.rho(x),
+                                                self.perfect_gas.gamma,
+                                                self.perfect_gas.R,
+                                                self.exhaust_transport.mu(T = T_gas[i], p = self.p(x)),
+                                                self.exhaust_transport.k(T = T_gas[i], p = self.p(x)),
+                                                self.exhaust_transport.Pr(T = T_gas[i], p = self.p(x)))
+
+                    #Use h_gas_3() for all subsequent steps
+                    else:
+                        h_gas[i] = cool.h_gas_3(self.c_star,
+                                                self.nozzle.At, 
+                                                self.A(x), 
+                                                self.chamber_conditions.p0, 
+                                                self.chamber_conditions.T0, 
+                                                self.M(x), 
+                                                T_wall_inner[i-1], 
+                                                self.exhaust_transport.mu(T = T_gas[i], p = self.p(x)), 
+                                                self.perfect_gas.cp, 
+                                                self.perfect_gas.gamma, 
+                                                self.exhaust_transport.Pr(T = T_gas[i], p = self.p(x)))
 
                 else:
-                    raise AttributeError(f"Could not find the h_gas_model '{h_gas_model}'")
+                    raise AttributeError(f"Could not find the h_gas_model '{h_gas_model}'. Try '1', '2' or '3'.")
 
                 #Calculate the current coolant temperature
                 if i == 0:
@@ -1422,24 +1514,24 @@ class Engine:
                     boil_off_position = x
 
                 #Get thermal circuit properties
-                if has_ablative and self.ablative.xs[0] <= x <= self.ablative.xs[1]:
-                    #Get the ablative thickness
-                    if self.ablative.ablative_thickness == None:
-                        ablative_thickness = self.geometry.chamber_radius - self.y(x)
-                    else:
-                        ablative_thickness = np.interp(x, ablative_thickness_xs, self.ablative.ablative_thickness)
+                wall_thickness = self.thickness(x, layer = 'wall')  #Get the wall thickness
 
+                if self.has_ablative and self.ablative.xs[0] <= x <= self.ablative.xs[1]:
+                    #Get the ablative thickness
+                    ablative_thickness = self.thickness(x, layer = 'ablative')
+                    
+                    #Thermal circuit
                     q_dot[i], R_gas, R_ablative, R_wall, R_coolant = self.regen_ablative_thermal_circuit(self.y(x), 
                                                                                                             h_gas[i], 
                                                                                                             h_coolant[i], 
                                                                                                             self.cooling_jacket.inner_wall, 
-                                                                                                            liner[i], 
+                                                                                                            wall_thickness, 
                                                                                                             T_gas[i], 
                                                                                                             T_coolant[i], 
                                                                                                             self.ablative.ablative_material, 
                                                                                                             ablative_thickness)
                     
-                    #Calculate wall temperatures
+                    #Calculate wall temperatures using the thermal circuit idea
                     T_wall_inner[i] = T_gas[i] - q_dot[i]*(R_gas + R_ablative)
                     T_wall_outer[i] = T_wall_inner[i] - q_dot[i]*R_wall
                 
@@ -1448,7 +1540,7 @@ class Engine:
                                                                                     h_gas[i], 
                                                                                     h_coolant[i], 
                                                                                     self.cooling_jacket.inner_wall, 
-                                                                                    liner[i], 
+                                                                                    wall_thickness, 
                                                                                     T_gas[i], 
                                                                                     T_coolant[i])
 
@@ -1482,6 +1574,9 @@ class Engine:
     def transient_heating_analysis(self, number_of_points=1000, dt = 0.1, t_max = 100, wall_starting_T = 298.15, h_gas_model = "1", to_json = "heating_output.json"):
         """This is used exclusive for pure ablative cooling, without any regenerative cooling jacket.
 
+        Note:
+            This function is outdated and does not incorporate many new features that have been added to Bamboo.
+
         Args:
             number_of_points (int, optional): [description]. Defaults to 1000.
             dt (float, optional): Timestep (s). Defaults to 0.1.
@@ -1489,6 +1584,8 @@ class Engine:
             wall_starting_T (float, optional): Starting temperature for the wall (K). Defaults to 298.15.
             h_gas_model (str, optional): [description]. Defaults to "1".
             to_json (str, optional): [description]. Defaults to "heating_output.json".
+
+
         """
         try:
             self.geometry
@@ -1665,7 +1762,7 @@ class Engine:
         for i in range(length):
             cur_stress = material.k * \
                 wall_deltaT[i] / (2 * material.perf_therm)
-        # Determine thermal stress using Ref [3], P53:
+        # Determine thermal stress using Ref [7], P53:
         # sigma_thermal = E*alpha*q_w*deltaL/(2*(1-v)k_w) =
         # E*alpha*deltaT/2(1-v)
 

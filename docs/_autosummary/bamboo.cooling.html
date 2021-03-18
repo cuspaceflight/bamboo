@@ -160,8 +160,8 @@
 <p>Extra tools for modelling the cooling system of a liquid rocket engine.</p>
 <dl class="simple">
 <dt>Room for improvement:</dt><dd><ul class="simple">
-<li><p>My equation for h_gas is the less accurate version, with the Bartz correction factors (this was just to avoid needing the extra parameters for the Bartz equation)</p></li>
-<li><p>The EngineWithCooling.rho() function calculates rho by doing p/RT, but it would probably be faster to just use isentropic compressible flow relations.</p></li>
+<li><p>Run some more thorough tests on the different h_gas() methods to try and validate/compare them.</p></li>
+<li><p>The EngineWithCooling.rho() function calculates rho by doing p/RT, but it might be faster to just use isentropic compressible flow relations.</p></li>
 </ul>
 </dd>
 <dt>Useful:</dt><dd><ul class="simple">
@@ -173,10 +173,11 @@
 <ul class="simple">
 <li><p>[1] - The Thrust Optimised Parabolic nozzle, AspireSpace, <a class="reference external" href="http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf">http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf</a></p></li>
 <li><p>[2] - Rocket Propulsion Elements, 7th Edition</p></li>
-<li><p>[3] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, <a class="reference external" href="https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf">https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf</a></p></li>
+<li><p>[3] - Design and analysis of contour bell nozzle and comparison with dual bell nozzle <a class="reference external" href="https://core.ac.uk/download/pdf/154060575.pdf">https://core.ac.uk/download/pdf/154060575.pdf</a></p></li>
 <li><p>[4] - Modelling ablative and regenerative cooling systems for an ethylene/ethane/nitrous oxide liquid fuel rocket engine, Elizabeth C. Browne, <a class="reference external" href="https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&amp;isAllowed=y">https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&amp;isAllowed=y</a></p></li>
 <li><p>[5] - Thermofluids databook, CUED, <a class="reference external" href="http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf">http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf</a></p></li>
 <li><p>[6] - Comparison of empirical correlations for the estimation of conjugate heat transfer in a thrust chamber, <a class="reference external" href="http://www.lifesciencesite.com/lsj/life0904/111_11626life0904_708_716.pdf">http://www.lifesciencesite.com/lsj/life0904/111_11626life0904_708_716.pdf</a></p></li>
+<li><p>[7] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, <a class="reference external" href="https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf">https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf</a></p></li>
 </ul>
 <p class="rubric">Functions</p>
 <table class="longtable docutils align-default">
