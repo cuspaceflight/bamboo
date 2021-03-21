@@ -49,7 +49,7 @@ def black_body(T):
     return SIGMA*T**4
 
 def h_gas_1(D, M, T, rho, gamma, R, mu, k, Pr):
-    """Get the convective heat transfer coefficient on the gas side. 
+    """Get the convective heat transfer coefficient on the gas side, non-Bartz equation.
     Uses Eqn (8-22) on page 312 or RPE 7th edition (Reference [2])
 
     Args:
@@ -122,7 +122,7 @@ def h_gas_3(c_star, At, A, pc, Tc, M, Tw, mu, cp, gamma, Pr):
 
 def h_coolant_1(A, D, mdot, mu, k, c_bar, rho):
     """Get the convective heat transfer coefficient for the coolant side.
-    Uses the equation from page 317 of RPE 7th edition.
+    Uses the equation from page 317 of RPE 7th edition (Reference [2]).
 
     Args:
         A (float): Coolant flow area (m^2)
@@ -139,6 +139,45 @@ def h_coolant_1(A, D, mdot, mu, k, c_bar, rho):
     v = mdot / (rho*A)
     return 0.023*c_bar * (mdot/A) * (D*v*rho/mu)**(-0.2) * (mu*c_bar/k)**(-2/3)
 
+def h_coolant_2(rho, V, D, mu_bulk, mu_wall, Pr, k):
+    """Sieder-Tate equation for convective heat transfer coefficient.
+
+    Args:
+        rho (float): Coolant bulk density (kg/m^3)
+        V (float): Coolant bulk velocity (m/s)
+        D (float): Effective diameter of pipe (m)
+        mu_bulk (float): Absolute viscosity of the coolant at the bulk temperature (Pa s).
+        mu_wall (float): Absolute viscosity of the coolant at the wall temperature (Pa s).
+        Pr (float): Bulk Prandtl number of the coolant.
+        k (float): Bulk thermal conductivity of the coolant.
+    
+    Returns:
+        float: Convective heat transfer coefficient
+    """
+    Re = rho*V*D/mu_bulk
+    Nu = 0.027*Re**(4/5)*Pr**(1/3)*(mu_bulk/mu_wall)**0.14
+
+    return Nu*k/D
+
+def h_coolant_3(rho, V, D, mu, Pr, k):
+    """Dittus-Boelter equation for convective heat transfer coefficient.
+
+    Args:
+        rho (float): Coolant bulk density (kg/m^3).
+        V (float): Coolant bulk velocity (m/s)
+        D (float): Effective diameter of pipe (m)
+        mu (float): Coolant bulk viscosity (Pa s)
+        Pr (float): Coolant bulk Prandtl number
+        k (float): Coolant thermal conductivity
+
+    Returns:
+        float: Convective heat transfer coefficient
+    """
+    Re = rho*V*D/mu
+    Nu = 0.023*Re**(4/5)*Pr**0.4
+
+    return Nu*k/D
+
 
 class Material:
     """Class used to specify a material and its properties. 
@@ -154,6 +193,15 @@ class Material:
     Keyword Args:
         c (float): Specific heat capacity (J/kg/K)
         rho (float): Density (kg/m^3)
+    
+    Attributes:
+        E (float): Young's modulus (Pa)
+        sigma_y (float): 0.2% yield stress (Pa)
+        poisson (float): Poisson's ratio
+        alpha (float): Thermal expansion coefficient (strain/K)
+        k (float): Thermal conductivity (W/m/K)
+        c (float): Specific heat capacity (J/kg/K). Only available if assigned.
+        rho (float): Density (kg/m^3). Only available if assigned.
     """
     def __init__(self, E, sigma_y, poisson, alpha, k, **kwargs):
         self.E = E                  
@@ -169,6 +217,13 @@ class Material:
 
         self.perf_therm = (1 - self.poisson) * self.k / (self.alpha * self.E)   #Performance coefficient for thermal stress, higher is better
 
+    def __repr__(self):
+        return f"""bamboo.cooling.Material Object \nYoung's modulus = {self.E/1e9} GPa 
+0.2% Yield Stress = {self.sigma_y/1e6} MPa 
+Poisson's ratio = {self.poisson}
+alpha = {self.alpha} strain/K
+Thermal conductivity = {self.k} W/m/K
+(may also have a specific heat capacity (self.c) and density (self.rho))"""
 
 class TransportProperties:
     """Container for transport properties of a fluid. 
@@ -267,7 +322,13 @@ class TransportProperties:
             elif self.force_phase == 'g':
                 return self.thermo_object.mug
             else:
-                return self.thermo_object.mu
+                #Manually check which phase we're in, and return the right viscosity (otherwise sometimes it seems to return odd results)
+                if self.thermo_object.phase == 'g':
+                    return self.thermo_object.mug
+                elif self.thermo_object.phase == 'l':
+                    return self.thermo_object.mul
+                else:
+                    return self.thermo_object.mu
 
         elif self.model == "CoolProp":
             return PropsSI("VISCOSITY", "T", T, "P", p, self.coolprop_name)

@@ -17,10 +17,10 @@ def plot_temperatures(data_dict, **kwargs):
         show_ablative (bool): If False, the ablative temperatures will not be shown. Defaults to True.
     """
     fig, ax_T = plt.subplots()
-    ax_T.plot(data_dict["x"], np.array(data_dict["T_wall_inner"]) - 273.15, label = "Wall (Inner)")
-    ax_T.plot(data_dict["x"], np.array(data_dict["T_wall_outer"])- 273.15, label = "Wall (Outer)")
+    ax_T.plot(data_dict["x"], np.array(data_dict["T_wall_inner"]) - 273.15, label = "Wall (inner)")
+    ax_T.plot(data_dict["x"], np.array(data_dict["T_wall_outer"])- 273.15, label = "Wall (outer)")
     ax_T.plot(data_dict["x"], np.array(data_dict["T_coolant"]) - 273.15, label = "Coolant")
-    
+
     if data_dict["boil_off_position"] != None:
         ax_T.axvline(data_dict["boil_off_position"], color = 'red', linestyle = '--', label = "Coolant boil-off")
 
@@ -31,8 +31,8 @@ def plot_temperatures(data_dict, **kwargs):
     if "show_ablative" in kwargs:
         if kwargs["show_ablative"] == False:
             pass
-        else:
-            ax_T.plot(data_dict["x"], np.array(data_dict["T_ablative_inner"]) - 273.15, label = "Ablative (inner)")
+    else:
+        ax_T.plot(data_dict["x"], np.array(data_dict["T_ablative_inner"]) - 273.15, label = "Ablative (inner)")
 
 
     ax_T.grid()
@@ -117,10 +117,19 @@ def plot_resistances(data_dict, **kwargs):
 
     """
     figs, axs = plt.subplots()
-    axs.plot(data_dict["x"], data_dict["R_gas"], label = "Gas")
-    axs.plot(data_dict["x"], data_dict["R_ablative"], label = "Ablative")
+    axs.plot(data_dict["x"], data_dict["R_gas"], label = "Gas boundary layer")
     axs.plot(data_dict["x"], data_dict["R_wall"], label = "Wall")
-    axs.plot(data_dict["x"], data_dict["R_coolant"], label = "Coolant")
+    axs.plot(data_dict["x"], data_dict["R_coolant"], label = "Coolant boundary layer")
+
+    if type(data_dict["R_ablative"][0]) is float:
+        axs.plot(data_dict["x"], data_dict["R_ablative"], label = "Ablative")
+        axs.plot(data_dict["x"], 
+                np.array(data_dict["R_gas"]) + np.array(data_dict["R_ablative"]) + np.array(data_dict["R_wall"]) + np.array(data_dict["R_coolant"]), 
+                label = "Total resistance", linestyle = '--')
+    else:
+        axs.plot(data_dict["x"], 
+                np.array(data_dict["R_gas"]) + np.array(data_dict["R_wall"]) + np.array(data_dict["R_coolant"]), 
+                label = "Total resistance", linestyle = '--') 
 
     axs.legend()
     axs.grid()

@@ -1089,11 +1089,10 @@ class Engine:
             configuration (str, optional): Options include 'spiral' and 'vertical'. Defaults to "vertical".
         
         Keyword Args:
-            channel_shape (str, optional): Used if configuration = 'spiral'. Options include 'rectangle', 'semi-circle', and 'custom'. 
+            channel_shape (str, optional): Used if configuration = 'spiral'. Options include 'rectangle', 'semi-circle', and 'custom'.
             channel_height (float, optional): If using configuration = 'vertical' or channel_shape = 'rectangle', this is the height of the channels (m).
-            channel_width (float, optional): If using channel_shape = 'rectangle', this is the width of the channels (m).
-            channel_diameter (float, optional): If using channel_shape = 'semi-circle', this is the diameter of the semi circle.
-            custom_effective_diameter (float, optional): If using channel_shape = 'custom', this is the effective diameter you want to use. 
+            channel_width (float, optional): If using channel_shape = 'rectangle', this is the width of the channels (m). If using channel_shape = 'semi-circle', this is the diameter of the semi circle (m).
+            custom_effective_diameter (float, optional): If using channel_shape = 'custom', this is the effective diameter you want to use.
             custom_flow_area (float, optional): If using channel_shape = 'custom', this is the flow you want to use. 
         """
         self.cooling_jacket = cool.CoolingJacket(inner_wall, 
@@ -1368,11 +1367,11 @@ class Engine:
         Args:
             number_of_points (int, optional): Number of discrete points to divide the engine into. Defaults to 1000.
             h_gas_model (str, optional): Equation to use for the gas side convective heat transfer coefficients. Options are '1', '2' and '3'. Defaults to "1".
-            h_coolant_model (str, optional): Equation to use for the coolant side convective heat transfer coefficients, currently the only option is '1'. Defaults to "1".
+            h_coolant_model (str, optional): Equation to use for the coolant side convective heat transfer coefficients. Options are '1', '2' and '3'. Defaults to "1".
             to_json (str or bool, optional): Directory to export a .JSON file to, containing simulation results. If False, no .JSON file is saved. Defaults to 'heating_output.json'.
 
         Note:
-            h_gas_model = '2' seems to provide questionable results (if it works at all) - use it with caution.
+            h_gas_model = '2' seems to provide questionable results (if it works at all) - use it with caution. h_coolant_model = '2' can raise errors if using the 'force_phase' setting with your coolant TransportProperties object. See the functions h_gas_1(), h_gas_2(), h_coolant_1(), etc.. in the documentation for details on each model.
 
         Returns:
             dict: Results of the simulation. Contains the following dictionary keys: 
@@ -1434,11 +1433,13 @@ class Engine:
         R_coolant = np.full(len(discretised_x), float('NaN'))       #Coolant side convective thermal resistance
         p_coolant = np.full(len(discretised_x), float('NaN'))       #Coolant static pressure
         p0_coolant = np.full(len(discretised_x), float('NaN'))      #Coolant Bernoulli constant / stagnation pressure
-
-        mu_coolant = np.full(len(discretised_x), float('NaN'))      #Coolant absolute viscosity
-        k_coolant = np.full(len(discretised_x), float('NaN'))       #Coolant thermal conductivity
-        cp_coolant = np.full(len(discretised_x), float('NaN'))      #Coolant specific heat capacity
-        rho_coolant = np.full(len(discretised_x), float('NaN'))     #Coolant density
+        v_coolant = np.full(len(discretised_x), float('NaN'))       #Coolant bulk velocity
+        
+        Pr_coolant = np.full(len(discretised_x), float('NaN'))      #Coolant bulk Prandtl number
+        mu_coolant = np.full(len(discretised_x), float('NaN'))      #Coolant bulk absolute viscosity
+        k_coolant = np.full(len(discretised_x), float('NaN'))       #Coolant bulk thermal conductivity
+        cp_coolant = np.full(len(discretised_x), float('NaN'))      #Coolant bulk specific heat capacity
+        rho_coolant = np.full(len(discretised_x), float('NaN'))     #Coolant bulk density
 
         #Only relevant if there's an ablative:
         T_ablative_inner = np.full(len(discretised_x), float('NaN'))    #Ablative inner side temperature
@@ -1560,21 +1561,51 @@ class Engine:
                     if p0_coolant[i] < 0:
                         raise ValueError("Coolant stagnation pressure dropped below 0 bar - your coolant velocities may be too high.")
 
-                #Update coolant heat capacity and transport properties
+                #Update coolant heat capacity, transport properties and velocity
+                Pr_coolant[i] = self.cooling_jacket.coolant_transport.Pr(T = T_coolant[i], p = p_coolant[i])
                 cp_coolant[i] = self.cooling_jacket.coolant_transport.cp(T = T_coolant[i], p = p_coolant[i])
                 mu_coolant[i] = self.cooling_jacket.coolant_transport.mu(T = T_coolant[i], p = p_coolant[i])
                 k_coolant[i] = self.cooling_jacket.coolant_transport.k(T = T_coolant[i], p = p_coolant[i])
                 rho_coolant[i] = self.cooling_jacket.coolant_transport.rho(T = T_coolant[i], p = p_coolant[i])
+                v_coolant[i] = self.cooling_jacket.coolant_velocity(rho_coolant[i], x=x, y = self.y(x, up_to = "wall in"))
 
                 #Coolant side heat transfer coefficient
                 if h_coolant_model == "1":
-                    h_coolant[i] = cool.h_coolant_1(self.cooling_jacket.A(x=x, y=self.y(x)), 
-                                                    self.cooling_jacket.D(x=x, y=self.y(x)), 
+                    h_coolant[i] = cool.h_coolant_1(self.cooling_jacket.A(x=x, y=self.y(x=x, up_to = "wall in")), 
+                                                    self.cooling_jacket.D(x=x, y=self.y(x=x, up_to = "wall in")), 
                                                     self.cooling_jacket.mdot_coolant, 
                                                     mu_coolant[i], 
                                                     k_coolant[i], 
                                                     cp_coolant[i], 
                                                     rho_coolant[i])
+
+                elif h_coolant_model == "2":
+                    #Use '3' for the first step (model '2' relies on the wall temperature, which hasn't yet been calculated for the first step).
+                    if i == 0:
+                        h_coolant[i] = cool.h_coolant_3(rho_coolant[i], 
+                                                        v_coolant[i], 
+                                                        self.cooling_jacket.D(x=x, y=self.y(x=x, up_to = "wall in")), 
+                                                        mu_coolant[i], 
+                                                        Pr_coolant[i], 
+                                                        k_coolant[i])
+
+                    #Use model '2' for every other step.
+                    else:
+                        h_coolant[i] = cool.h_coolant_2(rho_coolant[i], 
+                                                        v_coolant[i], 
+                                                        self.cooling_jacket.D(x=x, y=self.y(x=x, up_to = "wall in")), 
+                                                        mu_coolant[i], 
+                                                        self.cooling_jacket.coolant_transport.mu(T = T_wall_outer[i-1], p = p_coolant[i]), 
+                                                        Pr_coolant[i], 
+                                                        k_coolant[i])
+
+                elif h_coolant_model == "3":
+                    h_coolant[i] = cool.h_coolant_3(rho_coolant[i], 
+                                                    v_coolant[i], 
+                                                    self.cooling_jacket.D(x=x, y=self.y(x=x, up_to = "wall in")), 
+                                                    mu_coolant[i], 
+                                                    Pr_coolant[i], 
+                                                    k_coolant[i])
 
                 else:
                     raise AttributeError(f"Could not find the h_coolant_model '{h_coolant_model}'")
@@ -1618,6 +1649,10 @@ class Engine:
                 T_wall_inner[i] = T_gas[i]
                 T_wall_outer[i] = T_gas[i]
 
+        #Not sure if the Sieder-Tate equation is valid with your coolant above the boiling temperature at the wall.
+        if h_coolant_model == '2' and self.cooling_jacket.coolant_transport.check_liquid(T = np.amax(T_wall_outer[i]), p = p_coolant[-1]) == False:
+            print("Coolant temperature at the wall was above its boiling point when using the Sieder-Tate equation (h_coolant_model = '2') - results should be used with caution.")
+
         #Dictionary containing results
         output_dict = {"x" : list(discretised_x),
                 "q_dot" : list(q_dot),
@@ -1637,10 +1672,12 @@ class Engine:
                 "mu_gas" : list(mu_gas),
                 "k_gas" : list(k_gas),
                 "Pr_gas" : list(Pr_gas),
+                "Pr_coolant" : list(Pr_coolant),
                 "mu_coolant" : list(mu_coolant),
                 "k_coolant" : list(k_coolant),
                 "cp_coolant" : list(cp_coolant),
                 "rho_coolant" : list(rho_coolant),
+                "v_coolant" : list(v_coolant),
                 "boil_off_position" : boil_off_position}
 
         #Export a .JSON file if required
