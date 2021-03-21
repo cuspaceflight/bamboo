@@ -233,12 +233,15 @@ class TransportProperties:
         If you are getting questionable data, it may be useful to try out the 'force_phase' argument.
 
     Args:
-        model (str, optional): The module to use for modelling. Options include 'thermo' and 'CoolProp'.
+        model (str, optional): The module to use for modelling. Options include 'thermo' and 'CoolProp' and 'custom'.
         force_phase (str, optional): 'l' for liquid or 'g' for gas. Forces thermo to use transport properties in the given phase. Does not affect other models. Defaults to None.
     
     Keywords Args:
         thermo_object (thermo.chemical.Chemical or thermo.mixture.Mixture): An object from the 'thermo' Python module.
         coolprop_name (str): Name of the chemcial or mixture for the CoolProp module. See http://www.coolprop.org/ for a list of available fluids.
+        custom_Pr (float): Prandtl number to use for model = 'custom'
+        custom_mu (float): Absolute viscosity to use for model = 'custom' (Pa s)
+        custom_k (float): Thermal conductivity to use for model = 'custom' (W/m/K)
     """
 
     def __init__(self, model = "thermo", force_phase = None, **kwargs):
@@ -254,6 +257,11 @@ class TransportProperties:
             else:
                 raise ImportError("Could not find the 'CoolProp' module, so can't use TransportProperties.model = 'CoolProp'")
         
+        elif model == "custom":
+            self.custom_Pr = kwargs["custom_Pr"]
+            self.custom_mu = kwargs["custom_mu"]
+            self.custom_k = kwargs["custom_k"]
+
         else:
             raise ValueError(f"The model {model} is not a valid option.")
 
@@ -280,6 +288,7 @@ class TransportProperties:
                 return True
             else:
                 return False
+        
 
     def k(self, T, p):
         """Thermal conductivity
@@ -303,6 +312,9 @@ class TransportProperties:
             
         elif self.model == "CoolProp":
             return PropsSI("CONDUCTIVITY", "T", T, "P", p, self.coolprop_name)
+
+        elif self.model == "custom":
+            return self.custom_k
 
     def mu(self, T, p):
         """Absolute viscosity
@@ -333,6 +345,8 @@ class TransportProperties:
         elif self.model == "CoolProp":
             return PropsSI("VISCOSITY", "T", T, "P", p, self.coolprop_name)
 
+        elif self.model == "custom":
+            return self.custom_mu
     def Pr(self, T, p):
         """Prandtl number
 
@@ -355,6 +369,9 @@ class TransportProperties:
 
         elif self.model == "CoolProp":
             return PropsSI("PRANDTL", "T", T, "P", p, self.coolprop_name)
+
+        elif self.model == "custom":
+            return self.custom_Pr
 
     def cp(self, T, p):
         """Specific heat capacity at constant pressure (J/kg/K)
