@@ -379,6 +379,7 @@ class Nozzle:
         Ae (float): Exit plane area (m^2)
         type (str, optional): Desired shape, can be "rao" or "conical". Conical is not currently implemented. Defaults to "rao".
         length_fraction (float): Length fraction if a Rao nozzle is used. Defaults to 0.8.
+        cone_angle (float): Cone angle if a cone nozzle is used (deg). Defaults to 15.
     
     Attributes:
         length (float): Length of the diverging section (distance between throat and nozzle exit) (m).
@@ -387,15 +388,20 @@ class Nozzle:
         Rt (float): Throat radius (m)
         Re (float): Exit radius (m)
     """
-    def __init__(self, At, Ae, type = "rao", length_fraction = 0.8):
+    def __init__(self, At, Ae, type = "rao", length_fraction = 0.8, cone_angle = 15):
         self.At = At
         self.Ae = Ae
         self.Rt = (At/np.pi)**0.5   #Throat radius (m)
         self.Re = (Ae/np.pi)**0.5   #Exit radius (m)
         self.type = type
-        self.length_fraction = length_fraction
+        
+        if self.type == "cone":
+            self.cone_angle = cone_angle
+            self.dydx = np.tan(self.cone_angle*np.pi/180)
+            self.length = (self.Re - self.Rt)/self.dydx
 
-        if self.type == "rao":
+        elif self.type == "rao":
+            self.length_fraction = length_fraction
             self.theta_n = rao_theta_n(self.Ae/self.At)     #Inflection angle (rad), as defined in [1]
             self.theta_e = rao_theta_e(self.Ae/self.At)     #Exit angle (rad), as defined in [1]
 
@@ -445,6 +451,9 @@ class Nozzle:
             #Parabolic section.
             else:
                 return ((4*self.a*(x-self.c) + self.b**2)**0.5 - self.b)/(2*self.a)   #Rearranging the quadratic on page 2 of Reference [3] to solve for y
+
+        elif self.type == "cone" and x <= self.length:
+            return self.Rt + self.dydx*x
 
         else:
             raise ValueError(f"x is beyond the end of the nozzle, which is only {self.length} m long. You tried to input {x}.")
@@ -538,29 +547,36 @@ class EngineGeometry:
             raise ValueError(f"The combustion chamber area {self.chamber_area} m^2 is smaller than the throat area {nozzle.At} m^2.")
 
         if self.style == "auto":
-            #Use the system defined in Reference [1] - mostly using Eqns (4)
-            #Make sure we cap the size of the converging section to the radius of the combustion chamber.
-            chamber_radius = (self.chamber_area/np.pi)**0.5
-            theta_min = -np.pi - np.arcsin((chamber_radius - nozzle.Rt - 1.5*nozzle.Rt) / (1.5*nozzle.Rt)) 
-            if theta_min > -3*np.pi/4:
-                self.theta_curved_converging_start = theta_min
-            else:
-                self.theta_curved_converging_start = -3*np.pi/4
+            if nozzle.type == "cone":
+                self.dydx_conv = np.tan(-45*np.pi/180)
+                self.x_max = nozzle.length
+                self.x_chamber_end = (self.chamber_radius - nozzle.Rt)/self.dydx_conv
+                self.x_min = self.x_chamber_end - self.chamber_length
 
-            #Find key properties for the converging section
-            self.x_curved_converging_start = 1.5*nozzle.Rt*np.cos(self.theta_curved_converging_start)
-            self.y_curved_converging_start = 1.5*nozzle.Rt*np.sin(self.theta_curved_converging_start) + 1.5*nozzle.Rt + nozzle.Rt
+            elif nozzle.type == "rao":
+                #Use the system defined in Reference [1] - mostly using Eqns (4)
+                #Make sure we cap the size of the converging section to the radius of the combustion chamber.
+                chamber_radius = (self.chamber_area/np.pi)**0.5
+                theta_min = -np.pi - np.arcsin((chamber_radius - nozzle.Rt - 1.5*nozzle.Rt) / (1.5*nozzle.Rt)) 
+                if theta_min > -3*np.pi/4:
+                    self.theta_curved_converging_start = theta_min
+                else:
+                    self.theta_curved_converging_start = -3*np.pi/4
 
-            #Find the gradient where the curved converging bit starts
-            dxdtheta_curved_converging_start = -1.5*nozzle.Rt*np.sin(self.theta_curved_converging_start)
-            self.dydx_curved_converging_start = -1.5*nozzle.Rt*np.cos(self.theta_curved_converging_start)/dxdtheta_curved_converging_start
+                #Find key properties for the converging section
+                self.x_curved_converging_start = 1.5*nozzle.Rt*np.cos(self.theta_curved_converging_start)
+                self.y_curved_converging_start = 1.5*nozzle.Rt*np.sin(self.theta_curved_converging_start) + 1.5*nozzle.Rt + nozzle.Rt
 
-            #Find the x-position where we reach the combustion chamber radius
-            self.x_chamber_end = self.x_curved_converging_start - (self.chamber_radius - self.y_curved_converging_start)/self.dydx_curved_converging_start
+                #Find the gradient where the curved converging bit starts
+                dxdtheta_curved_converging_start = -1.5*nozzle.Rt*np.sin(self.theta_curved_converging_start)
+                self.dydx_curved_converging_start = -1.5*nozzle.Rt*np.cos(self.theta_curved_converging_start)/dxdtheta_curved_converging_start
 
-            #Start and end points of the engine
-            self.x_min = self.x_chamber_end - self.chamber_length
-            self.x_max = nozzle.length
+                #Find the x-position where we reach the combustion chamber radius
+                self.x_chamber_end = self.x_curved_converging_start - (self.chamber_radius - self.y_curved_converging_start)/self.dydx_curved_converging_start
+
+                #Start and end points of the engine
+                self.x_min = self.x_chamber_end - self.chamber_length
+                self.x_max = nozzle.length
 
 class Engine:
     """Class for representing a liquid rocket engine.
@@ -615,28 +631,43 @@ class Engine:
                     raise AttributeError("Geometry is not defined for x < 0. You need to add geometry with the 'Engine.add_geometry()' function.")
 
                 if self.geometry.style == "auto":
-                    #Curved converging section
-                    if x < 0 and x > self.geometry.x_curved_converging_start:
-                        theta = -np.arccos(x/(1.5*self.nozzle.Rt))
-                        return 1.5*self.nozzle.Rt*np.sin(theta) + 1.5*self.nozzle.Rt + self.nozzle.Rt
+                    if self.nozzle.type == "rao":
+                        #Curved converging section
+                        if x < 0 and x > self.geometry.x_curved_converging_start:
+                            theta = -np.arccos(x/(1.5*self.nozzle.Rt))
+                            return 1.5*self.nozzle.Rt*np.sin(theta) + 1.5*self.nozzle.Rt + self.nozzle.Rt
 
-                    #Before the curved part of the converging section
-                    elif x <= self.geometry.x_curved_converging_start:
+                        #Before the curved part of the converging section
+                        elif x <= self.geometry.x_curved_converging_start:
 
-                        #Inside the chamber
-                        if x < self.geometry.x_chamber_end and x >= self.geometry.x_min:
+                            #Inside the chamber
+                            if x < self.geometry.x_chamber_end and x >= self.geometry.x_min:
+                                return self.geometry.chamber_radius
+
+                            #Inside the converging section
+                            elif x >= self.geometry.x_chamber_end:
+                                return np.interp(x, 
+                                                [self.geometry.x_chamber_end, self.geometry.x_curved_converging_start], 
+                                                [self.geometry.chamber_radius, self.geometry.y_curved_converging_start])
+
+                            #Outside of the engine
+                            else:
+                                raise ValueError(f"x is beyond the front of the engine. You tried to input {x} but the minimum value you're allowed is {self.geometry.x_chamber_end - self.geometry.chamber_length}")
+                    
+                    elif self.nozzle.type == "cone":
+                        #If between the end of the chamber and the throat
+                        if x < 0 and x >= self.geometry.x_chamber_end:
+                            #Use a 45 degree converging section
+                            return self.nozzle.Rt + self.geometry.dydx_conv*x
+
+                        #If in the chamber
+                        elif x >= self.geometry.x_min and x < self.geometry.x_chamber_end:
                             return self.geometry.chamber_radius
 
-                        #Inside the converging section
-                        elif x >= self.geometry.x_chamber_end:
-                            return np.interp(x, 
-                                            [self.geometry.x_chamber_end, self.geometry.x_curved_converging_start], 
-                                            [self.geometry.chamber_radius, self.geometry.y_curved_converging_start])
-
-                        #Outside of the engine
                         else:
-                            return ValueError(f"x is beyond the front of the engine. You tried to input {x} but the minimum value you're allowed is {self.geometry.x_chamber_end - self.geometry.chamber_length}")
-        
+                            raise ValueError(f"x is beyond the front of the engine. You tried to input {x} but the minimum value you're allowed is {self.geometry.x_min}")
+                    
+
         elif up_to == 'ablative in':
             if self.has_ablative == False:
                 raise AttributeError("There is no ablative attached to this engine")

@@ -528,7 +528,7 @@ Data obtained by using <a class="reference external" href="http://www.graphreade
 
 <dl class="py class">
 <dt id="bamboo.main.Nozzle">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.main.</span></code><code class="sig-name descname"><span class="pre">Nozzle</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">At</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Ae</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rao'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.8</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Nozzle" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.main.</span></code><code class="sig-name descname"><span class="pre">Nozzle</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">At</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Ae</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rao'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cone_angle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Nozzle" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Object for calculating and storing nozzle geometry.</p>
 <dl class="field-list simple">
@@ -538,6 +538,7 @@ Data obtained by using <a class="reference external" href="http://www.graphreade
 <li><p><strong>Ae</strong> (<em>float</em>) – Exit plane area (m^2)</p></li>
 <li><p><strong>type</strong> (<em>str</em><em>, </em><em>optional</em>) – Desired shape, can be “rao” or “conical”. Conical is not currently implemented. Defaults to “rao”.</p></li>
 <li><p><strong>length_fraction</strong> (<em>float</em>) – Length fraction if a Rao nozzle is used. Defaults to 0.8.</p></li>
+<li><p><strong>cone_angle</strong> (<em>float</em>) – Cone angle if a cone nozzle is used (deg). Defaults to 15.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1105,8 +1106,7 @@ To see the plot, you will need to run matplotlib.pyplot.show().</p>
 <dd class="field-even"><ul class="simple">
 <li><p><strong>channel_shape</strong> (<em>str</em><em>, </em><em>optional</em>) – Used if configuration = ‘spiral’. Options include ‘rectangle’, ‘semi-circle’, and ‘custom’.</p></li>
 <li><p><strong>channel_height</strong> (<em>float</em><em>, </em><em>optional</em>) – If using configuration = ‘vertical’ or channel_shape = ‘rectangle’, this is the height of the channels (m).</p></li>
-<li><p><strong>channel_width</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘rectangle’, this is the width of the channels (m).</p></li>
-<li><p><strong>channel_diameter</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘semi-circle’, this is the diameter of the semi circle.</p></li>
+<li><p><strong>channel_width</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘rectangle’, this is the width of the channels (m). If using channel_shape = ‘semi-circle’, this is the diameter of the semi circle (m).</p></li>
 <li><p><strong>custom_effective_diameter</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘custom’, this is the effective diameter you want to use.</p></li>
 <li><p><strong>custom_flow_area</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘custom’, this is the flow you want to use.</p></li>
 </ul>
@@ -1343,14 +1343,14 @@ Uses the idea of thermal circuits and resistances - we have three resistors in s
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>number_of_points</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of discrete points to divide the engine into. Defaults to 1000.</p></li>
 <li><p><strong>h_gas_model</strong> (<em>str</em><em>, </em><em>optional</em>) – Equation to use for the gas side convective heat transfer coefficients. Options are ‘1’, ‘2’ and ‘3’. Defaults to “1”.</p></li>
-<li><p><strong>h_coolant_model</strong> (<em>str</em><em>, </em><em>optional</em>) – Equation to use for the coolant side convective heat transfer coefficients, currently the only option is ‘1’. Defaults to “1”.</p></li>
+<li><p><strong>h_coolant_model</strong> (<em>str</em><em>, </em><em>optional</em>) – Equation to use for the coolant side convective heat transfer coefficients. Options are ‘1’, ‘2’ and ‘3’. Defaults to “1”.</p></li>
 <li><p><strong>to_json</strong> (<em>str</em><em> or </em><em>bool</em><em>, </em><em>optional</em>) – Directory to export a .JSON file to, containing simulation results. If False, no .JSON file is saved. Defaults to ‘heating_output.json’.</p></li>
 </ul>
 </dd>
 </dl>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>h_gas_model = ‘2’ seems to provide questionable results (if it works at all) - use it with caution.</p>
+<p>h_gas_model = ‘2’ seems to provide questionable results (if it works at all) - use it with caution. h_coolant_model = ‘2’ can raise errors if using the ‘force_phase’ setting with your coolant TransportProperties object. See the functions h_gas_1(), h_gas_2(), h_coolant_1(), etc.. in the documentation for details on each model.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
@@ -1467,7 +1467,7 @@ Uses the idea of thermal circuits and resistances - we have three resistors in s
 <dl class="py function">
 <dt id="bamboo.cooling.h_gas_1">
 <code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">h_gas_1</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">D</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">R</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.h_gas_1" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the convective heat transfer coefficient on the gas side.
+<dd><p>Get the convective heat transfer coefficient on the gas side, non-Bartz equation.
 Uses Eqn (8-22) on page 312 or RPE 7th edition (Reference [2])</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1557,7 +1557,7 @@ using Equation (8-23) from page 312 of RPE 7th edition (Reference [2]). ‘am’
 <dt id="bamboo.cooling.h_coolant_1">
 <code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">h_coolant_1</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">D</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_bar</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.h_coolant_1" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the convective heat transfer coefficient for the coolant side.
-Uses the equation from page 317 of RPE 7th edition.</p>
+Uses the equation from page 317 of RPE 7th edition (Reference [2]).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1572,6 +1572,55 @@ Uses the equation from page 317 of RPE 7th edition.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Convective heat transfer coefficient, h, for the coolant side (where q = h(T - T_inf)).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="bamboo.cooling.h_coolant_2">
+<code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">h_coolant_2</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">V</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">D</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_bulk</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_wall</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.h_coolant_2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sieder-Tate equation for convective heat transfer coefficient.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rho</strong> (<em>float</em>) – Coolant bulk density (kg/m^3)</p></li>
+<li><p><strong>V</strong> (<em>float</em>) – Coolant bulk velocity (m/s)</p></li>
+<li><p><strong>D</strong> (<em>float</em>) – Effective diameter of pipe (m)</p></li>
+<li><p><strong>mu_bulk</strong> (<em>float</em>) – Absolute viscosity of the coolant at the bulk temperature (Pa s).</p></li>
+<li><p><strong>mu_wall</strong> (<em>float</em>) – Absolute viscosity of the coolant at the wall temperature (Pa s).</p></li>
+<li><p><strong>Pr</strong> (<em>float</em>) – Bulk Prandtl number of the coolant.</p></li>
+<li><p><strong>k</strong> (<em>float</em>) – Bulk thermal conductivity of the coolant.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Convective heat transfer coefficient</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="bamboo.cooling.h_coolant_3">
+<code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">h_coolant_3</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">V</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">D</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.h_coolant_3" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dittus-Boelter equation for convective heat transfer coefficient.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rho</strong> (<em>float</em>) – Coolant bulk density (kg/m^3).</p></li>
+<li><p><strong>V</strong> (<em>float</em>) – Coolant bulk velocity (m/s)</p></li>
+<li><p><strong>D</strong> (<em>float</em>) – Effective diameter of pipe (m)</p></li>
+<li><p><strong>mu</strong> (<em>float</em>) – Coolant bulk viscosity (Pa s)</p></li>
+<li><p><strong>Pr</strong> (<em>float</em>) – Coolant bulk Prandtl number</p></li>
+<li><p><strong>k</strong> (<em>float</em>) – Coolant thermal conductivity</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Convective heat transfer coefficient</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>float</p>
@@ -1602,6 +1651,83 @@ Used specifically for defining the inner liner of an engine.</p>
 </ul>
 </dd>
 </dl>
+<dl class="py attribute">
+<dt id="bamboo.cooling.Material.E">
+<code class="sig-name descname"><span class="pre">E</span></code><a class="headerlink" href="#bamboo.cooling.Material.E" title="Permalink to this definition">¶</a></dt>
+<dd><p>Young’s modulus (Pa)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="bamboo.cooling.Material.sigma_y">
+<code class="sig-name descname"><span class="pre">sigma_y</span></code><a class="headerlink" href="#bamboo.cooling.Material.sigma_y" title="Permalink to this definition">¶</a></dt>
+<dd><p>0.2% yield stress (Pa)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="bamboo.cooling.Material.poisson">
+<code class="sig-name descname"><span class="pre">poisson</span></code><a class="headerlink" href="#bamboo.cooling.Material.poisson" title="Permalink to this definition">¶</a></dt>
+<dd><p>Poisson’s ratio</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="bamboo.cooling.Material.alpha">
+<code class="sig-name descname"><span class="pre">alpha</span></code><a class="headerlink" href="#bamboo.cooling.Material.alpha" title="Permalink to this definition">¶</a></dt>
+<dd><p>Thermal expansion coefficient (strain/K)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="bamboo.cooling.Material.k">
+<code class="sig-name descname"><span class="pre">k</span></code><a class="headerlink" href="#bamboo.cooling.Material.k" title="Permalink to this definition">¶</a></dt>
+<dd><p>Thermal conductivity (W/m/K)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="bamboo.cooling.Material.c">
+<code class="sig-name descname"><span class="pre">c</span></code><a class="headerlink" href="#bamboo.cooling.Material.c" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specific heat capacity (J/kg/K). Only available if assigned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="bamboo.cooling.Material.rho">
+<code class="sig-name descname"><span class="pre">rho</span></code><a class="headerlink" href="#bamboo.cooling.Material.rho" title="Permalink to this definition">¶</a></dt>
+<dd><p>Density (kg/m^3). Only available if assigned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">

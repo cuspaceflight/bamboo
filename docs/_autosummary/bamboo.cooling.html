@@ -192,8 +192,14 @@
 <tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_coolant_1" title="bamboo.cooling.h_coolant_1"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_coolant_1</span></code></a>(A, D, mdot, mu, k, c_bar, rho)</p></td>
 <td><p>Get the convective heat transfer coefficient for the coolant side.</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_coolant_2" title="bamboo.cooling.h_coolant_2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_coolant_2</span></code></a>(rho, V, D, mu_bulk, mu_wall, Pr, k)</p></td>
+<td><p>Sieder-Tate equation for convective heat transfer coefficient.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_coolant_3" title="bamboo.cooling.h_coolant_3"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_coolant_3</span></code></a>(rho, V, D, mu, Pr, k)</p></td>
+<td><p>Dittus-Boelter equation for convective heat transfer coefficient.</p></td>
+</tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_gas_1" title="bamboo.cooling.h_gas_1"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_gas_1</span></code></a>(D, M, T, rho, gamma, R, mu, k, Pr)</p></td>
-<td><p>Get the convective heat transfer coefficient on the gas side.</p></td>
+<td><p>Get the convective heat transfer coefficient on the gas side, non-Bartz equation.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_gas_2" title="bamboo.cooling.h_gas_2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_gas_2</span></code></a>(D, cp_inf, mu_inf, Pr_inf, rho_inf, …)</p></td>
 <td><p>Bartz equation, using Equation (8-23) from page 312 of RPE 7th edition (Reference [2]).</p></td>

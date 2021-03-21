@@ -121,15 +121,16 @@ def plot_resistances(data_dict, **kwargs):
     axs.plot(data_dict["x"], data_dict["R_wall"], label = "Wall")
     axs.plot(data_dict["x"], data_dict["R_coolant"], label = "Coolant boundary layer")
 
-    if type(data_dict["R_ablative"][0]) is float:
+    if type(data_dict["R_ablative"][0]) is float("NaN"):
+        axs.plot(data_dict["x"], 
+                np.array(data_dict["R_gas"]) + np.array(data_dict["R_wall"]) + np.array(data_dict["R_coolant"]), 
+                label = "Total resistance", linestyle = '--') 
+
+    else:
         axs.plot(data_dict["x"], data_dict["R_ablative"], label = "Ablative")
         axs.plot(data_dict["x"], 
                 np.array(data_dict["R_gas"]) + np.array(data_dict["R_ablative"]) + np.array(data_dict["R_wall"]) + np.array(data_dict["R_coolant"]), 
                 label = "Total resistance", linestyle = '--')
-    else:
-        axs.plot(data_dict["x"], 
-                np.array(data_dict["R_gas"]) + np.array(data_dict["R_wall"]) + np.array(data_dict["R_coolant"]), 
-                label = "Total resistance", linestyle = '--') 
 
     axs.legend()
     axs.grid()

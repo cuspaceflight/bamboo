@@ -15,6 +15,8 @@
    
       black_body
       h_coolant_1
+      h_coolant_2
+      h_coolant_3
       h_gas_1
       h_gas_2
       h_gas_3
