@@ -1890,17 +1890,22 @@ class Engine:
             condition (str, optional): Engine state for analysis. Options are "steady", "startup", or "shutdown". Defaults to "steady". (ONLY DEFAULT WORKS)
 
         Returns:
-            dict: Analysis result. 'thermal_stress' is the heat induced stress, 'deltaT_wall' is the wall temperature difference, hot side - cold side
+            dict: Results of the stress simulation. Contains the following dictionary keys: 
+                - "thermal_stress : Stress induced in the inner liner due to temperature difference, chamber to coolant side, for each x value (Pa).
+                - "tadjusted_yield : Yield stress of the inner wall material, corrected for the chamber side temperature (worst case) (Pa).
+                - "deltaT_wall" : Inner liner temperature difference, chamber side - coolant side (K).
         """
         length = len(heating_result["x"])
         wall_stress = np.zeros(length)
         wall_deltaT = np.zeros(length)
+        tadjusted_yield = np.zeros(length)
 
         material = self.cooling_jacket.inner_wall
 
         for i in range(length):
             wall_deltaT[i] = heating_result["T_wall_inner"][i] - \
                 heating_result["T_wall_outer"][i]
+            tadjusted_yield[i] = material.relStrength(heating_result["T_wall_inner"][i]) * material.sigma_y
 
         # Compute wall temperature gradient
         wall_deltaT = wall_deltaT[::-1]
@@ -1917,4 +1922,5 @@ class Engine:
             wall_stress[i] = cur_stress
 
         return {"thermal_stress": wall_stress,
+                "tadjusted_yield": tadjusted_yield,
                 "deltaT_wall": wall_deltaT}
