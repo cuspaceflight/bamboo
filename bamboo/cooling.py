@@ -200,8 +200,13 @@ class Material:
         poisson (float): Poisson's ratio
         alpha (float): Thermal expansion coefficient (strain/K)
         k (float): Thermal conductivity (W/m/K)
-        c (float): Specific heat capacity (J/kg/K). Only available if assigned.
-        rho (float): Density (kg/m^3). Only available if assigned.
+        c (float, optional): Specific heat capacity (J/kg/K). Only available if assigned.
+        rho (float, optional): Density (kg/m^3). Only available if assigned.
+        Tsigma_coeffs (list, optional): List of coefficients, in ascending power order,
+                                        for the polynomial for the temp / relative strength
+                                        relationship.
+        Tsigma_range (list, optional): Start, end temp (Kelvin) for Tsigma polynomial.
+                                       At T = T_start, yield strength is sigma_y.
     """
     def __init__(self, E, sigma_y, poisson, alpha, k, **kwargs):
         self.E = E                  
@@ -215,6 +220,16 @@ class Material:
         if "rho" in kwargs:
             self.rho = kwargs["rho"]
 
+        if "Tsigma_coeffs" in kwargs and "Tsigma_range" in kwargs:
+            self.polyCoeffs = kwargs["Tsigma_coeffs"]
+            self.polyOrder = len(self.polyCoeffs)
+            self.polyTmin = kwargs["Tsigma_range"][0]
+            self.polyTmax = kwargs["Tsigma_range"][1]
+            self.polyFlag = True # A valid relationship exists
+            self.warned = False # Used to check if the user has been warned of inaccurate results, if they also set accuracy overrides
+        else:
+            print("Warning: Missing or invalid temperature-strength relationship. Stress results invalid for at least one material.")
+
         self.perf_therm = (1 - self.poisson) * self.k / (self.alpha * self.E)   #Performance coefficient for thermal stress, higher is better
 
     def __repr__(self):
@@ -224,6 +239,44 @@ Poisson's ratio = {self.poisson}
 alpha = {self.alpha} strain/K
 Thermal conductivity = {self.k} W/m/K
 (may also have a specific heat capacity (self.c) and density (self.rho))"""
+
+    def relStrength(self, T, ignoreLowTemp = False, ignoreHighTemp = False):
+        """Uses polynomial coefficients to determine the fraction of yield stress
+           at a given temperature.
+
+        Args:
+            T (float): Temperature at which to find the relative strength
+            ignoreLowTemp (bool, optional): If true and a temperature below the minimum
+            specified by Tsigma_config is passed in, the relative strength at the minimum
+            temperature is returned. Else an exception is raised. Defaults to False.
+            ignoreHighTemp (bool, optional): If true and a temperature above the maximum
+            specified by Tsigma_config is passed in, the relative strength at the maximum
+            temperature is returned. Else an exception is raised. NOT RECOMMENDED. Defaults to False.
+
+        Returns:
+            float: A fraction of sigma_y
+        """
+        if self.polyFlag is False:
+            raise ValueError("No valid material yield strength relationship for calculation.")
+
+        if T > self.polyTmax:
+            if ignoreHighTemp is False:
+                raise ValueError(f"Material temperature out of bounds and override not set: {T} > {self.polyTmax}")
+            if self.warned is False:
+                print("Accuracy warning: Material temperature out of bounds at least once, continuing with override.")
+                self.warned = True 
+                # Set this flag true so the output isn't spammed - likely that more than one value will be out of range
+
+        if T < self.polyTmin:
+            if ignoreLowTemp is False:
+                raise ValueError(f"Material temperature out of bounds and override not set: {T} < {self.polyTmin}")
+            if self.warned is False:
+                print("Accuracy warning: Material temperature out of bounds at least once, continuing with override.")
+                self.warned = True 
+                # Set this flag true so the output isn't spammed - likely that more than one value will be out of range
+
+        return np.sum([self.polyCoeffs[index] * T**index for index in range(self.polyOrder)])
+
 
 class TransportProperties:
     """Container for transport properties of a fluid. 
