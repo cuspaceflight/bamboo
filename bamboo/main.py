@@ -1126,13 +1126,16 @@ class Engine:
             custom_effective_diameter (float, optional): If using channel_shape = 'custom', this is the effective diameter you want to use.
             custom_flow_area (float, optional): If using channel_shape = 'custom', this is the flow you want to use. 
         """
-        self.cooling_jacket = cool.CoolingJacket(inner_wall, 
+        
+        self.cooling_jacket = cool.CoolingJacket(self.geometry,
+                                                inner_wall, 
                                                 inlet_T, 
                                                 inlet_p0, 
                                                 coolant_transport, 
                                                 mdot_coolant, 
                                                 xs, 
                                                 configuration, 
+                                                self.has_ablative,
                                                 **kwargs)
         self.has_cooling_jacket = True
 
@@ -1155,6 +1158,7 @@ class Engine:
             regression_rate (float): (Not currently used) (m/s). Defaults to 0.0.
         """
         #Use the cooling jacket's wall material if the user inputs 'wall_material = None'
+        
         if wall_material == None:
             if self.has_cooling_jacket == False:
                 raise AttributeError("You need to specify a wall material for the ablative (there is no cooling jacket wall material to use)")
@@ -1162,6 +1166,10 @@ class Engine:
 
         else:
             wall_material_to_use = wall_material
+        
+        if self.has_cooling_jacket is True:
+            self.cooling_jacket.has_ablator = True
+        # Update the cooling jacket if an ablator is added after the jacket
 
         self.ablative = cool.Ablative(ablative_material = ablative_material,
                                       wall_material = wall_material_to_use, 
@@ -1218,8 +1226,14 @@ class Engine:
             pitch = self.cooling_jacket.channel_width               # No gaps between channels so spiral pitch = width
             section_turns = axis_length/(pitch*number_of_sections)  # Number of turns per discrete section
 
-            for i in range(number_of_sections-1):
-                radius_avg = (self.y(discretised_x[i], up_to = 'wall out') + self.y(discretised_x[i+1], up_to = 'wall out'))/2
+            for i in range(number_of_sections-1):              
+                if self.has_ablative is True:
+                    y = self.geometry.chamber_radius
+                else:
+                    y = self.y(discretised_x[i], up_to = "wall out")
+                # Ignore the nozzle contours - jacket has constant radius if an ablative insert is present
+                 
+                radius_avg = (y) + self.y(discretised_x[i+1], up_to = 'wall out')/2
                 discretised_length.append(section_turns * np.sqrt(pitch**2 + (radius_avg*2*np.pi)**2))
                 # Find the average radius for this section and use it to determine the spiral section length
 

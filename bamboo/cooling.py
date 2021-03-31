@@ -494,8 +494,9 @@ class CoolingJacket:
         custom_effective_diameter (float, optional): If using channel_shape = 'custom', this is the effective diameter you want to use. 
         custom_flow_area (float, optional): If using channel_shape = 'custom', this is the flow you want to use. 
     """
-    def __init__(self, inner_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
+    def __init__(self, geometry, inner_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", has_ablator = False, **kwargs):
 
+        self.ymax = geometry.chamber_radius
         self.inner_wall = inner_wall
         self.coolant_transport = coolant_transport       
         self.mdot_coolant = mdot_coolant
@@ -503,6 +504,7 @@ class CoolingJacket:
         self.inlet_T = inlet_T
         self.inlet_p0 = inlet_p0
         self.configuration = configuration
+        self.has_ablator = has_ablator
         
         if self.configuration == 'spiral':
             self.channel_shape = kwargs['channel_shape']
@@ -540,10 +542,14 @@ class CoolingJacket:
         Returns:
             float: Cooling channel flow area (m^2)
         """
+
         if self.configuration == 'spiral':
             return self.flow_area
 
         elif self.configuration == 'vertical':
+            if self.has_ablator is True:
+                y = self.ymax
+            # Ignore the nozzle contours - jacket has constant radius if an ablative insert is present
             return np.pi*((y + self.channel_height)**2 - y**2)
     
         else:
@@ -559,6 +565,10 @@ class CoolingJacket:
         Returns:
             float: Effective diameter (m)
         """
+        if self.has_ablator is True:
+            y = self.ymax
+        # Ignore the nozzle contours - jacket has constant radius if an ablative insert is present
+        
         if self.configuration == 'spiral':
             return self.effective_diameter
 
