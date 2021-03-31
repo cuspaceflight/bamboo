@@ -16,8 +16,8 @@ molecular_weight = 21.627   #Molecular weight of the exhaust gas (kg/kmol) (only
 '''Engine operating points'''
 p_tank = 25e5       #Tank / inlet coolant stagnation pressure (Pa) - used for cooling jacket
 pc = 10e5           #Chamber pressure (Pa)
-Tc = 2800.0           #Chamber temperature (K) - obtained from ProPEP 3
-mdot = 4.757        #Mass flow rate (kg/s)
+Tc = 2800.0         #Chamber temperature (K) - obtained from ProPEP 3
+mdot = 5.757        #Mass flow rate (kg/s)
 p_amb = 1.01325e5   #Ambient pressure (Pa). 1.01325e5 is sea level atmospheric.
 OF_ratio = 3.5      #Oxidiser/fuel mass ratio
 
@@ -128,9 +128,15 @@ ax_s.set_xlim(shape_x.min(), shape_x.max())
 ax_s.set_ylim(-shape_y.max(), shape_y.max())
 
 max_stress_index = np.where(stress_data["thermal_stress"]/stress_data["tadjusted_yield"] == max_rel_stress)[0][0]
+# Position of the maximum relative stress given as the index of the corresponding x position from heating analysis
+yield_max_rel = stress_data["tadjusted_yield"][max_stress_index]
+# The local temperature adjusted yield stress at the location of the highest relative stress
+
 ax_s.axvline(shape_x[max_stress_index], color = 'red', linestyle = '--',
-             label = "Max relative stress {:.1f}% of adjusted $\sigma_y$, {:.1f} $MPa$".format(100*stress_data["thermal_stress"][max_stress_index]/stress_data["tadjusted_yield"][max_stress_index], stress_data["thermal_stress"][max_stress_index]/10**6))
-# Show location of maximum inner line stress
+             label = f"""Max relative stress {100*max_rel_stress:.2f}% where """
+                     f"""$\sigma = $ {stress_data["thermal_stress"][max_stress_index]/10**6:.2f} $MPa$,"""
+                     f""" $\sigma_y = $ {yield_max_rel/10**6:.2f} $MPa$""")
+
 plt.figtext(0.5, 0.12, "(Ablator / refractory not currently shown, if present)", ha="center", fontsize=10)
 
 ax_s.set_xlabel("Axial displacement from throat / $m$")
