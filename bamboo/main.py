@@ -1233,7 +1233,7 @@ class Engine:
                     y = self.y(discretised_x[i], up_to = "wall out")
                 # Ignore the nozzle contours - jacket has constant radius if an ablative insert is present
                  
-                radius_avg = (y) + self.y(discretised_x[i+1], up_to = 'wall out')/2
+                radius_avg = (y + self.y(discretised_x[i+1], up_to = 'wall out'))/2
                 discretised_length.append(section_turns * np.sqrt(pitch**2 + (radius_avg*2*np.pi)**2))
                 # Find the average radius for this section and use it to determine the spiral section length
 
