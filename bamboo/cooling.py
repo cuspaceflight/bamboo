@@ -488,11 +488,13 @@ class CoolingJacket:
         configuration (str, optional): Options include 'spiral' and 'vertical'. Defaults to "vertical".
     
     Keyword Args:
-        channel_shape (str, optional): Used if configuration = 'spiral'. Options include 'rectangle', 'semi-circle', and 'custom'. 
+        channel_shape (str, optional): Used if configuration = 'spiral'. Options include 'rectangle', 'semi-circle', and 'custom'.
+        blockage_ratio (str, optional): Can be used if configuration = "spiral". This is the proportion of the channel cross section occupied by ribs.
         channel_height (float, optional): If using configuration = 'vertical' or channel_shape = 'rectangle', this is the height of the channels (m).
         channel_width (float, optional): If using channel_shape = 'rectangle', this is the width of the channels (m). If using channel_shape = 'semi-circle', this is the diameter of the semi circle (m).
         custom_effective_diameter (float, optional): If using channel_shape = 'custom', this is the effective diameter you want to use. 
-        custom_flow_area (float, optional): If using channel_shape = 'custom', this is the flow you want to use. 
+        custom_flow_area (float, optional): If using channel_shape = 'custom', this is the flow you want to use.
+        outer_wall (Material, optional): Wall material for the outer liner. Only needed for transient stress analysis. 
     """
     def __init__(self, geometry, inner_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", has_ablator = False, **kwargs):
 
@@ -506,6 +508,9 @@ class CoolingJacket:
         self.configuration = configuration
         self.has_ablator = has_ablator
         
+        if "outer_wall" in kwargs:
+            self.outer_wall = kwargs["outer_wall"]
+
         if self.configuration == 'spiral':
             self.channel_shape = kwargs['channel_shape']
 
@@ -531,6 +536,10 @@ class CoolingJacket:
         
         elif self.configuration == 'vertical':
             self.channel_height = kwargs["channel_height"]
+            if "blockage_ratio" in kwargs:
+                self.blockage_ratio = kwargs["blockage_ratio"]
+            else:
+                self.blockage_ratio = 0
 
     def A(self, x = None, y = None):
         """Get coolant channel cross flow cross sectional area.
@@ -550,7 +559,7 @@ class CoolingJacket:
             if self.has_ablator is True:
                 y = self.ymax
             # Ignore the nozzle contours - jacket has constant radius if an ablative insert is present
-            return np.pi*((y + self.channel_height)**2 - y**2)
+            return np.pi*((y + self.channel_height)**2 - y**2) * (1 - self.blockage_ratio)
     
         else:
             raise ValueError(f"The cooling jacket configuration {self.configuration} is not recognised. Try 'spiral' or 'vertical'. ")
