@@ -1909,10 +1909,18 @@ class Engine:
 
     def run_stress_analysis(self, heating_result, mode="thermal", condition="steady", **kwargs):
         """Perform stress analysis on the liner, using a cooling result.
+           Things this function does not account for:
+                - Transient stress due to temperature differences across the inner liner.
+                - Stresses in the axial direction due to axial temperature gradients
         Args:
             heating_result (dict): Requires a heating analysis result to compute stress.
-            type (str, optional): Options are "pressure",  "thermal" and "combined". Defaults to "thermal". (ONLY DEFAULT WORKS)
-            condition (str, optional): Engine state for analysis. Options are "steady", "startup", or "shutdown". Defaults to "steady". (ONLY DEFAULT WORKS)
+            mode (str, optional): Options are "pressure",  "thermal" and "combined". Defaults to "thermal". (ONLY DEFAULT WORKS)
+            condition (str, optional): Engine state for analysis. Options are "steady", or "transient". Defaults to "steady". (ONLY DEFAULT WORKS)
+
+        Keyword Args:
+            T_amb (float, optional): For transient analysis, the ambient temperature can be overriden from the default, 283 K.
+                                     This is used for calculating thermal expansions, so it's really the zero thermal stress
+                                     temperature, presumably the temperature at which the engine was assembled.
 
         Returns:
             dict: Results of the stress simulation. Contains the following dictionary keys: 
@@ -1924,9 +1932,18 @@ class Engine:
         wall_stress = np.zeros(length)
         wall_deltaT = np.zeros(length)
         tadjusted_yield = np.zeros(length)
+        mat_in = self.cooling_jacket.inner_wall
+        mat_out = self.cooling_jacket.outer_wall
         
-        material = self.cooling_jacket.inner_wall
+        if condition == "transient":
+            if "T_amb" in kwargs:
+                T_amb = kwargs["T_amb"]
+            else:
+                T_amb = 283
+            # T_amb is really the zero thermal stress temperature for the jacket
+            # i.e. the temperature at which the engine was assembled
 
+        if mode == "thermal" and condition == "steady":
             for i in range(length):
                 wall_deltaT[i] = heating_result["T_wall_inner"][i] - \
                     heating_result["T_wall_outer"][i]
@@ -1949,3 +1966,55 @@ class Engine:
             return {"thermal_stress": wall_stress,
                     "tadjusted_yield": tadjusted_yield,
                     "deltaT_wall": wall_deltaT}
+
+        if mode == "thermal" and condition == "transient":
+            if self.cooling_jacket.configuration == "vertical":
+                # Assumptions for this analysis:
+                # Both liners must not be axially constrained, i.e. free at
+                # at least one end. This may present a challenge for sealing the
+                # outer liner.
+
+                # The ribs are treated as a ring exerting uniform pressure around the
+                # circumference on the outer liner, which is not strictly true.
+
+                # Finally, the chamber side temperature of the inner wall is used for
+                # determining the inner liner expansion, which is actually governed by the
+                # temperature of the top surface of the ribs, which contact the outer liner.
+
+                # See for loop for notes on these variables
+                epsilon_T = np.zeros(length)
+                E1 = self.cooling_jacket.inner_wall.E
+                E2 = self.cooling_jacket.outer_wall.E
+                t1 = self.map_thickness_profile(self.geometry.inner_wall_thickness, length) \
+                     + self.cooling_jacket.channel_height
+                t2 = self.map_thickness_profile(self.geometry.outer_wall_thickness, length)
+
+                if self.has_ablative is True or self.cooling_jacket.has_ablator is True:
+                    R1 = [self.geometry.chamber_radius]*length + t1/2
+                    R2 = R1 + t1/2 + t2/2
+                else:
+                    R1 = self.geometry.y(x, up_to="wall in") + t1/2
+                    R2 = R1 + t1/2 + t2/2
+                # Use chamber radius if there is an ablator - the inner liner
+                # radius will be constant as the ablative handles the nozzle contour
+
+                for i in range(length):
+                    epsilon_T[i] = (heating_result["T_wall_inner"][i] - T_amb) \
+                                 * mat_in.alpha
+                    # Find the (unconstrained) thermal strain where the ribs
+                    # meet the outer liner, for each x position
+
+                    # Now impose this expansion on the outer liner to find the equlibrium.
+                    # By compatibility, both liners must have the same change in radius
+                    # By taking a cut of half of the section and imposing equlibrium:
+                    # sigma_inner = -alpha*deltaT*R1 / ((R1/E1) + (R2*t1)/(E2*t2))
+                    # sigma_outer = -t1*sigma_inner/t2
+                    # R1 = inner liner average radius, R2 = outer liner average radius
+                    # t1 = wall height + rib height, t2 = outer liner thickness
+                    # E1 = inner liner Young's modulus, E2 = outer liner Young's modulus
+
+                    # Use chamber radius if there is an ablator - the inner liner
+                    # radius will be constant as the ablative handles the nozzle contour
+            else:
+                raise AttributeError("Currently only vertical channels are supported for"
+                                     " transient stress analysis.")
