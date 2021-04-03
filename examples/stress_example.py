@@ -59,9 +59,9 @@ engine.add_cooling_jacket(inner_wall_material, outer_wall_material, inlet_T, p_t
 engine.add_ablative(bam.materials.Graphite, bam.materials.StainlessSteel304, regression_rate = 0.0033e-3, xs = [engine.geometry.x_chamber_end, 100], ablative_thickness = None)
 
 print(f"Sea level thrust = {engine.thrust(1e5)/1000} kN")
-print(f"Sea level Isp = {engine.isp(1e5)} s")     
+print(f"Sea level Isp = {engine.isp(1e5)} s")
 
-num_pts = 100 # Only increased beyond 1000 to make the graph smoother, no meaningful accuracy gain
+num_pts = 2000 # Only increased beyond 1000 to make the graph smoother, no meaningful accuracy gain
 cooling_data = engine.steady_heating_analysis(number_of_points=num_pts, to_json = "data/heating_output.json")
 
 '''Run the stress analysis, using cooling simulation data'''
@@ -153,11 +153,9 @@ ax_s.axvline(shape_x[max_stress_index], color = 'red', linestyle = '--',
                      f"""$\sigma = $ {stress_data["thermal_stress"][max_stress_index]/10**6:.2f} $MPa$,"""
                      f""" $\sigma_y = $ {yield_max_rel/10**6:.2f} $MPa$""")
 
-plt.figtext(0.5, 0.12, "(Ablator / refractory not currently shown, if present)", ha="center", fontsize=10)
-
 ax_s.set_xlabel("Axial displacement from throat / $m$")
 ax_s.set_ylabel("Radial position / $m$")
 plt.gca().set_aspect('equal', adjustable='box')
-# Equal axes scales for a true view of the engine
+# Equal axis scales for a true view of the engine
 ax_s.legend()
 plt.show()
