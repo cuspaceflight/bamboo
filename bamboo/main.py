@@ -1100,7 +1100,7 @@ class Engine:
 
 
     #Adding additional components and specifications to the engine
-    def add_geometry(self, chamber_length, chamber_area, inner_wall_thickness, style="auto", **kwargs):
+    def add_geometry(self, chamber_length, chamber_area, inner_wall_thickness, outer_wall_thickness, style="auto"):
         """Specify extra geometry parameters. Required for running cooling system analyses.
 
         Args:
@@ -1114,7 +1114,7 @@ class Engine:
 
 
         self.geometry = EngineGeometry(self.nozzle, chamber_length, chamber_area, inner_wall_thickness,
-                                       style, outer_wall_thickness = outer_wall_thickness)
+                                       style, outer_wall_thickness)
         self.has_geometry = True
 
     def add_cooling_jacket(self, inner_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
