@@ -17,17 +17,19 @@ molecular_weight = 21.627   #Molecular weight of the exhaust gas (kg/kmol) (only
 p_tank = 25e5       #Tank / inlet coolant stagnation pressure (Pa) - used for cooling jacket
 pc = 10e5           #Chamber pressure (Pa)
 Tc = 2800.0         #Chamber temperature (K) - obtained from ProPEP 3
-mdot = 5.757        #Mass flow rate (kg/s)
+mdot = 4.757        #Mass flow rate (kg/s)
 p_amb = 1.01325e5   #Ambient pressure (Pa). 1.01325e5 is sea level atmospheric.
 OF_ratio = 3.5      #Oxidiser/fuel mass ratio
 
 '''Engine geometry'''
 Ac = np.pi*0.1**2               #Chamber cross-sectional area (m^2)
 L_star = 1.5                    #L_star = Volume_c/Area_t
-wall_thickness = 2e-3
+inner_wall_thickness = 2e-3
+outer_wall_thickness = 5e-3
 
 '''Coolant jacket'''
-wall_material = bam.materials.CopperC700
+inner_wall_material = bam.materials.CopperC700
+outer_wall_material = bam.materials.StainlessSteel304
 mdot_coolant = mdot/(OF_ratio + 1) 
 inlet_T = 298.15                    #Coolant inlet temperature
 thermo_coolant = thermo.chemical.Chemical('isopropanol')
@@ -45,10 +47,12 @@ thermo_gas = thermo.mixture.Mixture(['N2', 'H2O', 'CO2'], ws = [0.49471, 0.14916
 gas_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_gas, force_phase = 'g')
 
 '''Cooling system setup'''
-engine.add_geometry(chamber_length, Ac, wall_thickness)
+engine.add_geometry(chamber_length, Ac, inner_wall_thickness, outer_wall_thickness, style="auto")
 engine.add_exhaust_transport(gas_transport)
-#engine.add_cooling_jacket(wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, configuration = "vertical", channel_height = 0.001, xs = [-100, 100])
-engine.add_cooling_jacket(wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, configuration = "spiral", channel_shape = "semi-circle", channel_width = 0.020)
+engine.add_cooling_jacket(inner_wall_material, outer_wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant,
+                          configuration = "vertical", channel_height = 0.001, xs = [-100, 100], blockage_ratio = 0.5)
+#engine.add_cooling_jacket(inner_wall_material, outer_wall_material inlet_T, p_tank, coolant_transport, mdot_coolant,
+#                          configuration = "spiral", channel_shape = "semi-circle", channel_width = 0.020)
 
 '''Run a second simulation with an ablative added'''
 #Add a graphite refractory, and override the copper cooling jacket with a stainless steel layer.
@@ -57,24 +61,36 @@ engine.add_ablative(bam.materials.Graphite, bam.materials.StainlessSteel304, reg
 print(f"Sea level thrust = {engine.thrust(1e5)/1000} kN")
 print(f"Sea level Isp = {engine.isp(1e5)} s")     
 
-num_pts = 4000 # Only increased beyond 1000 to make the graph smoother, no meaningful accuracy gain
+num_pts = 100 # Only increased beyond 1000 to make the graph smoother, no meaningful accuracy gain
 cooling_data = engine.steady_heating_analysis(number_of_points=num_pts, to_json = "data/heating_output.json")
 
 '''Run the stress analysis, using cooling simulation data'''
-stress_data = engine.run_stress_analysis(cooling_data, wall_material)
+stress_data = engine.run_stress_analysis(heating_result=cooling_data, mode="thermal", condition="steady")
 max_rel_stress = np.amax(stress_data["thermal_stress"]/stress_data["tadjusted_yield"])
 min_rel_stress = np.amin(stress_data["thermal_stress"]/stress_data["tadjusted_yield"])
 
-'''Get nozzle data'''
+'''Get nozzle data, including the ablator if it is present'''
 shape_x = np.linspace(engine.geometry.x_min, engine.geometry.x_max, num_pts)
 shape_y = np.zeros(len(shape_x))
-
-for i in range(len(shape_x)):
-    shape_y[i] = engine.y(shape_x[i])
-
-'''Plot results'''
 fig2, ax_s = plt.subplots()
 
+# Code here involving the ablator is ripped out of Engine.plot_geometry()
+x = np.linspace(engine.geometry.x_min, engine.geometry.x_max, num_pts)
+ablative_inner = np.zeros(num_pts)
+ablative_outer = np.zeros(num_pts)
+
+if engine.has_ablative is True:
+    for i in range(len(shape_x)):
+        shape_y[i] = engine.geometry.chamber_radius
+        ablative_inner[i] = engine.y(x[i], up_to = 'ablative in') - 0.0085 # The -0.0085 corrects for the line width
+        ablative_outer[i] = engine.y(x[i], up_to = 'ablative out') - 0.0085 # The -0.0085 corrects for the line width
+    ax_s.fill_between(x, ablative_inner, ablative_outer, color="grey", label = 'Ablative')
+    ax_s.fill_between(x, -ablative_inner, -ablative_outer, color="grey")   
+else:
+    for i in range(len(shape_x)):
+        shape_y[i] = engine.y(shape_x[i])
+
+'''Plot results'''
 points1 = np.array([shape_x, shape_y]).T.reshape(-1, 1, 2)
 points2 = np.array([shape_x, -shape_y]).T.reshape(-1, 1, 2)
 segments1 = np.concatenate([points1[:-1], points1[1:]], axis=1)
@@ -110,10 +126,10 @@ norm = plt.Normalize(np.amin(stress_data["thermal_stress"]/min_rel_stress), norm
 
 lc1 = LineCollection(segments1, cmap=colours, norm=norm)
 lc1.set_array(stress_data["thermal_stress"])
-lc1.set_linewidth(20)
+lc1.set_linewidth(40)
 lc2 = LineCollection(segments2, cmap=colours, norm=norm)
 lc2.set_array(stress_data["thermal_stress"])
-lc2.set_linewidth(20)
+lc2.set_linewidth(40)
 # Create line collections defined by segments arrays, map colours
 
 line1 = ax_s.add_collection(lc1)
@@ -143,6 +159,5 @@ ax_s.set_xlabel("Axial displacement from throat / $m$")
 ax_s.set_ylabel("Radial position / $m$")
 plt.gca().set_aspect('equal', adjustable='box')
 # Equal axes scales for a true view of the engine
-
 ax_s.legend()
 plt.show()
