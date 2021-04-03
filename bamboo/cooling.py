@@ -496,7 +496,7 @@ class CoolingJacket:
         custom_effective_diameter (float, optional): If using channel_shape = 'custom', this is the effective diameter you want to use. 
         custom_flow_area (float, optional): If using channel_shape = 'custom', this is the flow you want to use.
     """
-    def __init__(self, geometry, inner_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", has_ablator = False, **kwargs):
+    def __init__(self, geometry, inner_wall, outer_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", has_ablator = False, **kwargs):
 
         self.ymax = geometry.chamber_radius
         self.inner_wall = inner_wall

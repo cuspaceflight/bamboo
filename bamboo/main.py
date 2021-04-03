@@ -520,9 +520,8 @@ class EngineGeometry:
         chamber_length (float): Length of the combustion chamber (m)
         chamber_area (float): Cross sectional area of the combustion chamber (m^2)
         inner_wall_thickness (float or array): Thickness of the inner liner wall (m). Can be constant (float), or variable (array). 
-        style (str, optional): Geometry style to use. Currently the only option is 'auto'. Defaults to "auto".
         outer_wall_thickness (float or array): Thickness of the outer liner wall (m). Can be constant (float), or variable (array).
-                                               Used for transient stress analysis, the CoolingJacket needs an outer liner material.
+        style (str, optional): Geometry style to use. Currently the only option is 'auto'. Defaults to "auto".
 
     Attributes:
         x_min (float): Minimum x position (m).
@@ -1114,14 +1113,15 @@ class Engine:
 
 
         self.geometry = EngineGeometry(self.nozzle, chamber_length, chamber_area, inner_wall_thickness,
-                                       style, outer_wall_thickness)
+                                       outer_wall_thickness, style)
         self.has_geometry = True
 
-    def add_cooling_jacket(self, inner_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
+    def add_cooling_jacket(self, inner_wall, outer_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
         """Container for cooling jacket information - e.g. for regenerative cooling.
 
         Args:
-            inner_wall (Material): Inner wall material
+            inner_wall (Material): Inner wall material.
+            outer_wall (Material): Wall material for the outer liner. 
             inlet_T (float): Inlet coolant temperature (K)
             inlet_p0 (float): Inlet coolant stagnation pressure (Pa)
             coolant_transport (TransportProperties): Container for the coolant transport properties.
@@ -1138,7 +1138,8 @@ class Engine:
         """
         
         self.cooling_jacket = cool.CoolingJacket(self.geometry,
-                                                inner_wall, 
+                                                inner_wall,
+                                                outer_wall, 
                                                 inlet_T, 
                                                 inlet_p0, 
                                                 coolant_transport, 
@@ -1906,7 +1907,7 @@ class Engine:
         return output_dict
 
 
-    def run_stress_analysis(self, heating_result, type="thermal", condition="steady"):
+    def run_stress_analysis(self, heating_result, mode="thermal", condition="steady", **kwargs):
         """Perform stress analysis on the liner, using a cooling result.
         Args:
             heating_result (dict): Requires a heating analysis result to compute stress.
