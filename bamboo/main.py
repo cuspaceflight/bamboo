@@ -535,7 +535,7 @@ class EngineGeometry:
         
 
     """
-    def __init__(self, nozzle, chamber_length, chamber_area, inner_wall_thickness, outer_wall_thickness style="auto"):
+    def __init__(self, nozzle, chamber_length, chamber_area, inner_wall_thickness, outer_wall_thickness, style="auto"):
         self.chamber_length = chamber_length
         self.chamber_area = chamber_area
         self.chamber_radius = (chamber_area/np.pi)**0.5 
