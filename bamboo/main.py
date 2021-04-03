@@ -511,7 +511,7 @@ class Nozzle:
 class EngineGeometry:
     """Container for additional engine geometry parameters (mostly chamber geometry). Used internally for heating analyses.
 
-    Using the 'wall_thickness' argument:
+    Using the 'inner_wall_thickness' (or 'outer_wall_thickness', if also provided) argument:
         If an array, must be thicknesses at equally spaced x positions. This will be stretched to fill the engine length.
         E.g. [1e-3, 5e-3] will have 1mm thick walls at chamber entrance, 5mm thick at nozzle exit.
 
@@ -519,8 +519,10 @@ class EngineGeometry:
         nozzle (float): Nozzle of the engine.
         chamber_length (float): Length of the combustion chamber (m)
         chamber_area (float): Cross sectional area of the combustion chamber (m^2)
-        wall_thickness (float or array): Thickness of the inner liner wall (m). Can be constant (float), or variable (array). 
+        inner_wall_thickness (float or array): Thickness of the inner liner wall (m). Can be constant (float), or variable (array). 
         style (str, optional): Geometry style to use. Currently the only option is 'auto'. Defaults to "auto".
+        outer_wall_thickness (float or array): Thickness of the outer liner wall (m). Can be constant (float), or variable (array).
+                                               Used for transient stress analysis, the CoolingJacket needs an outer liner material.
 
     Attributes:
         x_min (float): Minimum x position (m).
@@ -533,19 +535,24 @@ class EngineGeometry:
         
 
     """
-    def __init__(self, nozzle, chamber_length, chamber_area, wall_thickness, style="auto"):
+    def __init__(self, nozzle, chamber_length, chamber_area, inner_wall_thickness, outer_wall_thickness style="auto"):
         self.chamber_length = chamber_length
         self.chamber_area = chamber_area
         self.chamber_radius = (chamber_area/np.pi)**0.5 
-        if type(wall_thickness) is float or type(wall_thickness) is int:
-            self.wall_thickness = [wall_thickness]  #Convert into a list so the interpolation works
+        if type(inner_wall_thickness) is float or type(inner_wall_thickness) is int:
+            self.inner_wall_thickness = [inner_wall_thickness]  #Convert into a list so the interpolation works
         else:
-            self.wall_thickness = wall_thickness
-        self.style = style
+            self.inner_wall_thickness = inner_wall_thickness
+        
+        if type(outer_wall_thickness) is float or type(outer_wall_thickness) is int:
+            self.outer_wall_thickness = [outer_wall_thickness]  #Convert into a list so the interpolation works
+        else:
+            self.outer_wall_thickness = outer_wall_thickness
 
         if nozzle.At > self.chamber_area:
             raise ValueError(f"The combustion chamber area {self.chamber_area} m^2 is smaller than the throat area {nozzle.At} m^2.")
-
+        
+        self.style = style
         if self.style == "auto":
             if nozzle.type == "cone":
                 self.dydx_conv = np.tan(-45*np.pi/180)
@@ -718,8 +725,8 @@ class Engine:
         """
         if layer == 'wall':
             #Stretch the wall_thickness array across the engine, and interpolate to get our desired thickness
-            wall_thickness_xs = np.linspace(self.geometry.x_min, self.geometry.x_max, len(self.geometry.wall_thickness))
-            return np.interp(x, wall_thickness_xs, self.geometry.wall_thickness)
+            inner_wall_thickness_xs = np.linspace(self.geometry.x_min, self.geometry.x_max, len(self.geometry.inner_wall_thickness))
+            return np.interp(x, inner_wall_thickness_xs, self.geometry.inner_wall_thickness)
         
         if layer == 'ablative':
             if self.has_ablative == False:
@@ -1093,18 +1100,21 @@ class Engine:
 
 
     #Adding additional components and specifications to the engine
-    def add_geometry(self, chamber_length, chamber_area, wall_thickness, style="auto"):
+    def add_geometry(self, chamber_length, chamber_area, inner_wall_thickness, style="auto", **kwargs):
         """Specify extra geometry parameters. Required for running cooling system analyses.
 
         Args:
             nozzle (Nozzle): Nozzle of the engine.
             chamber_length (float): Length of the combustion chamber (m)
             chamber_area (float): Cross sectional area of the combustion chamber (m^2)
-            wall_thickness (float or array): Thickness of the inner liner wall (m). Can be constant (float), or variable (array).
-            style (str, optional): Geometry style to use. Currently the only option is 'auto'. Defaults to "auto".
-
+            inner_wall_thickness (float or array): Thickness of the inner liner wall (m). Can be constant (float), or variable (array).
+            style (str, optional): Geometry style to use. Currently the only option is 'auto'. Defaults to "auto".      
+            outer_wall_thickness (float or array): Thickness of the outer liner wall (m). Can be constant (float), or variable (array).
         """
-        self.geometry = EngineGeometry(self.nozzle, chamber_length, chamber_area, wall_thickness, style)
+
+
+        self.geometry = EngineGeometry(self.nozzle, chamber_length, chamber_area, inner_wall_thickness,
+                                       style, outer_wall_thickness = outer_wall_thickness)
         self.has_geometry = True
 
     def add_cooling_jacket(self, inner_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
@@ -1307,7 +1317,7 @@ class Engine:
 
         return friction_factor*dl*Q/D
 
-    def regen_thermal_circuit(self, r, h_gas, h_coolant, wall_material, wall_thickness, T_gas, T_coolant):
+    def regen_thermal_circuit(self, r, h_gas, h_coolant, wall_material, inner_wall_thickness, T_gas, T_coolant):
         """
         q is per unit length along the nozzle wall (axially) - positive when heat is flowing to the coolant.   
         Uses the idea of thermal circuits and resistances - we have three resistors in series.
@@ -1317,7 +1327,7 @@ class Engine:
             h_gas (float): Gas side convective heat transfer coefficient
             h_coolant (float): Coolant side convective heat transfer coefficient
             wall_material (Material): Material object for the inner wall, needed for thermal conductivity
-            wall_thickness (float): Thickness of the inner wall at x position (m)
+            inner_wall_thickness (float): Thickness of the inner wall at x position (m)
             T_gas (float): Free stream gas temperature (K)
             T_coolant (float): Coolant temperature (K)
 
@@ -1326,7 +1336,7 @@ class Engine:
         """
 
         r_in = r   
-        r_out = r_in + wall_thickness
+        r_out = r_in + inner_wall_thickness
 
         A_in = 2*np.pi*r_in         #Inner area per unit length (i.e. just the inner circumference)
         A_out = 2*np.pi*r_out       #Outer area per unit length (i.e. just the outer circumference)
@@ -1367,7 +1377,7 @@ class Engine:
 
         return q_dot, R_gas, R_ablative
 
-    def regen_ablative_thermal_circuit(self, r, h_gas, h_coolant, wall_material, wall_thickness, T_gas, T_coolant, ablative_material, ablative_thickness):
+    def regen_ablative_thermal_circuit(self, r, h_gas, h_coolant, wall_material, inner_wall_thickness, T_gas, T_coolant, ablative_material, ablative_thickness):
         """Combined regenerative and ablative cooling thermal circuit.
         q is per unit length along the nozzle wall (axially) - positive when heat is flowing to the coolant.  
         q_Adot is the heat flux per unit area along the nozzle wall.  
@@ -1378,7 +1388,7 @@ class Engine:
             h_gas (float): Gas side convective heat transfer coefficient
             h_coolant (float): Coolant side convective heat transfer coefficient
             wall_material (Material): Material object for the inner wall, needed for thermal conductivity
-            wall_thickness (float): Thickness of the inner wall at x position (m)
+            inner_wall_thickness (float): Thickness of the inner wall at x position (m)
             T_gas (float): Free stream gas temperature (K)
             T_coolant (float): Coolant temperature (K)
             ablative_material (Material): Material object for the ablative material, needed for thermal conductivity
@@ -1392,7 +1402,7 @@ class Engine:
         r_ablative_out = r_ablative_in + ablative_thickness
 
         r_wall_in = r_ablative_out
-        r_wall_out = r_wall_in + wall_thickness
+        r_wall_out = r_wall_in + inner_wall_thickness
 
         A_wall_in = 2*np.pi*r_wall_in       #Inner area per unit length (i.e. just the inner circumference)
         A_wall_out = 2*np.pi*r_wall_out     #Outer area per unit length (i.e. just the outer circumference)
@@ -1773,7 +1783,7 @@ class Engine:
         dx = discretised_x[0] - discretised_x[1]
 
         #Discretised liner thickness
-        liner = self.map_thickness_profile(self.geometry.wall_thickness, number_of_points)
+        liner = self.map_thickness_profile(self.geometry.inner_wall_thickness, number_of_points)
 
         #Temperatures and heat transfer rates - everything is a 2D array, with indexes [time_index, space_index]
         T_wall = np.zeros([len(discretised_t), len(discretised_x)]) 
@@ -1913,28 +1923,28 @@ class Engine:
         wall_stress = np.zeros(length)
         wall_deltaT = np.zeros(length)
         tadjusted_yield = np.zeros(length)
-
+        
         material = self.cooling_jacket.inner_wall
 
-        for i in range(length):
-            wall_deltaT[i] = heating_result["T_wall_inner"][i] - \
-                heating_result["T_wall_outer"][i]
+            for i in range(length):
+                wall_deltaT[i] = heating_result["T_wall_inner"][i] - \
+                    heating_result["T_wall_outer"][i]
             tadjusted_yield[i] = material.relStrength(heating_result["T_wall_inner"][i]) * material.sigma_y
 
-        # Compute wall temperature gradient
-        wall_deltaT = wall_deltaT[::-1]
+            # Compute wall temperature gradient
+            wall_deltaT = wall_deltaT[::-1]
         # Makes the data order match with the coolant flow direction, i.e. nozzle exit to injector face
         # Spent an hour wondering why the throat was cooler than the chamber wall...
 
-        for i in range(length):
+            for i in range(length):
             cur_stress = material.k * \
                 wall_deltaT[i] / (2 * material.perf_therm)
-        # Determine thermal stress using Ref [7], P53:
-        # sigma_thermal = E*alpha*q_w*deltaL/(2*(1-v)k_w) =
-        # E*alpha*deltaT/2(1-v)
+            # Determine thermal stress using Ref [7], P53:
+            # sigma_thermal = E*alpha*q_w*deltaL/(2*(1-v)k_w) =
+            # E*alpha*deltaT/2(1-v)
 
-            wall_stress[i] = cur_stress
+                wall_stress[i] = cur_stress
 
-        return {"thermal_stress": wall_stress,
-                "tadjusted_yield": tadjusted_yield,
-                "deltaT_wall": wall_deltaT}
+            return {"thermal_stress": wall_stress,
+                    "tadjusted_yield": tadjusted_yield,
+                    "deltaT_wall": wall_deltaT}
