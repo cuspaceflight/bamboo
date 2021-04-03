@@ -1935,15 +1935,7 @@ class Engine:
         mat_in = self.cooling_jacket.inner_wall
         mat_out = self.cooling_jacket.outer_wall
         
-        if condition == "transient":
-            if "T_amb" in kwargs:
-                T_amb = kwargs["T_amb"]
-            else:
-                T_amb = 283
-            # T_amb is really the zero thermal stress temperature for the jacket
-            # i.e. the temperature at which the engine was assembled
-
-        if mode == "thermal" and condition == "steady":
+        if condition == "steady":
             for i in range(length):
                 wall_deltaT[i] = heating_result["T_wall_inner"][i] - \
                     heating_result["T_wall_outer"][i]
@@ -1967,7 +1959,14 @@ class Engine:
                     "tadjusted_yield": tadjusted_yield,
                     "deltaT_wall": wall_deltaT}
 
-        if mode == "thermal" and condition == "transient":
+        if condition == "transient":
+            if "T_amb" in kwargs:
+                T_amb = kwargs["T_amb"]
+            else:
+                T_amb = 283
+            # T_amb is really the zero thermal stress temperature for the jacket
+            # i.e. the temperature at which the engine was assembled
+
             if self.cooling_jacket.configuration == "vertical":
                 # Assumptions for this analysis:
                 # Both liners must not be axially constrained, i.e. free at
@@ -1981,40 +1980,78 @@ class Engine:
                 # determining the inner liner expansion, which is actually governed by the
                 # temperature of the top surface of the ribs, which contact the outer liner.
 
-                # See for loop for notes on these variables
                 epsilon_T = np.zeros(length)
                 E1 = self.cooling_jacket.inner_wall.E
                 E2 = self.cooling_jacket.outer_wall.E
-                t1 = self.map_thickness_profile(self.geometry.inner_wall_thickness, length) \
-                     + self.cooling_jacket.channel_height
+                t1_hoop = self.map_thickness_profile(self.geometry.inner_wall_thickness, length)
+                t1 = t1_hoop + self.cooling_jacket.channel_height*self.cooling_jacket.blockage_ratio
+                     # The blockage ratio is used to scale the contribution of the ribs to the
+                     # thickness of the inner liner (wider ribs = greater blockage ratio)
                 t2 = self.map_thickness_profile(self.geometry.outer_wall_thickness, length)
 
                 if self.has_ablative is True or self.cooling_jacket.has_ablator is True:
                     R1 = [self.geometry.chamber_radius]*length + t1/2
                     R2 = R1 + t1/2 + t2/2
+                    R1_hoop = [self.geometry.chamber_radius]*length
                 else:
                     R1 = self.geometry.y(x, up_to="wall in") + t1/2
                     R2 = R1 + t1/2 + t2/2
+                    R1_hoop = self.geometry.y(x, up_to="wall in")
                 # Use chamber radius if there is an ablator - the inner liner
                 # radius will be constant as the ablative handles the nozzle contour
 
-                for i in range(length):
-                    epsilon_T[i] = (heating_result["T_wall_inner"][i] - T_amb) \
-                                 * mat_in.alpha
-                    # Find the (unconstrained) thermal strain where the ribs
-                    # meet the outer liner, for each x position
+                epsilon_T = (np.array((heating_result["T_wall_outer"])) - T_amb) \
+                                * mat_in.alpha
+                # Find the (unconstrained) thermal strain where the ribs
+                # meet the outer liner, for each x position
 
-                    # Now impose this expansion on the outer liner to find the equlibrium.
-                    # By compatibility, both liners must have the same change in radius
-                    # By taking a cut of half of the section and imposing equlibrium:
-                    # sigma_inner = -alpha*deltaT*R1 / ((R1/E1) + (R2*t1)/(E2*t2))
-                    # sigma_outer = -t1*sigma_inner/t2
-                    # R1 = inner liner average radius, R2 = outer liner average radius
-                    # t1 = wall height + rib height, t2 = outer liner thickness
-                    # E1 = inner liner Young's modulus, E2 = outer liner Young's modulus
+                # Now impose this expansion on the outer liner to find the equlibrium.
+                # By compatibility, both liners must have the same change in radius
+                # By taking a cut of half of the section and imposing equlibrium:
+                # sigma_inner = -alpha*deltaT*R1 / ((R1/E1) + (R2*t1)/(E2*t2))
+                # sigma_outer = -t1*sigma_inner/t2
+                # R1 = inner liner average radius, R2 = outer liner average radius
+                # t1 = wall height + rib height, t2 = outer liner thickness
+                # E1 = inner liner Young's modulus, E2 = outer liner Young's modulus
 
-                    # Use chamber radius if there is an ablator - the inner liner
-                    # radius will be constant as the ablative handles the nozzle contour
+                sigma_inner_IE = -epsilon_T * R1/((R1/E1) + ((R2*t1)/(E2*t2)))
+                sigma_outer_IE = -sigma_inner_IE*t1/t2
+                # _IE = due to inner ixpansion
+
+                # Now we can determine the hoop stresses. For the outer liner,
+                # the pressure is taken to be the coolant pressure.
+                # In reality the average pressure is less than this, because
+                # the ribs occupy part of the wall area, and their contribution
+                # to the stress has already been accounted for above
+                # For the inner liner, the hoop stress is much lower because
+                # when the engine is running.
+
+                sigma_inner_hoop = (np.array(heating_result["p_coolant"]) - self.chamber_conditions.p0) \
+                                    *R1_hoop/t1_hoop
+                # Need to account for the falling pressure in the nozzle ideally else
+                # this will underestimate the stress in the nozzle as the flow expands.
+                sigma_outer_hoop = np.array(heating_result["p_coolant"])*R2/t2
+
+                #sigma_inner = sigma_inner_hoop + sigma_inner_IE
+                #sigma_outer = sigma_outer_hoop + sigma_outer_IE
+
+                """# Quick graphs
+                print(min(sigma_inner)/1E6)
+                print(max(sigma_outer)/1E6)
+                print(list(sigma_inner).index(min(sigma_inner))*(self.geometry.x_max-self.geometry.x_min)/length)
+                plt.title("Engine start-up stresses due to inner liner expansion and pressure differences")
+                plt.plot(np.abs(sigma_inner[::-1]/1E6), label="$|\sigma_{inner}|$")
+                plt.plot(np.abs(sigma_outer[::-1]/1E6), label="$|\sigma_{outer}|$")
+                plt.xlabel(f"Axial position index (Nozzle exit = {length}, injector head = 0)")
+                plt.ylabel("Stress $MPa$")
+                plt.legend()
+                plt.show()"""
+
+                return {"stress_inner_hoop": sigma_inner_hoop,
+                        "stress_outer_hoop": sigma_outer_hoop,
+                        "stress_inner_IE": sigma_inner_IE,
+                        "stress_outer_IE": sigma_outer_IE}
+
             else:
                 raise AttributeError("Currently only vertical channels are supported for"
                                      " transient stress analysis.")

@@ -12,7 +12,8 @@ import time
 '''Engine dimensions'''
 Ac = np.pi*0.1**2               #Chamber cross-sectional area (m^2)
 L_star = 1.5                    #L_star = Volume_c/Area_t
-wall_thickness = 2e-3
+inner_wall_thickness = 2e-3
+outer_wall_thickness = 5e-3
 
 '''Chamber conditions'''
 pc = 15e5               #Chamber pressure (Pa)
@@ -25,7 +26,8 @@ OF_ratio = 3.5          #Oxidiser/fuel mass ratio
 water_mass_fraction = 0.10  #Fraction of the fuel that is water, by mass
 
 '''Coolant jacket'''
-wall_material = bam.materials.CopperC700
+inner_wall_material = bam.materials.CopperC700
+outer_wall_material = bam.materials.StainlessSteel304
 mdot_coolant = mdot/(OF_ratio + 1) 
 semi_circle_diameter = 0.02
 inlet_T = 298.15                    #Coolant inlet temperature
@@ -68,13 +70,16 @@ print(f"Sea level thrust = {white_dwarf.thrust(1e5)/1000} kN")
 print(f"Sea level Isp = {white_dwarf.isp(1e5)} s")
 
 '''Cooling system setup'''
-cooling_jacket = cool.CoolingJacket(wall_material, inlet_T, pt, coolant_transport, mdot_coolant, channel_shape = "semi-circle", circle_diameter = semi_circle_diameter)
-engine_geometry = cool.EngineGeometry(nozzle, chamber_length, Ac, wall_thickness)
-cooled_engine = cool.EngineWithCooling(chamber, engine_geometry, cooling_jacket, perfect_gas, gas_transport)
+white_dwarf.add_geometry(chamber_length, Ac, inner_wall_thickness, outer_wall_thickness)
+white_dwarf.add_exhaust_transport(gas_transport)
+white_dwarf.add_cooling_jacket(inner_wall_material, outer_wall_material, inlet_T, pt, coolant_transport, mdot_coolant,
+                          configuration = "vertical", channel_height = 0.001, xs = [-100, 100], blockage_ratio = 0.5)
+#white_dwarf.add_cooling_jacket(inner_wall_material, outer_wall_material inlet_T, p_tank, coolant_transport, mdot_coolant,
+#                          configuration = "spiral", channel_shape = "semi-circle", channel_width = 0.020)
 
 '''Run the cooling system simulation, calculate coolant channel length'''
-cooling_data = cooled_engine.run_heating_analysis(number_of_points = 1000, h_gas_model = "3", to_json = "data/heating_output.json")
-channel_length = cooled_engine.channel_geometry(number_of_sections = 1000)
+cooling_data = white_dwarf.steady_heating_analysis(to_json = "data/heating_output.json")
+channel_length = white_dwarf.channel_geometry(number_of_sections = 1000)
 
 '''Plot g raph'''
 fig, axs = plt.subplots()

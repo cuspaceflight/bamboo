@@ -20,7 +20,7 @@ molecular_weight = 21.627   #Molecular weight of the exhaust gas (kg/kmol) (only
 '''Engine operating points'''
 p_tank = 25e5       #Tank / inlet coolant stagnation pressure (Pa) - used for cooling jacket
 pc = 10e5           #Chamber pressure (Pa)
-Tc = 2800.0           #Chamber temperature (K) - obtained from ProPEP 3
+Tc = 2800.0         #Chamber temperature (K) - obtained from ProPEP 3
 mdot = 4.757        #Mass flow rate (kg/s)
 p_amb = 1.01325e5   #Ambient pressure (Pa). 1.01325e5 is sea level atmospheric.
 OF_ratio = 3.5      #Oxidiser/fuel mass ratio
@@ -28,10 +28,12 @@ OF_ratio = 3.5      #Oxidiser/fuel mass ratio
 '''Engine geometry'''
 Ac = np.pi*0.1**2               #Chamber cross-sectional area (m^2)
 L_star = 1.5                    #L_star = Volume_c/Area_t
-wall_thickness = 2e-3
+inner_wall_thickness = 2e-3
+outer_wall_thickness = 5e-3
 
 '''Coolant jacket'''
-wall_material = bam.materials.CopperC700
+inner_wall_material = bam.materials.CopperC700
+outer_wall_material = bam.materials.StainlessSteel304
 mdot_coolant = mdot/(OF_ratio + 1) 
 inlet_T = 298.15                    #Coolant inlet temperature
 thermo_coolant = thermo.chemical.Chemical('isopropanol')
@@ -49,10 +51,12 @@ thermo_gas = thermo.mixture.Mixture(['N2', 'H2O', 'CO2'], ws = [0.49471, 0.14916
 gas_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_gas, force_phase = 'g')
 
 '''Cooling system setup'''
-engine.add_geometry(chamber_length, Ac, wall_thickness)
+engine.add_geometry(chamber_length, Ac, inner_wall_thickness, outer_wall_thickness)
 engine.add_exhaust_transport(gas_transport)
-#engine.add_cooling_jacket(wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, configuration = "vertical", channel_height = 0.001, xs = [-100, 100])
-engine.add_cooling_jacket(wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, configuration = "spiral", channel_shape = "semi-circle", channel_width = 0.020)
+engine.add_cooling_jacket(inner_wall_material, outer_wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant,
+                          configuration = "vertical", channel_height = 0.001, xs = [-100, 100], blockage_ratio = 0.5)
+#engine.add_cooling_jacket(inner_wall_material, outer_wall_material inlet_T, p_tank, coolant_transport, mdot_coolant,
+#                          configuration = "spiral", channel_shape = "semi-circle", channel_width = 0.020)
 
 '''Run a steady state simulation'''
 #data = engine.steady_heating_analysis()
