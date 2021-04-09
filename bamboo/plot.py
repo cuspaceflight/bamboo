@@ -31,8 +31,8 @@ def plot_temperatures(data_dict, **kwargs):
     if "show_ablative" in kwargs:
         if kwargs["show_ablative"] == False:
             pass
-    else:
-        ax_T.plot(data_dict["x"], np.array(data_dict["T_ablative_inner"]) - 273.15, label = "Ablative (inner)")
+        else:
+            ax_T.plot(data_dict["x"], np.array(data_dict["T_ablative_inner"]) - 273.15, label = "Ablative (inner)")
 
 
     ax_T.grid()
