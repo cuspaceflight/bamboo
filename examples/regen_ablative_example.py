@@ -64,7 +64,7 @@ engine.add_cooling_jacket(inner_wall_material, outer_wall_material, inlet_T, p_t
 
 '''Run a second simulation with an ablative added'''
 #Add a graphite refractory, and override the copper cooling jacket with a stainless steel layer.
-engine.add_ablative(bam.materials.Graphite, bam.materials.StainlessSteel304, regression_rate = 0.0033e-3, xs = [engine.geometry.x_chamber_end, 100], ablative_thickness = None)
+engine.add_ablative(bam.materials.Graphite, inner_wall_material, regression_rate = 0.0033e-3, xs = [engine.geometry.x_chamber_end, 100], ablative_thickness = None)
 
 print(nozzle)
 

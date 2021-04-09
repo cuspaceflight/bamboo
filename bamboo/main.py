@@ -2031,33 +2031,38 @@ class Engine:
                 # the ribs occupy part of the wall area, and their contribution
                 # to the stress has already been accounted for above.
 
-                # Array for the pressure inside the engine along its length.
-                discretised_x = np.linspace(self.geometry.x_max, self.geometry.x_min, length)
-                engine_pressure = [self.p(discretised_x[i]) for i in range(length)]
+                # In phase I, when the engine has not yet been ignited but there is
+                # pressurised IPA in the cooling jacket, the internal pressure is 0
+                # (technically 0 gauge, but ambient is neglected)
+                sigma_inner_hoop_I = np.array(heating_result["p_coolant"]) * R1_hoop/t1_hoop
 
-                sigma_inner_hoop = (np.array(heating_result["p_coolant"]) - \
-                                    engine_pressure) * R1_hoop/t1_hoop
+                # Array for the pressure inside the engine along its length, after ignition.
+                discretised_x = np.linspace(self.geometry.x_max, self.geometry.x_min, length)
+                engine_pressure_II = [self.p(discretised_x[i]) for i in range(length)]
+                sigma_inner_hoop_II = (np.array(heating_result["p_coolant"]) - \
+                                    engine_pressure_II) * R1_hoop/t1_hoop
 
                 # Ambient pressure is neglected
-                sigma_outer_hoop = np.array(heating_result["p_coolant"])*R2/t2
+                sigma_outer_hoop_II = np.array(heating_result["p_coolant"])*R2/t2
 
                 #sigma_inner = sigma_inner_hoop + sigma_inner_IE
                 #sigma_outer = sigma_outer_hoop + sigma_outer_IE
 
                 # Quick graphs
-                #print(min(sigma_inner)/1E6)
-                #print(max(sigma_outer)/1E6)
-                #print(list(sigma_inner).index(min(sigma_inner))*(self.geometry.x_max-self.geometry.x_min)/length)
-                plt.title("Engine start-up stresses due to inner liner expansion and pressure differences")
-                plt.plot(np.abs(sigma_inner_hoop[::-1]/1E6), label="$|\sigma_{inner}|$")
-                plt.plot(np.abs(sigma_outer_hoop[::-1]/1E6), label="$|\sigma_{outer}|$")
+                #plt.title("Engine start-up stresses due to inner liner expansion and pressure differences")
+                plt.title("Liner stresses (phase II / prior to thermal equlibrium)")
+                plt.plot(np.abs(sigma_inner_hoop_II[::-1]/1E6), label="$|\sigma_{inner}| (hoop)$")
+                plt.plot(np.abs(sigma_outer_hoop_II[::-1]/1E6), label="$|\sigma_{outer}| (hoop)$")
+                plt.plot(np.abs(sigma_outer_IE[::-1]/1E6), label="$|\sigma_{outer}| (IE)$")
+                plt.plot(np.abs(sigma_inner_IE[::-1]/1E6), label="$|\sigma_{inner}| (IE)$")
+                #plt.plot(np.abs(sigma_outer_hoop_II[::-1]/1E6), label="$|\sigma_{outer}|$")
                 plt.xlabel(f"Axial position index (Nozzle exit = {length}, injector head = 0)")
                 plt.ylabel("Stress $MPa$")
                 plt.legend()
                 plt.show()
 
-                return {"stress_inner_hoop": sigma_inner_hoop,
-                        "stress_outer_hoop": sigma_outer_hoop,
+                return {"stress_inner_hoop_II": sigma_inner_hoop_II,
+                        "stress_outer_hoop_II": sigma_outer_hoop_II,
                         "stress_inner_IE": sigma_inner_IE,
                         "stress_outer_IE": sigma_outer_IE}
 
