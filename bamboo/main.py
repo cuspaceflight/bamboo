@@ -1934,6 +1934,12 @@ class Engine:
         tadjusted_yield = np.zeros(length)
         mat_in = self.cooling_jacket.inner_wall
         mat_out = self.cooling_jacket.outer_wall
+
+        if self.has_ablative:
+            if self.ablative.wall_material != self.cooling_jacket.inner_wall:
+                raise AttributeError("Change of material behind ablator is not "
+                                     "currently supported in stress analysis")
+        # Should get around to sorting this at some point
         
         if condition == "steady":
             for i in range(length):
@@ -1964,14 +1970,15 @@ class Engine:
                 T_amb = kwargs["T_amb"]
             else:
                 T_amb = 283
-            # T_amb is really the zero thermal stress temperature for the jacket
-            # i.e. the temperature at which the engine was assembled
+            # T_amb is really the zero thermal stress temperature for the jacket, which
+            # I think should be the temperature at which the engine was assembled?
 
             if self.cooling_jacket.configuration == "vertical":
                 # Assumptions for this analysis:
                 # Both liners must not be axially constrained, i.e. free at
                 # at least one end. This may present a challenge for sealing the
-                # outer liner.
+                # outer liner, but as the outer liner temperature changes are realtively
+                # low this should not problematic.
 
                 # The ribs are treated as a ring exerting uniform pressure around the
                 # circumference on the outer liner, which is not strictly true.
@@ -2000,7 +2007,7 @@ class Engine:
                 # Use chamber radius if there is an ablator - the inner liner
                 # radius will be constant as the ablative handles the nozzle contour
 
-                epsilon_T = (np.array((heating_result["T_wall_outer"])) - T_amb) \
+                epsilon_T = (np.array((heating_result["T_wall_inner"])) - T_amb) \
                                 * mat_in.alpha
                 # Find the (unconstrained) thermal strain where the ribs
                 # meet the outer liner, for each x position
@@ -2016,36 +2023,41 @@ class Engine:
 
                 sigma_inner_IE = -epsilon_T * R1/((R1/E1) + ((R2*t1)/(E2*t2)))
                 sigma_outer_IE = -sigma_inner_IE*t1/t2
-                # _IE = due to inner ixpansion
+                # _IE = due to inner expansion
 
-                # Now we can determine the hoop stresses. For the outer liner,
+                # Now we determine the hoop stresses. For the outer liner,
                 # the pressure is taken to be the coolant pressure.
                 # In reality the average pressure is less than this, because
                 # the ribs occupy part of the wall area, and their contribution
-                # to the stress has already been accounted for above
-                # For the inner liner, the hoop stress is much lower because
-                # when the engine is running.
+                # to the stress has already been accounted for above.
+
+                # Array for the pressure inside the engine along its length.
+                discretised_x = np.linspace(self.geometry.x_max, self.geometry.x_min, length)
+                engine_pressure = [self.p(discretised_x[i]) for i in range(length)]
+
 
                 sigma_inner_hoop = (np.array(heating_result["p_coolant"]) - self.chamber_conditions.p0) \
                                     *R1_hoop/t1_hoop
                 # Need to account for the falling pressure in the nozzle ideally else
                 # this will underestimate the stress in the nozzle as the flow expands.
+
+                # Assume ambient pressure of 1 bar
                 sigma_outer_hoop = np.array(heating_result["p_coolant"])*R2/t2
 
                 #sigma_inner = sigma_inner_hoop + sigma_inner_IE
                 #sigma_outer = sigma_outer_hoop + sigma_outer_IE
 
-                """# Quick graphs
-                print(min(sigma_inner)/1E6)
-                print(max(sigma_outer)/1E6)
-                print(list(sigma_inner).index(min(sigma_inner))*(self.geometry.x_max-self.geometry.x_min)/length)
+                # Quick graphs
+                #print(min(sigma_inner)/1E6)
+                #print(max(sigma_outer)/1E6)
+                #print(list(sigma_inner).index(min(sigma_inner))*(self.geometry.x_max-self.geometry.x_min)/length)
                 plt.title("Engine start-up stresses due to inner liner expansion and pressure differences")
-                plt.plot(np.abs(sigma_inner[::-1]/1E6), label="$|\sigma_{inner}|$")
-                plt.plot(np.abs(sigma_outer[::-1]/1E6), label="$|\sigma_{outer}|$")
+                plt.plot(np.abs(sigma_inner_hoop[::-1]/1E6), label="$|\sigma_{inner}|$")
+                plt.plot(np.abs(sigma_outer_hoop[::-1]/1E6), label="$|\sigma_{outer}|$")
                 plt.xlabel(f"Axial position index (Nozzle exit = {length}, injector head = 0)")
                 plt.ylabel("Stress $MPa$")
                 plt.legend()
-                plt.show()"""
+                plt.show()
 
                 return {"stress_inner_hoop": sigma_inner_hoop,
                         "stress_outer_hoop": sigma_outer_hoop,
