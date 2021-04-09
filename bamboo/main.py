@@ -2035,13 +2035,10 @@ class Engine:
                 discretised_x = np.linspace(self.geometry.x_max, self.geometry.x_min, length)
                 engine_pressure = [self.p(discretised_x[i]) for i in range(length)]
 
+                sigma_inner_hoop = (np.array(heating_result["p_coolant"]) - \
+                                    engine_pressure) * R1_hoop/t1_hoop
 
-                sigma_inner_hoop = (np.array(heating_result["p_coolant"]) - self.chamber_conditions.p0) \
-                                    *R1_hoop/t1_hoop
-                # Need to account for the falling pressure in the nozzle ideally else
-                # this will underestimate the stress in the nozzle as the flow expands.
-
-                # Assume ambient pressure of 1 bar
+                # Ambient pressure is neglected
                 sigma_outer_hoop = np.array(heating_result["p_coolant"])*R2/t2
 
                 #sigma_inner = sigma_inner_hoop + sigma_inner_IE
