@@ -53,10 +53,10 @@ gas_transport = cool.TransportProperties(model = "thermo", thermo_object = therm
 '''Cooling system setup'''
 engine.add_geometry(chamber_length, Ac, inner_wall_thickness, outer_wall_thickness)
 engine.add_exhaust_transport(gas_transport)
-engine.add_cooling_jacket(inner_wall_material, outer_wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant,
-                          configuration = "vertical", channel_height = 0.001, xs = [-100, 100], blockage_ratio = 0.5)
-#engine.add_cooling_jacket(inner_wall_material, outer_wall_material inlet_T, p_tank, coolant_transport, mdot_coolant,
-#                          configuration = "spiral", channel_shape = "semi-circle", channel_width = 0.020)
+engine.add_cooling_jacket(inner_wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, configuration = "vertical",
+                          channel_height = 0.001, xs = [-100, 100], blockage_ratio = 0.5, outer_wall = outer_wall_material)
+#engine.add_cooling_jacket(inner_wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, configuration = "spiral",
+#                          channel_shape = "semi-circle", channel_width = 0.02, outer_wall = outer_wall_material)
 
 #Add a graphite refractory
 engine.add_ablative(bam.materials.Graphite, inner_wall_material, regression_rate = 0.0033e-3, xs = [engine.geometry.x_chamber_end, 100], ablative_thickness = None)

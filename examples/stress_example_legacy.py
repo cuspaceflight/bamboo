@@ -54,10 +54,10 @@ gas_transport = cool.TransportProperties(model = "thermo", thermo_object = therm
 '''Cooling system setup'''
 engine.add_geometry(chamber_length, Ac, inner_wall_thickness, outer_wall_thickness, style="auto")
 engine.add_exhaust_transport(gas_transport)
-engine.add_cooling_jacket(inner_wall_material, outer_wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant,
-                          configuration = "vertical", channel_height = 0.001, xs = [-100, 100], blockage_ratio = 0.5)
-#engine.add_cooling_jacket(inner_wall_material, outer_wall_material inlet_T, p_tank, coolant_transport, mdot_coolant,
-#                          configuration = "spiral", channel_shape = "semi-circle", channel_width = 0.020)
+engine.add_cooling_jacket(inner_wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, configuration = "vertical",
+                          channel_height = 0.001, xs = [-100, 100], blockage_ratio = 0.5, outer_wall = outer_wall_material)
+#engine.add_cooling_jacket(inner_wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, configuration = "spiral",
+#                          channel_shape = "semi-circle", channel_width = 0.02, outer_wall = outer_wall_material)
 
 '''Run a second simulation with an ablative added'''
 #Add a graphite refractory.
@@ -104,7 +104,7 @@ segments2 = np.concatenate([points2[:-1], points2[1:]], axis=1)
 
 '''Run the steady state stress analysis, using cooling simulation data'''
 steady_stress = engine.run_stress_analysis(heating_result=cooling_data, condition="steady")
-rel_stress = steady_stress["thermal_stress"]/steady_stress["yield_adj"]
+rel_stress = steady_stress["thermal_stress"][::-1]/steady_stress["yield_adj"][::-1]
 max_rel_stress = np.amax(rel_stress)
 min_rel_stress = np.amin(rel_stress)
 

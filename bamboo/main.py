@@ -1116,12 +1116,11 @@ class Engine:
                                        outer_wall_thickness, style)
         self.has_geometry = True
 
-    def add_cooling_jacket(self, inner_wall, outer_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
+    def add_cooling_jacket(self, inner_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
         """Container for cooling jacket information - e.g. for regenerative cooling.
 
         Args:
             inner_wall (Material): Inner wall material.
-            outer_wall (Material): Wall material for the outer liner. 
             inlet_T (float): Inlet coolant temperature (K)
             inlet_p0 (float): Inlet coolant stagnation pressure (Pa)
             coolant_transport (TransportProperties): Container for the coolant transport properties.
@@ -1131,16 +1130,15 @@ class Engine:
         
         Keyword Args:
             channel_shape (str, optional): Used if configuration = 'spiral'. Options include 'rectangle', 'semi-circle', and 'custom'.
-            blockage_ratio (str, optional): Can be used if configuration = "spiral". This is the proportion (by area) of the channel cross section occupied by ribs.
             channel_height (float, optional): If using configuration = 'vertical' or channel_shape = 'rectangle', this is the height of the channels (m).
             channel_width (float, optional): If using channel_shape = 'rectangle', this is the width of the channels (m). If using channel_shape = 'semi-circle', this is the diameter of the semi circle (m).
             custom_effective_diameter (float, optional): If using channel_shape = 'custom', this is the effective diameter you want to use.
             custom_flow_area (float, optional): If using channel_shape = 'custom', this is the flow you want to use. 
+            outer_wall (Material): Wall material for the outer liner. 
         """
         
         self.cooling_jacket = cool.CoolingJacket(self.geometry,
                                                 inner_wall,
-                                                outer_wall, 
                                                 inlet_T, 
                                                 inlet_p0, 
                                                 coolant_transport, 
@@ -1922,17 +1920,15 @@ class Engine:
                                      temperature, presumably the temperature at which the engine was assembled.
 
         Returns:
-            dict: Results of the stress simulation. Contains the following dictionary keys (all are arrays):
-                For a steady state analysis: 
-                - "thermal_stress : Stress induced in the inner liner due to temperature difference, chamber to coolant side, for each x value (Pa).
-                - "tadjusted_yield : Yield stress of the inner wall material, corrected for the chamber side temperature (worst case) (Pa).
-                - "deltaT_wall" : Inner liner temperature difference, chamber side - coolant side (K).
-                - "stress_inner_hoop_steady" : Hoop stress of inner liner due to coolant static pressure in jacket after ignition (Pa).
-                - "stress_outer_hoop" : Hoop stress of outer liner due to coolant static pressure (same before and after ignition) (Pa).
-                For a transient analysis:
-                - "stress_inner_hoop_transient" : Hoop stress of inner liner due to coolant static pressure in jacket prior to ignition (0 chamber pressure) (Pa).
-                - "stress_inner_IE" : Stress induced in inner liner as it is heated but constrained by cold outer liner (Pa).
-                - "stress_outer_IE : Stress induced in outer liner by expanding inner liner (Pa).
+            dict: Results of the stress simulation. Contains the following dictionary keys (all are arrays): 
+                - "thermal_stress : (steady only) Stress induced in the inner liner due to temperature difference, chamber to coolant side, for each x value (Pa).
+                - "tadjusted_yield : (steady only) Yield stress of the inner wall material, corrected for the chamber side temperature (worst case) (Pa).
+                - "deltaT_wall" : (steady only) Inner liner temperature difference, chamber side - coolant side (K).
+                - "stress_inner_hoop_steady" : (steady only) Hoop stress of inner liner due to coolant static pressure in jacket after ignition (Pa).
+                - "stress_outer_hoop" : (steady only) Hoop stress of outer liner due to coolant static pressure (same before and after ignition) (Pa).
+                - "stress_inner_hoop_transient" : (transient only) Hoop stress of inner liner due to coolant static pressure in jacket prior to ignition (0 chamber pressure) (Pa).
+                - "stress_inner_IE" : (transient only) Stress induced in inner liner as it is heated but constrained by cold outer liner (Pa).
+                - "stress_outer_IE : (transient only) Stress induced in outer liner by expanding inner liner (Pa).
         """
         length = len(heating_result["x"])
         wall_stress = np.zeros(length)
