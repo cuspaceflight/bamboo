@@ -1131,6 +1131,7 @@ class Engine:
         
         Keyword Args:
             channel_shape (str, optional): Used if configuration = 'spiral'. Options include 'rectangle', 'semi-circle', and 'custom'.
+            blockage_ratio (str, optional): Can be used if configuration = "spiral". This is the proportion (by area) of the channel cross section occupied by ribs.
             channel_height (float, optional): If using configuration = 'vertical' or channel_shape = 'rectangle', this is the height of the channels (m).
             channel_width (float, optional): If using channel_shape = 'rectangle', this is the width of the channels (m). If using channel_shape = 'semi-circle', this is the diameter of the semi circle (m).
             custom_effective_diameter (float, optional): If using channel_shape = 'custom', this is the effective diameter you want to use.

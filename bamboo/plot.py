@@ -137,7 +137,7 @@ def plot_resistances(data_dict, **kwargs):
     axs.legend()
     axs.grid()
     axs.set_xlabel("Position (m)")
-    axs.set_ylabel("Thermal resistance (K/W)")
+    axs.set_ylabel("Thermal resistance (K/W/m)")
  
 def plot_exhaust_properties(data_dict, **kwargs):
     """Given the output dictionary from a engine cooling analysis, plot the exhaust gas transport properties
