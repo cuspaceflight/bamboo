@@ -87,15 +87,9 @@ axs1_2.legend(bbox_to_anchor = (0, -0.22), loc = "lower left")
 
 fig1.subplots_adjust(bottom = 0.16)
 
-axs2.plot(xs, steady_stress["stress_inner_hoop_steady"]/1E6, label="Inner liner, prior to ignition")
-axs2.plot(xs, transient_stress["stress_inner_hoop_transient"]/1E6, label="Inner liner, after ignition")
-axs2.plot(xs, steady_stress["stress_outer_hoop"]/1E6, label="Outer liner")
+axs2.plot(xs, steady_stress["stress_inner_hoop_steady"], label="Inner liner, prior to ignition")
+axs2.plot(xs, transient_stress["stress_inner_hoop_II"], label="Inner liner, after ignition")
+axs2.plot(xs, steady_stress["stress_outer_hoop"], label="Outer liner")
 axs2.set_title("Hoop stresses in liners")
-axs2.set_xlabel("Axial displacement from throat $(m)$")
-axs2.set_ylabel("Stress $(MPa)$")
-axs2.set_ylim([0, None])
-axs2.legend(bbox_to_anchor = (0, -0.19), loc = "lower left")
-
-fig2.subplots_adjust(bottom = 0.14)
 
 plt.show()

@@ -1179,7 +1179,7 @@ class Engine:
             wall_material_to_use = wall_material
         
         if self.has_cooling_jacket is True:
-            self.cooling_jacket.has_ablator = True
+            self.cooling_jacket.has_ablative = True
         # Update the cooling jacket if an ablator is added after the jacket
 
         self.ablative = cool.Ablative(ablative_material = ablative_material,
@@ -1907,7 +1907,7 @@ class Engine:
         return output_dict
 
 
-    def run_stress_analysis(self, heating_result, mode="thermal", condition="steady", **kwargs):
+    def run_stress_analysis(self, heating_result, condition="steady", **kwargs):
         """Perform stress analysis on the liner, using a cooling result.
            Things this function does not account for:
                 - Transient stress due to temperature differences across the inner liner.
@@ -1923,10 +1923,17 @@ class Engine:
                                      temperature, presumably the temperature at which the engine was assembled.
 
         Returns:
-            dict: Results of the stress simulation. Contains the following dictionary keys: 
+            dict: Results of the stress simulation. Contains the following dictionary keys (all are arrays):
+                For a steady state analysis: 
                 - "thermal_stress : Stress induced in the inner liner due to temperature difference, chamber to coolant side, for each x value (Pa).
                 - "tadjusted_yield : Yield stress of the inner wall material, corrected for the chamber side temperature (worst case) (Pa).
                 - "deltaT_wall" : Inner liner temperature difference, chamber side - coolant side (K).
+                - "stress_inner_hoop_steady" : Hoop stress of inner liner due to coolant static pressure in jacket after ignition (Pa).
+                - "stress_outer_hoop" : Hoop stress of outer liner due to coolant static pressure (same before and after ignition) (Pa).
+                For a transient analysis:
+                - "stress_inner_hoop_transient" : Hoop stress of inner liner due to coolant static pressure in jacket prior to ignition (0 chamber pressure) (Pa).
+                - "stress_inner_IE" : Stress induced in inner liner as it is heated but constrained by cold outer liner (Pa).
+                - "stress_outer_IE : Stress induced in outer liner by expanding inner liner (Pa).
         """
         length = len(heating_result["x"])
         wall_stress = np.zeros(length)
@@ -1935,11 +1942,29 @@ class Engine:
         mat_in = self.cooling_jacket.inner_wall
         mat_out = self.cooling_jacket.outer_wall
 
-        if self.has_ablative:
+        E1 = self.cooling_jacket.inner_wall.E
+        E2 = self.cooling_jacket.outer_wall.E
+        t1_hoop = self.map_thickness_profile(self.geometry.inner_wall_thickness, length)
+        t1 = t1_hoop + self.cooling_jacket.channel_height*self.cooling_jacket.blockage_ratio
+        # The blockage ratio is used to scale the contribution of the ribs to the
+        # effective total thickness of the inner liner (wider ribs = greater blockage ratio)
+        t2 = self.map_thickness_profile(self.geometry.outer_wall_thickness, length)
+
+        # Geometry calculations used for non-thermal stresses;
+        # if there is an ablative, the inner liner radius will be
+        # constant as the nozzle geometry is created with this instead of
+        # the cooling jacket.
+        if self.has_ablative is True or self.cooling_jacket.has_ablative is True:
             if self.ablative.wall_material != self.cooling_jacket.inner_wall:
                 raise AttributeError("Change of material behind ablator is not "
                                      "currently supported in stress analysis")
-        # Should get around to sorting this at some point
+            R1 = [self.geometry.chamber_radius]*length + t1/2
+            R2 = R1 + t1/2 + t2/2
+            R1_hoop = [self.geometry.chamber_radius]*length
+        else:
+            R1 = self.geometry.y(x, up_to="wall in") + t1/2
+            R2 = R1 + t1/2 + t2/2
+            R1_hoop = self.geometry.y(x, up_to="wall in")
         
         if condition == "steady":
             for i in range(length):
@@ -1961,9 +1986,20 @@ class Engine:
 
                 wall_stress[i] = cur_stress
 
+            # Now we determine the hoop stresses. For the outer liner,
+            # the pressure is taken to be the coolant pressure.
+            # In reality the average pressure is less than this, because
+            # the ribs occupy part of the wall. 
+            # Ambient pressure is also neglected for the outer liner.
+
+            sigma_inner_hoop = np.array(heating_result["p_coolant"]) * R1_hoop/t1_hoop
+            sigma_outer_hoop = np.array(heating_result["p_coolant"])*R2/t2
+
             return {"thermal_stress": wall_stress,
-                    "tadjusted_yield": tadjusted_yield,
-                    "deltaT_wall": wall_deltaT}
+                    "yield_adj": tadjusted_yield,
+                    "deltaT_wall": wall_deltaT,
+                    "stress_inner_hoop_steady": sigma_inner_hoop,
+                    "stress_outer_hoop": sigma_outer_hoop}
 
         if condition == "transient":
             if "T_amb" in kwargs:
@@ -1988,22 +2024,7 @@ class Engine:
                 # temperature of the top surface of the ribs, which contact the outer liner.
 
                 epsilon_T = np.zeros(length)
-                E1 = self.cooling_jacket.inner_wall.E
-                E2 = self.cooling_jacket.outer_wall.E
-                t1_hoop = self.map_thickness_profile(self.geometry.inner_wall_thickness, length)
-                t1 = t1_hoop + self.cooling_jacket.channel_height*self.cooling_jacket.blockage_ratio
-                     # The blockage ratio is used to scale the contribution of the ribs to the
-                     # thickness of the inner liner (wider ribs = greater blockage ratio)
-                t2 = self.map_thickness_profile(self.geometry.outer_wall_thickness, length)
 
-                if self.has_ablative is True or self.cooling_jacket.has_ablator is True:
-                    R1 = [self.geometry.chamber_radius]*length + t1/2
-                    R2 = R1 + t1/2 + t2/2
-                    R1_hoop = [self.geometry.chamber_radius]*length
-                else:
-                    R1 = self.geometry.y(x, up_to="wall in") + t1/2
-                    R2 = R1 + t1/2 + t2/2
-                    R1_hoop = self.geometry.y(x, up_to="wall in")
                 # Use chamber radius if there is an ablator - the inner liner
                 # radius will be constant as the ablative handles the nozzle contour
 
@@ -2025,44 +2046,27 @@ class Engine:
                 sigma_outer_IE = -sigma_inner_IE*t1/t2
                 # _IE = due to inner expansion
 
-                # Now we determine the hoop stresses. For the outer liner,
-                # the pressure is taken to be the coolant pressure.
-                # In reality the average pressure is less than this, because
-                # the ribs occupy part of the wall area, and their contribution
-                # to the stress has already been accounted for above.
-
-                # In phase I, when the engine has not yet been ignited but there is
-                # pressurised IPA in the cooling jacket, the internal pressure is 0
-                # (technically 0 gauge, but ambient is neglected)
-                sigma_inner_hoop_I = np.array(heating_result["p_coolant"]) * R1_hoop/t1_hoop
-
+                # Now determine the startup inner liner hoop stress
                 # Array for the pressure inside the engine along its length, after ignition.
                 discretised_x = np.linspace(self.geometry.x_max, self.geometry.x_min, length)
-                engine_pressure_II = [self.p(discretised_x[i]) for i in range(length)]
-                sigma_inner_hoop_II = (np.array(heating_result["p_coolant"]) - \
-                                    engine_pressure_II) * R1_hoop/t1_hoop
+                engine_pressure = [self.p(discretised_x[i]) for i in range(length)]
+                sigma_inner_hoop = (np.array(heating_result["p_coolant"]) - \
+                                    engine_pressure) * R1_hoop/t1_hoop
 
-                # Ambient pressure is neglected
-                sigma_outer_hoop_II = np.array(heating_result["p_coolant"])*R2/t2
-
-                #sigma_inner = sigma_inner_hoop + sigma_inner_IE
-                #sigma_outer = sigma_outer_hoop + sigma_outer_IE
-
-                # Quick graphs
+                """# Quick graphs
                 #plt.title("Engine start-up stresses due to inner liner expansion and pressure differences")
                 plt.title("Liner stresses (phase II / prior to thermal equlibrium)")
                 plt.plot(np.abs(sigma_inner_hoop_II[::-1]/1E6), label="$|\sigma_{inner}| (hoop)$")
-                plt.plot(np.abs(sigma_outer_hoop_II[::-1]/1E6), label="$|\sigma_{outer}| (hoop)$")
+                plt.plot(np.abs(sigma_outer_hoop[::-1]/1E6), label="$|\sigma_{outer}| (hoop)$")
                 plt.plot(np.abs(sigma_outer_IE[::-1]/1E6), label="$|\sigma_{outer}| (IE)$")
                 plt.plot(np.abs(sigma_inner_IE[::-1]/1E6), label="$|\sigma_{inner}| (IE)$")
                 #plt.plot(np.abs(sigma_outer_hoop_II[::-1]/1E6), label="$|\sigma_{outer}|$")
                 plt.xlabel(f"Axial position index (Nozzle exit = {length}, injector head = 0)")
                 plt.ylabel("Stress $MPa$")
                 plt.legend()
-                plt.show()
+                plt.show()"""
 
-                return {"stress_inner_hoop_II": sigma_inner_hoop_II,
-                        "stress_outer_hoop_II": sigma_outer_hoop_II,
+                return {"stress_inner_hoop_transient": sigma_inner_hoop,
                         "stress_inner_IE": sigma_inner_IE,
                         "stress_outer_IE": sigma_outer_IE}
 
