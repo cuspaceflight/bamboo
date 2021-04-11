@@ -68,8 +68,12 @@ steady_stress = engine.run_stress_analysis(heating_result = cooling_data, condit
 transient_stress = engine.run_stress_analysis(heating_result = cooling_data, condition= "transient", T_amb = inlet_T)
 
 # Graph results
+threshold = 0.5
+# If a hoop or inner expansion stress exceeds this proportion of nominal yield stress,
+# then show the nominal yield stress on the plot to make it clear this could be problematic
 fig1, axs1 = plt.subplots(figsize=(12, 7))
 fig2, axs2 = plt.subplots(figsize=(12, 7))
+fig3, axs3 = plt.subplots(figsize=(12, 7))
 
 axs1.plot(xs, steady_stress["thermal_stress"]/1E6, label = "Thermal stress")
 axs1.plot(xs, steady_stress["yield_adj"]/1E6, label = "Temperature compensated yield stress")
@@ -87,15 +91,74 @@ axs1_2.legend(bbox_to_anchor = (0, -0.22), loc = "lower left")
 
 fig1.subplots_adjust(bottom = 0.16)
 
-axs2.plot(xs, steady_stress["stress_inner_hoop_steady"]/1E6, label="Inner liner, prior to ignition")
-axs2.plot(xs, transient_stress["stress_inner_hoop_transient"]/1E6, label="Inner liner, after ignition")
-axs2.plot(xs, steady_stress["stress_outer_hoop"]/1E6, label="Outer liner")
-axs2.set_title("Hoop stresses in liners")
+axs2.plot(xs, steady_stress["stress_inner_hoop_steady"]/1E6, label = "Inner liner, prior to ignition")
+axs2.plot(xs, transient_stress["stress_inner_hoop_transient"]/1E6, label = "Inner liner, after ignition")
+axs2.plot(xs, steady_stress["stress_outer_hoop"]/1E6, label = "Outer liner")
+ymax2 = axs2.get_ylim()[1]
+
+if np.max(steady_stress["stress_inner_hoop_steady"]) > threshold*inner_wall_material.sigma_y or \
+   np.max(transient_stress["stress_inner_hoop_transient"]) > threshold*inner_wall_material.sigma_y:
+    axs2i = axs2.twinx()
+    axs2i.get_yaxis().set_visible(False)
+    axs2i.hlines(inner_wall_material.sigma_y/1E6, xs[0], xs[-1], linestyles = "dashed", color = "indianred",
+                label = "Nominal inner liner yield stress")
+    ymax2 = max((ymax2, 1.1*inner_wall_material.sigma_y/1E6))
+    axs2i.set_ylim(0, ymax2)
+    axs2i.legend(bbox_to_anchor = (0.7, -0.11), loc = "lower left")
+
+if np.max(steady_stress["stress_outer_hoop"]) > threshold*outer_wall_material.sigma_y:
+    axs2o = axs2.twinx()
+    axs2o.get_yaxis().set_visible(False)
+    axs2o.hlines(outer_wall_material.sigma_y/1E6, xs[0], xs[-1], linestyles = "dashed", color = "maroon",
+                label = "Nominal outer liner yield stress")
+    ymax2 = max((ymax2, 1.1*outer_wall_material.sigma_y/1E6))
+    try:
+        axs2i.set_ylim(0, ymax2)
+    except NameError:
+        pass
+    axs2o.set_ylim(0, ymax2)
+    axs2o.legend(bbox_to_anchor = (0.7, -0.15), loc = "lower left")
+
+axs2.set_title("Hoop stresses")
 axs2.set_xlabel("Axial displacement from throat $(m)$")
 axs2.set_ylabel("Stress $(MPa)$")
-axs2.set_ylim([0, None])
 axs2.legend(bbox_to_anchor = (0, -0.19), loc = "lower left")
+axs2.set_ylim([0, ymax2])
 
 fig2.subplots_adjust(bottom = 0.14)
+
+axs3.plot(xs, np.abs(transient_stress["stress_inner_IE"]/1E6), label = "Inner liner")
+axs3.plot(xs, np.abs(transient_stress["stress_outer_IE"]/1E6), label = "Outer liner")
+ymax3 = axs3.get_ylim()[1]
+
+if np.max(np.abs(transient_stress["stress_inner_IE"])) > threshold*inner_wall_material.sigma_y:
+    axs3i = axs3.twinx()
+    axs3i.get_yaxis().set_visible(False)
+    axs3i.hlines(inner_wall_material.sigma_y/1E6, xs[0], xs[-1], linestyles = "dashed", color = "indianred",
+                label = "Nominal inner liner yield stress")
+    ymax3 = max((ymax3, 1.1*inner_wall_material.sigma_y/1E6))
+    axs3i.set_ylim(0, ymax3)
+    axs3i.legend(bbox_to_anchor = (0.7, -0.11), loc = "lower left")
+
+if np.max(np.abs(transient_stress["stress_outer_IE"])) > threshold*outer_wall_material.sigma_y:
+    axs3o = axs3.twinx()
+    axs3o.get_yaxis().set_visible(False)
+    axs3o.hlines(outer_wall_material.sigma_y/1E6, xs[0], xs[-1], linestyles = "dashed", color = "maroon",
+                label = "Nominal outer liner yield stress")
+    ymax3 = max((ymax3, 1.1*outer_wall_material.sigma_y/1E6))
+    try:
+        axs3i.set_ylim(0, ymax3)
+    except NameError:
+        pass
+    axs3o.set_ylim(0, ymax3)
+    axs3o.legend(bbox_to_anchor = (0.7, -0.15), loc = "lower left")
+
+axs3.set_title("Absolute stresses due to constrained inner liner expansion")
+axs3.set_xlabel("Axial displacement from throat $(m)$")
+axs3.set_ylabel("Stress $(MPa)$")
+axs3.legend(bbox_to_anchor = (0, -0.15), loc = "lower left")
+axs3.set_ylim([0, ymax3])
+
+fig3.subplots_adjust(bottom = 0.12)
 
 plt.show()

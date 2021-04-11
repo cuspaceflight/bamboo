@@ -1909,13 +1909,11 @@ class Engine:
 
     def run_stress_analysis(self, heating_result, condition="steady", **kwargs):
         """Perform stress analysis on the liner, using a cooling result.
-           Things this function does not account for:
-                - Transient stress due to temperature differences across the inner liner.
-                - Stresses in the axial direction due to axial temperature gradients
+           Results should be taken only as a first approximation of some key stresses.
+
         Args:
             heating_result (dict): Requires a heating analysis result to compute stress.
-            mode (str, optional): Options are "pressure",  "thermal" and "combined". Defaults to "thermal". (ONLY DEFAULT WORKS)
-            condition (str, optional): Engine state for analysis. Options are "steady", or "transient". Defaults to "steady". (ONLY DEFAULT WORKS)
+            condition (str, optional): Engine state for analysis. Options are "steady", or "transient". Defaults to "steady".
 
         Keyword Args:
             T_amb (float, optional): For transient analysis, the ambient temperature can be overriden from the default, 283 K.
@@ -2052,19 +2050,6 @@ class Engine:
                 engine_pressure = [self.p(discretised_x[i]) for i in range(length)]
                 sigma_inner_hoop = (np.array(heating_result["p_coolant"]) - \
                                     engine_pressure) * R1_hoop/t1_hoop
-
-                """# Quick graphs
-                #plt.title("Engine start-up stresses due to inner liner expansion and pressure differences")
-                plt.title("Liner stresses (phase II / prior to thermal equlibrium)")
-                plt.plot(np.abs(sigma_inner_hoop_II[::-1]/1E6), label="$|\sigma_{inner}| (hoop)$")
-                plt.plot(np.abs(sigma_outer_hoop[::-1]/1E6), label="$|\sigma_{outer}| (hoop)$")
-                plt.plot(np.abs(sigma_outer_IE[::-1]/1E6), label="$|\sigma_{outer}| (IE)$")
-                plt.plot(np.abs(sigma_inner_IE[::-1]/1E6), label="$|\sigma_{inner}| (IE)$")
-                #plt.plot(np.abs(sigma_outer_hoop_II[::-1]/1E6), label="$|\sigma_{outer}|$")
-                plt.xlabel(f"Axial position index (Nozzle exit = {length}, injector head = 0)")
-                plt.ylabel("Stress $MPa$")
-                plt.legend()
-                plt.show()"""
 
                 return {"stress_inner_hoop_transient": sigma_inner_hoop,
                         "stress_inner_IE": sigma_inner_IE,
