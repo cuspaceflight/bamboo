@@ -3,6 +3,8 @@
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from matplotlib.collections import LineCollection
+from matplotlib.colors import ListedColormap, BoundaryNorm, LinearSegmentedColormap
 import numpy as np
 
 def plot_temperatures(data_dict, **kwargs):

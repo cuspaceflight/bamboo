@@ -1,13 +1,17 @@
+'''
+Subscripts:
+    0 - Stagnation condition
+    c - Chamber condition (should be the same as stagnation conditions)
+    t - At the throat
+    e - At the nozzle exit plane
+    amb - Atmopsheric/ambient condition
+'''
 import bamboo as bam
 import bamboo.cooling as cool
-import bamboo.materials
-
 import numpy as np
-import pypropep as ppp
+import time
 import thermo
 import matplotlib.pyplot as plt
-from matplotlib.collections import LineCollection
-from matplotlib.colors import ListedColormap, BoundaryNorm, LinearSegmentedColormap
 
 '''Gas properties - obtained from ProPEP 3'''
 gamma = 1.264               #Ratio of specific heats cp/cv
@@ -17,19 +21,21 @@ molecular_weight = 21.627   #Molecular weight of the exhaust gas (kg/kmol) (only
 p_tank = 25e5       #Tank / inlet coolant stagnation pressure (Pa) - used for cooling jacket
 pc = 10e5           #Chamber pressure (Pa)
 Tc = 2800.0         #Chamber temperature (K) - obtained from ProPEP 3
-mdot = 5.757        #Mass flow rate (kg/s)
+mdot = 4.757        #Mass flow rate (kg/s)
 p_amb = 1.01325e5   #Ambient pressure (Pa). 1.01325e5 is sea level atmospheric.
 OF_ratio = 3.5      #Oxidiser/fuel mass ratio
 
 '''Engine geometry'''
 Ac = np.pi*0.1**2               #Chamber cross-sectional area (m^2)
 L_star = 1.5                    #L_star = Volume_c/Area_t
-wall_thickness = 2e-3
+inner_wall_thickness = 2e-3
+outer_wall_thickness = 4e-3
 
 '''Coolant jacket'''
-wall_material = bam.materials.CopperC700
+inner_wall_material = bam.materials.CopperC700
+outer_wall_material = bam.materials.StainlessSteel304
 mdot_coolant = mdot/(OF_ratio + 1) 
-inlet_T = 298.15                    #Coolant inlet temperature
+inlet_T = 298.15  # Coolant inlet temperature
 thermo_coolant = thermo.chemical.Chemical('isopropanol')
 coolant_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_coolant, force_phase = 'l')
 
@@ -45,104 +51,114 @@ thermo_gas = thermo.mixture.Mixture(['N2', 'H2O', 'CO2'], ws = [0.49471, 0.14916
 gas_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_gas, force_phase = 'g')
 
 '''Cooling system setup'''
-engine.add_geometry(chamber_length, Ac, wall_thickness)
+engine.add_geometry(chamber_length, Ac, inner_wall_thickness, outer_wall_thickness)
 engine.add_exhaust_transport(gas_transport)
-#engine.add_cooling_jacket(wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, configuration = "vertical", channel_height = 0.001, xs = [-100, 100])
-engine.add_cooling_jacket(wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, configuration = "spiral", channel_shape = "semi-circle", channel_width = 0.020)
+engine.add_cooling_jacket(inner_wall_material, outer_wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant,
+                          configuration = "vertical", channel_height = 0.001, xs = [-100, 100], blockage_ratio = 0.5)
+#engine.add_cooling_jacket(inner_wall_material, outer_wall_material inlet_T, p_tank, coolant_transport, mdot_coolant,
+#                          configuration = "spiral", channel_shape = "semi-circle", channel_width = 0.020)
 
-'''Run a second simulation with an ablative added'''
-#Add a graphite refractory, and override the copper cooling jacket with a stainless steel layer.
-engine.add_ablative(bam.materials.Graphite, bam.materials.StainlessSteel304, regression_rate = 0.0033e-3, xs = [engine.geometry.x_chamber_end, 100], ablative_thickness = None)
+#Add a graphite refractory
+engine.add_ablative(bam.materials.Graphite, inner_wall_material, regression_rate = 0.0033e-3, xs = [engine.geometry.x_chamber_end, 100], ablative_thickness = None)
 
-print(f"Sea level thrust = {engine.thrust(1e5)/1000} kN")
-print(f"Sea level Isp = {engine.isp(1e5)} s")     
+# Run the analyses
+cooling_data = engine.steady_heating_analysis(number_of_points=1000)
+xs = cooling_data["x"]
+steady_stress = engine.run_stress_analysis(heating_result = cooling_data, condition = "steady")
+transient_stress = engine.run_stress_analysis(heating_result = cooling_data, condition= "transient", T_amb = inlet_T)
 
-num_pts = 4000 # Only increased beyond 1000 to make the graph smoother, no meaningful accuracy gain
-cooling_data = engine.steady_heating_analysis(number_of_points=num_pts, to_json = "data/heating_output.json")
+# Graph results
+threshold = 0.5
+# If a hoop or inner expansion stress exceeds this proportion of nominal yield stress,
+# then show the nominal yield stress on the plot to make it clear this could be problematic
+fig1, axs1 = plt.subplots(figsize=(12, 7))
+fig2, axs2 = plt.subplots(figsize=(12, 7))
+fig3, axs3 = plt.subplots(figsize=(12, 7))
 
-'''Run the stress analysis, using cooling simulation data'''
-stress_data = engine.run_stress_analysis(cooling_data, wall_material)
-max_rel_stress = np.amax(stress_data["thermal_stress"]/stress_data["tadjusted_yield"])
-min_rel_stress = np.amin(stress_data["thermal_stress"]/stress_data["tadjusted_yield"])
+axs1.plot(xs, steady_stress["thermal_stress"]/1E6, label = "Thermal stress")
+axs1.plot(xs, steady_stress["yield_adj"]/1E6, label = "Temperature compensated yield stress")
+axs1.set_title("Steady state operation: Inner liner")
+axs1.set_xlabel("Axial displacement from throat $(m)$")
+axs1.set_ylabel("Stress $(MPa)$")
+axs1.set_ylim([0, None])
+axs1.legend(bbox_to_anchor = (0, -0.16), loc = "lower left")
 
-'''Get nozzle data'''
-shape_x = np.linspace(engine.geometry.x_min, engine.geometry.x_max, num_pts)
-shape_y = np.zeros(len(shape_x))
+axs1_2 = axs1.twinx()
+axs1_2.plot(xs, steady_stress["deltaT_wall"], color = "red", label = "Coolant side to chamber side $\Delta T$")
+axs1_2.set_ylabel("Temperature difference ($\Delta K$)")
+axs1_2.set_ylim([0, None])
+axs1_2.legend(bbox_to_anchor = (0, -0.22), loc = "lower left")
 
-for i in range(len(shape_x)):
-    shape_y[i] = engine.y(shape_x[i])
+fig1.subplots_adjust(bottom = 0.16)
 
-'''Plot results'''
-fig2, ax_s = plt.subplots()
+axs2.plot(xs, steady_stress["stress_inner_hoop_steady"]/1E6, label = "Inner liner, prior to ignition")
+axs2.plot(xs, transient_stress["stress_inner_hoop_transient"]/1E6, label = "Inner liner, after ignition")
+axs2.plot(xs, steady_stress["stress_outer_hoop"]/1E6, label = "Outer liner")
+ymax2 = axs2.get_ylim()[1]
 
-points1 = np.array([shape_x, shape_y]).T.reshape(-1, 1, 2)
-points2 = np.array([shape_x, -shape_y]).T.reshape(-1, 1, 2)
-segments1 = np.concatenate([points1[:-1], points1[1:]], axis=1)
-segments2 = np.concatenate([points2[:-1], points2[1:]], axis=1)
-# Each element in segments represents a point defining a coloured line segment
+if np.max(steady_stress["stress_inner_hoop_steady"]) > threshold*inner_wall_material.sigma_y or \
+   np.max(transient_stress["stress_inner_hoop_transient"]) > threshold*inner_wall_material.sigma_y:
+    axs2i = axs2.twinx()
+    axs2i.get_yaxis().set_visible(False)
+    axs2i.hlines(inner_wall_material.sigma_y/1E6, xs[0], xs[-1], linestyles = "dashed", color = "indianred",
+                label = "Nominal inner liner yield stress")
+    ymax2 = max((ymax2, 1.1*inner_wall_material.sigma_y/1E6))
+    axs2i.set_ylim(0, ymax2)
+    axs2i.legend(bbox_to_anchor = (0.7, -0.11), loc = "lower left")
 
-norm_max = max_rel_stress
-if max_rel_stress < np.amax(stress_data["tadjusted_yield"]):
-    mid = 1.0
-    red_max = 0.0
-else:
-    mid = engine.cooling_jacket.inner_wall.sigma_y/max_stress
-    red_max = 1.0
-# Check if yield is reached to adjust colour mapping, normalisation
-   
-cdict = {"red":  [(0.0, 0.0, 0.0),
-                  (mid, 0.0, 0.0),
-                  (1.0, red_max, red_max)],  
-    
-        "green": [(0.0, 1.0, 1.0),
-                  (mid/2, 0.0, 0.0),
-                  (1.0, 0.0, 0.0)],
-         
-        "blue":  [(0.0, 0.0, 0.0),
-                  (mid/2, 0.0, 0.0),
-                  (mid, 1.0, 1.0),
-                  (1.0, 0.0, 0.0)]}
-colours = LinearSegmentedColormap("colours", cdict)
-# Set up colour map for stress values
+if np.max(steady_stress["stress_outer_hoop"]) > threshold*outer_wall_material.sigma_y:
+    axs2o = axs2.twinx()
+    axs2o.get_yaxis().set_visible(False)
+    axs2o.hlines(outer_wall_material.sigma_y/1E6, xs[0], xs[-1], linestyles = "dashed", color = "maroon",
+                label = "Nominal outer liner yield stress")
+    ymax2 = max((ymax2, 1.1*outer_wall_material.sigma_y/1E6))
+    try:
+        axs2i.set_ylim(0, ymax2)
+    except NameError:
+        pass
+    axs2o.set_ylim(0, ymax2)
+    axs2o.legend(bbox_to_anchor = (0.7, -0.15), loc = "lower left")
 
-norm = plt.Normalize(np.amin(stress_data["thermal_stress"]/min_rel_stress), norm_max)
-# Normalise the stress data so it can be mapped
+axs2.set_title("Hoop stresses")
+axs2.set_xlabel("Axial displacement from throat $(m)$")
+axs2.set_ylabel("Stress $(MPa)$")
+axs2.legend(bbox_to_anchor = (0, -0.19), loc = "lower left")
+axs2.set_ylim([0, ymax2])
 
-lc1 = LineCollection(segments1, cmap=colours, norm=norm)
-lc1.set_array(stress_data["thermal_stress"])
-lc1.set_linewidth(20)
-lc2 = LineCollection(segments2, cmap=colours, norm=norm)
-lc2.set_array(stress_data["thermal_stress"])
-lc2.set_linewidth(20)
-# Create line collections defined by segments arrays, map colours
+fig2.subplots_adjust(bottom = 0.14)
 
-line1 = ax_s.add_collection(lc1)
-line2 = ax_s.add_collection(lc2)
+axs3.plot(xs, np.abs(transient_stress["stress_inner_IE"]/1E6), label = "Inner liner")
+axs3.plot(xs, np.abs(transient_stress["stress_outer_IE"]/1E6), label = "Outer liner")
+ymax3 = axs3.get_ylim()[1]
 
-cbar = fig2.colorbar(line1, ax=ax_s)
-cbar.set_label("$\sigma$ / $Pa$")
-#cbar = fig2.colorbar(line1, ax=ax_s, ticks=[int(engine.cooling_jacket.inner_wall.sigma_y)])
-#cbar.set_ticklabels(["$\sigma_y$"])
+if np.max(np.abs(transient_stress["stress_inner_IE"])) > threshold*inner_wall_material.sigma_y:
+    axs3i = axs3.twinx()
+    axs3i.get_yaxis().set_visible(False)
+    axs3i.hlines(inner_wall_material.sigma_y/1E6, xs[0], xs[-1], linestyles = "dashed", color = "indianred",
+                label = "Nominal inner liner yield stress")
+    ymax3 = max((ymax3, 1.1*inner_wall_material.sigma_y/1E6))
+    axs3i.set_ylim(0, ymax3)
+    axs3i.legend(bbox_to_anchor = (0.7, -0.11), loc = "lower left")
 
-ax_s.set_xlim(shape_x.min(), shape_x.max())
-ax_s.set_ylim(-shape_y.max(), shape_y.max())
+if np.max(np.abs(transient_stress["stress_outer_IE"])) > threshold*outer_wall_material.sigma_y:
+    axs3o = axs3.twinx()
+    axs3o.get_yaxis().set_visible(False)
+    axs3o.hlines(outer_wall_material.sigma_y/1E6, xs[0], xs[-1], linestyles = "dashed", color = "maroon",
+                label = "Nominal outer liner yield stress")
+    ymax3 = max((ymax3, 1.1*outer_wall_material.sigma_y/1E6))
+    try:
+        axs3i.set_ylim(0, ymax3)
+    except NameError:
+        pass
+    axs3o.set_ylim(0, ymax3)
+    axs3o.legend(bbox_to_anchor = (0.7, -0.15), loc = "lower left")
 
-max_stress_index = np.where(stress_data["thermal_stress"]/stress_data["tadjusted_yield"] == max_rel_stress)[0][0]
-# Position of the maximum relative stress given as the index of the corresponding x position from heating analysis
-yield_max_rel = stress_data["tadjusted_yield"][max_stress_index]
-# The local temperature adjusted yield stress at the location of the highest relative stress
+axs3.set_title("Absolute stresses due to constrained inner liner expansion")
+axs3.set_xlabel("Axial displacement from throat $(m)$")
+axs3.set_ylabel("Stress $(MPa)$")
+axs3.legend(bbox_to_anchor = (0, -0.15), loc = "lower left")
+axs3.set_ylim([0, ymax3])
 
-ax_s.axvline(shape_x[max_stress_index], color = 'red', linestyle = '--',
-             label = f"""Max relative stress {100*max_rel_stress:.2f}% where """
-                     f"""$\sigma = $ {stress_data["thermal_stress"][max_stress_index]/10**6:.2f} $MPa$,"""
-                     f""" $\sigma_y = $ {yield_max_rel/10**6:.2f} $MPa$""")
+fig3.subplots_adjust(bottom = 0.12)
 
-plt.figtext(0.5, 0.12, "(Ablator / refractory not currently shown, if present)", ha="center", fontsize=10)
-
-ax_s.set_xlabel("Axial displacement from throat / $m$")
-ax_s.set_ylabel("Radial position / $m$")
-plt.gca().set_aspect('equal', adjustable='box')
-# Equal axes scales for a true view of the engine
-
-ax_s.legend()
 plt.show()

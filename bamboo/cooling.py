@@ -480,6 +480,7 @@ class CoolingJacket:
 
     Args:
         inner_wall (Material): Wall material on the inner side of the cooling jacket.
+        outer_wall (Material): Wall material for the outer liner. 
         inlet_T (float): Inlet coolant temperature (K)
         inlet_p0 (float): Inlet coolant stagnation pressure (Pa)
         coolant_transport (TransportProperties): Container for the coolant transport properties.
@@ -494,23 +495,20 @@ class CoolingJacket:
         channel_width (float, optional): If using channel_shape = 'rectangle', this is the width of the channels (m). If using channel_shape = 'semi-circle', this is the diameter of the semi circle (m).
         custom_effective_diameter (float, optional): If using channel_shape = 'custom', this is the effective diameter you want to use. 
         custom_flow_area (float, optional): If using channel_shape = 'custom', this is the flow you want to use.
-        outer_wall (Material, optional): Wall material for the outer liner. Only needed for transient stress analysis. 
     """
-    def __init__(self, geometry, inner_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", has_ablator = False, **kwargs):
+    def __init__(self, geometry, inner_wall, outer_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", has_ablative = False, **kwargs):
 
         self.ymax = geometry.chamber_radius
         self.inner_wall = inner_wall
+        self.outer_wall = outer_wall
         self.coolant_transport = coolant_transport       
         self.mdot_coolant = mdot_coolant
         self.xs = xs
         self.inlet_T = inlet_T
         self.inlet_p0 = inlet_p0
         self.configuration = configuration
-        self.has_ablator = has_ablator
+        self.has_ablative = has_ablative
         
-        if "outer_wall" in kwargs:
-            self.outer_wall = kwargs["outer_wall"]
-
         if self.configuration == 'spiral':
             self.channel_shape = kwargs['channel_shape']
 
@@ -556,7 +554,7 @@ class CoolingJacket:
             return self.flow_area
 
         elif self.configuration == 'vertical':
-            if self.has_ablator is True:
+            if self.has_ablative is True:
                 y = self.ymax
             # Ignore the nozzle contours - jacket has constant radius if an ablative insert is present
             return np.pi*((y + self.channel_height)**2 - y**2) * (1 - self.blockage_ratio)
@@ -574,7 +572,7 @@ class CoolingJacket:
         Returns:
             float: Effective diameter (m)
         """
-        if self.has_ablator is True:
+        if self.has_ablative is True:
             y = self.ymax
         # Ignore the nozzle contours - jacket has constant radius if an ablative insert is present
         
