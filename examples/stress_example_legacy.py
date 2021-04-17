@@ -52,7 +52,7 @@ thermo_gas = thermo.mixture.Mixture(['N2', 'H2O', 'CO2'], ws = [0.49471, 0.14916
 gas_transport = cool.TransportProperties(model = "thermo", thermo_object = thermo_gas, force_phase = 'g')
 
 '''Cooling system setup'''
-engine.add_geometry(chamber_length, Ac, inner_wall_thickness, outer_wall_thickness, style="auto")
+engine.add_geometry(chamber_length, Ac, inner_wall_thickness, outer_wall_thickness)
 engine.add_exhaust_transport(gas_transport)
 engine.add_cooling_jacket(inner_wall_material, inlet_T, p_tank, coolant_transport, mdot_coolant, configuration = "vertical",
                           channel_height = 0.001, xs = [-100, 100], blockage_ratio = 0.5, outer_wall = outer_wall_material)
@@ -104,7 +104,10 @@ segments2 = np.concatenate([points2[:-1], points2[1:]], axis=1)
 
 '''Run the steady state stress analysis, using cooling simulation data'''
 steady_stress = engine.run_stress_analysis(heating_result=cooling_data, condition="steady")
-rel_stress = steady_stress["thermal_stress"][::-1]/steady_stress["yield_adj"][::-1]
+# Reverse arrays to match bamboo convention for plotting
+steady_stress["yield_adj"] = steady_stress["yield_adj"][::-1]
+steady_stress["thermal_stress"] = steady_stress["thermal_stress"][::-1]
+rel_stress = steady_stress["thermal_stress"]/steady_stress["yield_adj"]
 max_rel_stress = np.amax(rel_stress)
 min_rel_stress = np.amin(rel_stress)
 
@@ -113,10 +116,10 @@ if max_rel_stress < 1:
             "green": [(0, 1, 1), (0.7, 0, 0), (1, 0, 0)],
             "blue":  [(0, 0, 0), (0.5, 0, 0), (1, 1, 1)]}
 else:
-    cdict = {"red":   [(0, 0, 0), (1/(1.1*raw_max), 0, 0), 
-                       (1/(raw_max), 1, 1), (1, 1, 1)],
-             "green": [(0, 1, 1), (1/(2*raw_max), 0, 0), (1, 0, 0)],
-             "blue":  [(0, 0, 0), (1/(2*raw_max), 0, 0),
+    cdict = {"red":   [(0, 0, 0), (1/(1.1*max_rel_stress), 0, 0), 
+                       (1/(max_rel_stress), 1, 1), (1, 1, 1)],
+             "green": [(0, 1, 1), (1/(1.3*max_rel_stress), 0, 0), (1, 0, 0)],
+             "blue":  [(0, 0, 0), (1/(2*max_rel_stress), 0, 0),
                        (1/max_rel_stress, 0.4, 0.4), (1, 0, 0)]}  
 
 colours = LinearSegmentedColormap("colours", cdict)
@@ -153,9 +156,9 @@ ax_s.axvline(shape_x[max_stress_index], color = 'red', linestyle = '--',
                      f""" $\sigma_{{ya}} = $ {steady_stress["yield_adj"][max_stress_index]/10**6:.2f} $MPa$""")
 
 ax_s.set_xlabel("Axial displacement from throat / $m$")
-ax_s.set_ylabel("Radial position / $m$")
-ax_s.set_title("Steady state thermal stress")
+ax_s.set_ylabel("Radial displacement from engine axis / $m$")
+ax_s.set_title("Inner liner steady state thermal stress")
 ax_s.set_aspect('equal', adjustable='box')
 # Equal axis scales for a true view of the engine
-ax_s.legend()
+ax_s.legend(loc="upper left", bbox_to_anchor=(0, 0.95))
 plt.show()
