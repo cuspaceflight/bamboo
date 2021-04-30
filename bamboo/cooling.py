@@ -49,8 +49,10 @@ def black_body(T):
     return SIGMA*T**4
 
 def h_gas_1(D, M, T, rho, gamma, R, mu, k, Pr):
-    """Get the convective heat transfer coefficient on the gas side, non-Bartz equation.
-    Uses Eqn (8-22) on page 312 or RPE 7th edition (Reference [2])
+    """Get the convective heat transfer coefficient on the gas side. Uses Eqn (8-22) on page 312 or RPE 7th edition (Reference [2]). I believe this is just a form of the Dittius-Boelter equation.
+    
+    Note:
+        Seems to give much lower wall temperatures than the Bartz equation, and is likely less accurate. h_gas_2 and h_gas_3 are likely more accurate.
 
     Args:
         D (float): Flow diameter (m)
@@ -74,9 +76,6 @@ def h_gas_1(D, M, T, rho, gamma, R, mu, k, Pr):
 def h_gas_2(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0):
     """Bartz equation, 
     using Equation (8-23) from page 312 of RPE 7th edition (Reference [2]). 'am' refers to the gas being at the 'arithmetic mean' of the wall and freestream temperatures.
-
-    Note:
-        Seems to provide questionable results - may have been implemented incorrectly.
 
     Args:
         D (float): Gas flow diameter (m)
@@ -233,12 +232,13 @@ class Material:
         self.perf_therm = (1 - self.poisson) * self.k / (self.alpha * self.E)   #Performance coefficient for thermal stress, higher is better
 
     def __repr__(self):
-        return f"""bamboo.cooling.Material Object \nYoung's modulus = {self.E/1e9} GPa 
-0.2% Yield Stress = {self.sigma_y/1e6} MPa 
-Poisson's ratio = {self.poisson}
-alpha = {self.alpha} strain/K
-Thermal conductivity = {self.k} W/m/K
-(may also have a specific heat capacity (self.c) and density (self.rho))"""
+        return f"""bamboo.cooling.Material Object
+        Young's modulus = {self.E/1e9} GPa 
+        0.2% Yield Stress = {self.sigma_y/1e6} MPa 
+        Poisson's ratio = {self.poisson}
+        alpha = {self.alpha} strain/K
+        Thermal conductivity = {self.k} W/m/K
+        (may also have a specific heat capacity (self.c) and density (self.rho))"""
 
     def relStrength(self, T, ignoreLowTemp = False, ignoreHighTemp = False):
         """Uses polynomial coefficients to determine the fraction of yield stress
@@ -341,7 +341,6 @@ class TransportProperties:
                 return True
             else:
                 return False
-        
 
     def k(self, T, p):
         """Thermal conductivity
@@ -361,7 +360,11 @@ class TransportProperties:
             elif self.force_phase == 'g':
                 return self.thermo_object.kg
             else:
-                return self.thermo_object.k
+                #Manually check which phase we're in, and return the right conductivity (otherwise sometimes it seems to return odd results)
+                if self.thermo_object.phase == 'l':
+                    return self.thermo_object.kl
+                elif self.thermo_object.phase == 'g':
+                    return self.thermo_object.kg
             
         elif self.model == "CoolProp":
             return PropsSI("CONDUCTIVITY", "T", T, "P", p, self.coolprop_name)
@@ -400,6 +403,7 @@ class TransportProperties:
 
         elif self.model == "custom":
             return self.custom_mu
+
     def Pr(self, T, p):
         """Prandtl number
 
@@ -418,7 +422,11 @@ class TransportProperties:
             elif self.force_phase == 'g':
                 return self.thermo_object.Prg
             else:
-                return self.thermo_object.Pr
+                #Manually check which phase we're in, and return the right property
+                if self.thermo_object.phase == 'l':
+                    return self.thermo_object.Prl
+                elif self.thermo_object.phase == 'g':
+                    return self.thermo_object.Prg
 
         elif self.model == "CoolProp":
             return PropsSI("PRANDTL", "T", T, "P", p, self.coolprop_name)
@@ -445,7 +453,11 @@ class TransportProperties:
             elif self.force_phase == 'g':
                 return self.thermo_object.Cpg
             else:
-                return self.thermo_object.Cp
+                #Manually check which phase we're in, and return the right property
+                if self.thermo_object.phase == 'l':
+                    return self.thermo_object.Cpl
+                elif self.thermo_object.phase == 'g':
+                    return self.thermo_object.Cpg
         
         elif self.model == "CoolProp":
             return PropsSI("CPMASS", "T", T, "P", p, self.coolprop_name)
@@ -469,8 +481,12 @@ class TransportProperties:
             elif self.force_phase == 'g':
                 return self.thermo_object.rhog
             else:
-                return self.thermo_object.rho
-        
+                #Manually check which phase we're in, and return the right property
+                if self.thermo_object.phase == 'l':
+                    return self.thermo_object.rhol
+                elif self.thermo_object.phase == 'g':
+                    return self.thermo_object.rhog
+
         elif self.model == "CoolProp":
             return PropsSI("DMASS", "T", T, "P", p, self.coolprop_name)
 

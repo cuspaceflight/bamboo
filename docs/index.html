@@ -1072,7 +1072,7 @@ To see the plot, you will need to run matplotlib.pyplot.show().</p>
 
 <dl class="py method">
 <dt id="bamboo.main.Engine.add_geometry">
-<code class="sig-name descname"><span class="pre">add_geometry</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chamber_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chamber_area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inner_wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outer_wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">style</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.add_geometry" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">add_geometry</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chamber_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chamber_area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inner_wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">style</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.add_geometry" title="Permalink to this definition">¶</a></dt>
 <dd><p>Specify extra geometry parameters. Required for running cooling system analyses.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1082,21 +1082,22 @@ To see the plot, you will need to run matplotlib.pyplot.show().</p>
 <li><p><strong>chamber_area</strong> (<em>float</em>) – Cross sectional area of the combustion chamber (m^2)</p></li>
 <li><p><strong>inner_wall_thickness</strong> (<em>float</em><em> or </em><em>array</em>) – Thickness of the inner liner wall (m). Can be constant (float), or variable (array).</p></li>
 <li><p><strong>style</strong> (<em>str</em><em>, </em><em>optional</em>) – Geometry style to use. Currently the only option is ‘auto’. Defaults to “auto”.</p></li>
-<li><p><strong>outer_wall_thickness</strong> (<em>float</em><em> or </em><em>array</em>) – Thickness of the outer liner wall (m). Can be constant (float), or variable (array).</p></li>
 </ul>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><p><strong>outer_wall_thickness</strong> (<em>float</em><em> or </em><em>array</em>) – Thickness of the outer liner wall (m). Can be constant (float), or variable (array).</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt id="bamboo.main.Engine.add_cooling_jacket">
-<code class="sig-name descname"><span class="pre">add_cooling_jacket</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inner_wall</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outer_wall</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inlet_T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inlet_p0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coolant_transport</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot_coolant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[-</span> <span class="pre">1000,</span> <span class="pre">1000]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">configuration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'spiral'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.add_cooling_jacket" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">add_cooling_jacket</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inner_wall</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inlet_T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inlet_p0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coolant_transport</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot_coolant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[-</span> <span class="pre">1000,</span> <span class="pre">1000]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">configuration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'spiral'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.add_cooling_jacket" title="Permalink to this definition">¶</a></dt>
 <dd><p>Container for cooling jacket information - e.g. for regenerative cooling.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>inner_wall</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Inner wall material.</p></li>
-<li><p><strong>outer_wall</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Wall material for the outer liner.</p></li>
 <li><p><strong>inlet_T</strong> (<em>float</em>) – Inlet coolant temperature (K)</p></li>
 <li><p><strong>inlet_p0</strong> (<em>float</em>) – Inlet coolant stagnation pressure (Pa)</p></li>
 <li><p><strong>coolant_transport</strong> (<a class="reference internal" href="#bamboo.cooling.TransportProperties" title="bamboo.cooling.TransportProperties"><em>TransportProperties</em></a>) – Container for the coolant transport properties.</p></li>
@@ -1108,11 +1109,11 @@ To see the plot, you will need to run matplotlib.pyplot.show().</p>
 <dt class="field-even">Keyword Arguments</dt>
 <dd class="field-even"><ul class="simple">
 <li><p><strong>channel_shape</strong> (<em>str</em><em>, </em><em>optional</em>) – Used if configuration = ‘spiral’. Options include ‘rectangle’, ‘semi-circle’, and ‘custom’.</p></li>
-<li><p><strong>blockage_ratio</strong> (<em>str</em><em>, </em><em>optional</em>) – Can be used if configuration = “spiral”. This is the proportion (by area) of the channel cross section occupied by ribs.</p></li>
 <li><p><strong>channel_height</strong> (<em>float</em><em>, </em><em>optional</em>) – If using configuration = ‘vertical’ or channel_shape = ‘rectangle’, this is the height of the channels (m).</p></li>
 <li><p><strong>channel_width</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘rectangle’, this is the width of the channels (m). If using channel_shape = ‘semi-circle’, this is the diameter of the semi circle (m).</p></li>
 <li><p><strong>custom_effective_diameter</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘custom’, this is the effective diameter you want to use.</p></li>
 <li><p><strong>custom_flow_area</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘custom’, this is the flow you want to use.</p></li>
+<li><p><strong>outer_wall</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Wall material for the outer liner.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1340,21 +1341,21 @@ Uses the idea of thermal circuits and resistances - we have three resistors in s
 
 <dl class="py method">
 <dt id="bamboo.main.Engine.steady_heating_analysis">
-<code class="sig-name descname"><span class="pre">steady_heating_analysis</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_gas_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_coolant_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_json</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'heating_output.json'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.steady_heating_analysis" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">steady_heating_analysis</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_gas_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'3'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_coolant_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'2'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_json</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'heating_output.json'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.steady_heating_analysis" title="Permalink to this definition">¶</a></dt>
 <dd><p>Steady state heating analysis. Can be used for regenarative cooling, or combined regenerative and ablative cooling.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>number_of_points</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of discrete points to divide the engine into. Defaults to 1000.</p></li>
-<li><p><strong>h_gas_model</strong> (<em>str</em><em>, </em><em>optional</em>) – Equation to use for the gas side convective heat transfer coefficients. Options are ‘1’, ‘2’ and ‘3’. Defaults to “1”.</p></li>
-<li><p><strong>h_coolant_model</strong> (<em>str</em><em>, </em><em>optional</em>) – Equation to use for the coolant side convective heat transfer coefficients. Options are ‘1’, ‘2’ and ‘3’. Defaults to “1”.</p></li>
+<li><p><strong>h_gas_model</strong> (<em>str</em><em>, </em><em>optional</em>) – Equation to use for the gas side convective heat transfer coefficients. Options are ‘1’, ‘2’ and ‘3’. Defaults to “3”.</p></li>
+<li><p><strong>h_coolant_model</strong> (<em>str</em><em>, </em><em>optional</em>) – Equation to use for the coolant side convective heat transfer coefficients. Options are ‘1’, ‘2’ and ‘3’. Defaults to “2”.</p></li>
 <li><p><strong>to_json</strong> (<em>str</em><em> or </em><em>bool</em><em>, </em><em>optional</em>) – Directory to export a .JSON file to, containing simulation results. If False, no .JSON file is saved. Defaults to ‘heating_output.json’.</p></li>
 </ul>
 </dd>
 </dl>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>h_gas_model = ‘2’ seems to provide questionable results (if it works at all) - use it with caution. h_coolant_model = ‘2’ can raise errors if using the ‘force_phase’ setting with your coolant TransportProperties object. See the functions h_gas_1(), h_gas_2(), h_coolant_1(), etc.. in the documentation for details on each model.</p>
+<p>See the bamboo.cooling module for explanations of each h_gas and h_coolant option. Defaults are Bartz (using sigma correlation) for gas side, and Sieder-Tate for coolant side. These are believed to be the most accurate.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
@@ -1425,16 +1426,16 @@ temperature, presumably the temperature at which the engine was assembled.</p>
 </dd>
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p><dl class="simple">
-<dt>Results of the stress simulation. Contains the following dictionary keys (all are arrays):</dt><dd><p>For a steady state analysis:
-- “thermal_stress : Stress induced in the inner liner due to temperature difference, chamber to coolant side, for each x value (Pa).
-- “tadjusted_yield : Yield stress of the inner wall material, corrected for the chamber side temperature (worst case) (Pa).
-- “deltaT_wall” : Inner liner temperature difference, chamber side - coolant side (K).
-- “stress_inner_hoop_steady” : Hoop stress of inner liner due to coolant static pressure in jacket after ignition (Pa).
-- “stress_outer_hoop” : Hoop stress of outer liner due to coolant static pressure (same before and after ignition) (Pa).
-For a transient analysis:
-- “stress_inner_hoop_transient” : Hoop stress of inner liner due to coolant static pressure in jacket prior to ignition (0 chamber pressure) (Pa).
-- “stress_inner_IE” : Stress induced in inner liner as it is heated but constrained by cold outer liner (Pa).
-- “stress_outer_IE : Stress induced in outer liner by expanding inner liner (Pa).</p>
+<dt>Results of the stress simulation. Contains the following dictionary keys (all are arrays):</dt><dd><ul class="simple">
+<li><p>”thermal_stress : (steady only) Stress induced in the inner liner due to temperature difference, chamber to coolant side, for each x value (Pa).</p></li>
+<li><p>”tadjusted_yield : (steady only) Yield stress of the inner wall material, corrected for the chamber side temperature (worst case) (Pa).</p></li>
+<li><p>”deltaT_wall” : (steady only) Inner liner temperature difference, chamber side - coolant side (K).</p></li>
+<li><p>”stress_inner_hoop_steady” : (steady only) Hoop stress of inner liner due to coolant static pressure in jacket after ignition (Pa).</p></li>
+<li><p>”stress_outer_hoop” : (steady only) Hoop stress of outer liner due to coolant static pressure (same before and after ignition) (Pa).</p></li>
+<li><p>”stress_inner_hoop_transient” : (transient only) Hoop stress of inner liner due to coolant static pressure in jacket prior to ignition (0 chamber pressure) (Pa).</p></li>
+<li><p>”stress_inner_IE” : (transient only) Stress induced in inner liner as it is heated but constrained by cold outer liner (Pa).</p></li>
+<li><p>”stress_outer_IE : (transient only) Stress induced in outer liner by expanding inner liner (Pa).</p></li>
+</ul>
 </dd>
 </dl>
 </p>
@@ -1492,8 +1493,11 @@ For a transient analysis:
 <dl class="py function">
 <dt id="bamboo.cooling.h_gas_1">
 <code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">h_gas_1</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">D</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">R</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.h_gas_1" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the convective heat transfer coefficient on the gas side, non-Bartz equation.
-Uses Eqn (8-22) on page 312 or RPE 7th edition (Reference [2])</p>
+<dd><p>Get the convective heat transfer coefficient on the gas side. Uses Eqn (8-22) on page 312 or RPE 7th edition (Reference [2]). I believe this is just a form of the Dittius-Boelter equation.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Seems to give much lower wall temperatures than the Bartz equation, and is likely less accurate. h_gas_2 and h_gas_3 are likely more accurate.</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1522,10 +1526,6 @@ Uses Eqn (8-22) on page 312 or RPE 7th edition (Reference [2])</p>
 <code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">h_gas_2</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">D</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cp_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_am</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_am</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.h_gas_2" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bartz equation,
 using Equation (8-23) from page 312 of RPE 7th edition (Reference [2]). ‘am’ refers to the gas being at the ‘arithmetic mean’ of the wall and freestream temperatures.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Seems to provide questionable results - may have been implemented incorrectly.</p>
-</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1960,14 +1960,13 @@ custom_k (float): Thermal conductivity to use for model = ‘custom’ (W/m/K)</
 
 <dl class="py class">
 <dt id="bamboo.cooling.CoolingJacket">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">CoolingJacket</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">geometry</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inner_wall</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outer_wall</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inlet_T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inlet_p0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coolant_transport</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot_coolant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[-</span> <span class="pre">1000,</span> <span class="pre">1000]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">configuration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'spiral'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">has_ablative</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.CoolingJacket" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">CoolingJacket</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">geometry</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inner_wall</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inlet_T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inlet_p0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coolant_transport</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot_coolant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[-</span> <span class="pre">1000,</span> <span class="pre">1000]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">configuration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'spiral'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">has_ablative</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.CoolingJacket" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Container for cooling jacket information - e.g. for regenerative cooling.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>inner_wall</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Wall material on the inner side of the cooling jacket.</p></li>
-<li><p><strong>outer_wall</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Wall material for the outer liner.</p></li>
 <li><p><strong>inlet_T</strong> (<em>float</em>) – Inlet coolant temperature (K)</p></li>
 <li><p><strong>inlet_p0</strong> (<em>float</em>) – Inlet coolant stagnation pressure (Pa)</p></li>
 <li><p><strong>coolant_transport</strong> (<a class="reference internal" href="#bamboo.cooling.TransportProperties" title="bamboo.cooling.TransportProperties"><em>TransportProperties</em></a>) – Container for the coolant transport properties.</p></li>
@@ -1984,6 +1983,7 @@ custom_k (float): Thermal conductivity to use for model = ‘custom’ (W/m/K)</
 <li><p><strong>channel_width</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘rectangle’, this is the width of the channels (m). If using channel_shape = ‘semi-circle’, this is the diameter of the semi circle (m).</p></li>
 <li><p><strong>custom_effective_diameter</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘custom’, this is the effective diameter you want to use.</p></li>
 <li><p><strong>custom_flow_area</strong> (<em>float</em><em>, </em><em>optional</em>) – If using channel_shape = ‘custom’, this is the flow you want to use.</p></li>
+<li><p><strong>outer_wall</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Wall material for the outer liner.</p></li>
 </ul>
 </dd>
 </dl>

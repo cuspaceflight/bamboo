@@ -1417,17 +1417,17 @@ class Engine:
 
         return q_dot, R_gas, R_ablative, R_wall, R_coolant,
 
-    def steady_heating_analysis(self, number_of_points=1000, h_gas_model = "1", h_coolant_model = "1", to_json = "heating_output.json"):
+    def steady_heating_analysis(self, number_of_points=1000, h_gas_model = "3", h_coolant_model = "2", to_json = "heating_output.json"):
         """Steady state heating analysis. Can be used for regenarative cooling, or combined regenerative and ablative cooling.
 
         Args:
             number_of_points (int, optional): Number of discrete points to divide the engine into. Defaults to 1000.
-            h_gas_model (str, optional): Equation to use for the gas side convective heat transfer coefficients. Options are '1', '2' and '3'. Defaults to "1".
-            h_coolant_model (str, optional): Equation to use for the coolant side convective heat transfer coefficients. Options are '1', '2' and '3'. Defaults to "1".
+            h_gas_model (str, optional): Equation to use for the gas side convective heat transfer coefficients. Options are '1', '2' and '3'. Defaults to "3".
+            h_coolant_model (str, optional): Equation to use for the coolant side convective heat transfer coefficients. Options are '1', '2' and '3'. Defaults to "2".
             to_json (str or bool, optional): Directory to export a .JSON file to, containing simulation results. If False, no .JSON file is saved. Defaults to 'heating_output.json'.
 
         Note:
-            h_gas_model = '2' seems to provide questionable results (if it works at all) - use it with caution. h_coolant_model = '2' can raise errors if using the 'force_phase' setting with your coolant TransportProperties object. See the functions h_gas_1(), h_gas_2(), h_coolant_1(), etc.. in the documentation for details on each model.
+            See the bamboo.cooling module for explanations of each h_gas and h_coolant option. Defaults are Bartz (using sigma correlation) for gas side, and Sieder-Tate for coolant side. These are believed to be the most accurate.
 
         Returns:
             dict: Results of the simulation. Contains the following dictionary keys: 
@@ -1526,18 +1526,34 @@ class Engine:
                                             Pr_gas[i])
 
                 elif h_gas_model == "2":
-                    #We need the previous wall temperature to use h_gas_3. If we're on the first step, then just use h_gas_1()
+                    #We need the previous wall temperature to use h_gas_2. If we're on the first step, assume wall temperature = freestream temperature.
                     if i == 0:
-                        h_gas[i] = cool.h_gas_1(2*self.y(x),
-                                                self.M(x),
-                                                T_gas[i],
-                                                self.rho(x),
-                                                self.perfect_gas.gamma,
-                                                self.perfect_gas.R,
-                                                mu_gas[i],
-                                                k_gas[i],
-                                                Pr_gas[i])
-                    #Use h_gas_2() for all subsequent steps                            
+                        gamma = self.perfect_gas.gamma
+                        R = self.perfect_gas.R
+                        D = 2*self.y(x)            #Flow diameter
+
+                        #Freestream properties
+                        p_inf = self.p(x)
+                        T_inf = T_gas[i]
+                        rho_inf = self.rho(x)
+                        M_inf = self.M(x)
+                        v_inf = M_inf * (gamma*R*T_inf)**0.5    #Gas velocity
+                        mu_inf = mu_gas[i]
+                        Pr_inf = Pr_gas[i]
+                        cp_inf = self.perfect_gas.cp
+
+                        ##Properties at arithmetic mean of T_wall and T_inf. Assume wall temperature = freestream temperature for the first step.
+                        T_am = T_inf
+                        mu_am = self.exhaust_transport.mu(T = T_am, p = p_inf)
+                        rho_am = p_inf/(R*T_am)                                 #p = rho R T - pressure is roughly uniform across the boundary layer so p_inf ~= p_wall
+
+                        #Stagnation properties
+                        p0 = self.chamber_conditions.p0
+                        T0 = self.chamber_conditions.T0
+                        mu0 = self.exhaust_transport.mu(T =  T0, p = p0)
+
+                        h_gas[i] = cool.h_gas_2(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0)
+                         
                     else:
                         gamma = self.perfect_gas.gamma
                         R = self.perfect_gas.R
@@ -1566,16 +1582,18 @@ class Engine:
                         h_gas[i] = cool.h_gas_2(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0)
 
                 elif h_gas_model == "3":
-                    #We need the previous wall temperature to use h_gas_3. If we're on the first step, then just use h_gas_1()
+                    #We need the previous wall temperature to use h_gas_3. If we're on the first step, assume wall temperature = freestream temperature.
                     if i == 0:
-                        h_gas[i] = cool.h_gas_1(2*self.y(x),
-                                                self.M(x),
-                                                T_gas[i],
-                                                self.rho(x),
-                                                self.perfect_gas.gamma,
-                                                self.perfect_gas.R,
-                                                mu_gas[i],
-                                                k_gas[i],
+                        h_gas[i] = cool.h_gas_3(self.c_star,
+                                                self.nozzle.At, 
+                                                self.A(x), 
+                                                self.chamber_conditions.p0, 
+                                                self.chamber_conditions.T0, 
+                                                self.M(x), 
+                                                T_gas[i], 
+                                                mu_gas[i], 
+                                                self.perfect_gas.cp, 
+                                                self.perfect_gas.gamma, 
                                                 Pr_gas[i])
 
                     #Use h_gas_3() for all subsequent steps
@@ -1636,22 +1654,33 @@ class Engine:
                                                     rho_coolant[i])
 
                 elif h_coolant_model == "2":
-                    #Use '3' for the first step (model '2' relies on the wall temperature, which hasn't yet been calculated for the first step).
+                    #This model requires the cooling channel wall temperature, which hasn't been calculated in the first step. 
+                    #Assume the wall temperature = coolant temperature for the first step.
                     if i == 0:
-                        h_coolant[i] = cool.h_coolant_3(rho_coolant[i], 
-                                                        v_coolant[i], 
-                                                        self.cooling_jacket.D(x=x, y=self.y(x=x, up_to = "wall in")), 
-                                                        mu_coolant[i], 
-                                                        Pr_coolant[i], 
-                                                        k_coolant[i])
-
-                    #Use model '2' for every other step.
-                    else:
                         h_coolant[i] = cool.h_coolant_2(rho_coolant[i], 
                                                         v_coolant[i], 
                                                         self.cooling_jacket.D(x=x, y=self.y(x=x, up_to = "wall in")), 
                                                         mu_coolant[i], 
-                                                        self.cooling_jacket.coolant_transport.mu(T = T_wall_outer[i-1], p = p_coolant[i]), 
+                                                        self.cooling_jacket.coolant_transport.mu(T = T_coolant[i], p = p_coolant[i]), 
+                                                        Pr_coolant[i], 
+                                                        k_coolant[i])
+
+                    else:
+                        #If the wall temperature is above the boiling temperature of the fluid, cap the wall temperature used in Sieder-Tate to the boiling temperature of the liquid.
+                        #Currently doesn't do anything for CoolProp models.
+                        if self.cooling_jacket.coolant_transport.model == "thermo":
+                            self.cooling_jacket.coolant_transport.thermo_object.calculate(P = p_coolant[i]) 
+
+                            if self.cooling_jacket.coolant_transport.thermo_object.Tb < T_wall_outer[i-1]:
+                                liquid_wall_temp = self.cooling_jacket.coolant_transport.thermo_object.Tb - 0.001 #Make it a bit smaller just to avoid thermo using the gas phase.
+                            else:
+                                liquid_wall_temp = T_wall_outer[i-1]
+
+                        h_coolant[i] = cool.h_coolant_2(rho_coolant[i], 
+                                                        v_coolant[i], 
+                                                        self.cooling_jacket.D(x=x, y=self.y(x=x, up_to = "wall in")), 
+                                                        mu_coolant[i], 
+                                                        self.cooling_jacket.coolant_transport.mu(T = liquid_wall_temp, p = p_coolant[i]), 
                                                         Pr_coolant[i], 
                                                         k_coolant[i])
 
@@ -1707,7 +1736,7 @@ class Engine:
 
         #Not sure if the Sieder-Tate equation is valid with your coolant above the boiling temperature at the wall.
         if h_coolant_model == '2' and self.cooling_jacket.coolant_transport.check_liquid(T = np.amax(T_wall_outer[i]), p = p_coolant[-1]) == False:
-            print("Coolant temperature at the wall was above its boiling point when using the Sieder-Tate equation (h_coolant_model = '2') - results should be used with caution.")
+            print("Wall tempreature was above coolant boiling point when using the Sieder-Tate equation (h_coolant_model = '2') - coolant boiling temperature was used instead of wall temperature.")
 
         #Dictionary containing results
         output_dict = {"x" : list(discretised_x),
