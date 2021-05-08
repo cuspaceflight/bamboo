@@ -24,7 +24,6 @@
       p0
       rao_theta_e
       rao_theta_n
-      show_conical_shape
    
    
 

@@ -14,12 +14,12 @@
    .. autosummary::
    
       black_body
-      h_coolant_1
-      h_coolant_2
-      h_coolant_3
-      h_gas_1
-      h_gas_2
-      h_gas_3
+      h_coolant_dittus_boelter
+      h_coolant_rpe
+      h_coolant_sieder_tate
+      h_gas_bartz
+      h_gas_bartz_sigma
+      h_gas_rpe
    
    
 
@@ -32,6 +32,7 @@
       Ablative
       CoolingJacket
       Material
+      ThermalCircuit
       TransportProperties
    
    
