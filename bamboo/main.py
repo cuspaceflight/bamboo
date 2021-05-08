@@ -578,9 +578,9 @@ class Engine:
         self.has_exhaust_transport = False
 
         #Check if the nozzle is choked
-        max_throat_area = get_throat_area(perfect_gas, chamber_conditions)
-        if self.nozzle.At > max_throat_area:
-            raise ValueError(f"The nozzle throat is not choked. You need to reduce the throat area to at least {max_throat_area} m^2")
+        required_throat_area = get_throat_area(perfect_gas, chamber_conditions)
+        if abs(self.nozzle.At - required_throat_area) > 1e-5:
+            raise ValueError(f"The nozzle throat area is incompatible with the specified chamber conditions. The required throat area is {required_throat_area} m^2")
 
     #Engine geometry functions
     def y(self, x, up_to = 'contour'):
@@ -734,10 +734,9 @@ class Engine:
                 return self.chamber_conditions.mdot*(self.perfect_gas.cp*self.chamber_conditions.T0)**0.5 / (self.A(x)*self.chamber_conditions.p0) - m_bar(Mach, self.perfect_gas.gamma)
             
             if x > 0:
-                Mach = scipy.optimize.root_scalar(func_to_solve, bracket = [1,300], x0 = 1).root
+                Mach = scipy.optimize.root_scalar(func_to_solve, bracket = [1, 500], x0 = 1).root
             else:
-                Mach = scipy.optimize.root_scalar(func_to_solve, bracket = [0,1], x0 = 0.5).root
-
+                Mach = scipy.optimize.root_scalar(func_to_solve, bracket = [0.0,1], x0 = 0.5).root
             return Mach
 
     def T(self, x):
