@@ -344,7 +344,7 @@ class Nozzle:
     Args:
         At (float): Throat area (m^2).
         Ae (float): Exit plane area (m^2)
-        type (str, optional): Desired shape, can be "rao" or "conical". Conical is not currently implemented. Defaults to "rao".
+        type (str, optional): Desired shape, can be "rao" or "cone". Defaults to "rao".
         length_fraction (float): Length fraction if a Rao nozzle is used. Defaults to 0.8.
         cone_angle (float): Cone angle if a cone nozzle is used (deg). Defaults to 15.
     
@@ -396,6 +396,8 @@ class Nozzle:
     def __repr__(self):
         if self.type == "rao":
             return f"Rao type nozzle (length fraction = {self.length_fraction}). \nLength = {self.length} m \nThroat area = {self.At} m^2 \nExit area = {self.Ae} m^2 \nArea ratio = {self.Ae/self.At} \nRao inflection angle = {self.theta_n*180/np.pi} deg \nRao exit angle = {self.theta_e*180/np.pi} deg"
+        elif self.type == "cone":
+            return f"Cone type nozzle (Length = {self.length} m \nThroat area = {self.At} m^2 \nExit area = {self.Ae} m^2 \nArea ratio = {self.Ae/self.At} \n"
 
     def y(self, x):
         """Returns the distance between the nozzle contour and the centreline, given the axial distance 'x' downstream from the throat. Based on Reference [1] page 5.
@@ -1629,9 +1631,9 @@ class Engine:
                     A_gas = 2 * np.pi * self.y(x, up_to = 'contour')    
                     A_coolant = 2 * np.pi * r_wall_out                
 
-                    R_gas[i] = 1/(h_gas*A_gas)
+                    R_gas[i] = 1/(h_gas[i]*A_gas)
                     R_wall[i] = np.log(r_wall_out/r_wall_in)/(2*np.pi*self.cooling_jacket.inner_wall.k)
-                    R_coolant[i] = 1/(h_coolant*A_coolant)
+                    R_coolant[i] = 1/(h_coolant[i]*A_coolant)
 
                     #Thermal circuit object
                     thermal_circuit = cool.ThermalCircuit(T_gas[i], T_coolant[i], [R_gas[i], R_wall[i], R_coolant[i]])
