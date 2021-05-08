@@ -1322,7 +1322,7 @@ class Engine:
             See the bamboo.cooling module for details of each h_gas and h_coolant option. Defaults are Bartz (using sigma correlation) for gas side, and Sieder-Tate for coolant side. These are believed to be the most accurate.
 
         Note:
-            Questionable decisions (especially when using mixtures) were made when implementing the Sieder-Tate method with wall temperature > coolant boiling temperature. Ideally these should be looked into in more detail.
+            Sometimes the wall temperature can be above the boiling point of your coolant, in which case you may get nucleate boiling or other effects, and the Sieder-Tate model may become questionable.
 
         Returns:
             dict: Results of the simulation. Contains the following dictionary keys: 
@@ -1349,12 +1349,9 @@ class Engine:
         except AttributeError:
             raise AttributeError("Cannot run heating analysis without an exhaust gas transport properties model. You need to add one with the 'Engine.add_exhaust_transport()' function.")
         
-        if h_gas_model == "2":
-            print("WARNING: h_gas_model = '2' seems to provide questionable results (if it works at all) - use it with caution. ")
 
         '''Initialise variables and arrays'''
-        #To keep track of any coolant boiling, and if the coolant pressure drops below chamber pressure.
-        boil_off_position = None
+        #Keep track of if the coolant pressure drops below chamber pressure.
         too_low_pressure = False
 
         #Discretisation of the nozzle
@@ -1536,12 +1533,13 @@ class Engine:
                                                                                 x = x, 
                                                                                 y = self.y(x, up_to = "wall out")) 
 
+                    if p_coolant[i] <= 0 or p0_coolant[i] < 0:
+                        raise ValueError(f"Coolant static pressure became negative at x = {x}. Try raising the coolant inlet pressure or reducing coolant velocities.")
+
                     if too_low_pressure == False and p0_coolant[i] < self.chamber_conditions.p0:
                         too_low_pressure = True
                         print(f"Coolant stagnation pressure dropped below chamber pressure ({self.chamber_conditions.p0/1e5} bar) at x = {x}, the coolant would not flow in real life.")
                     
-                    if p0_coolant[i] < 0:
-                        raise ValueError("Coolant stagnation pressure dropped below 0 bar - your coolant velocities may be too high.")
 
                 #Update coolant heat capacity, transport properties and velocity
                 Pr_coolant[i] = self.cooling_jacket.coolant_transport.Pr(T = T_coolant[i], p = p_coolant[i])
@@ -1574,29 +1572,11 @@ class Engine:
                                                                     k_coolant[i])
 
                     else:
-                        #Get inside wall temperature
-                        liquid_wall_temp = T_wall_outer[i-1]
-
-                        #If the wall temperature is above the boiling temperature of the fluid, cap the wall temperature used in Sieder-Tate to the boiling temperature of the liquid.
-                        #Currently doesn't do anything for CoolProp models.
-                        if self.cooling_jacket.coolant_transport.model == "thermo":
-                            self.cooling_jacket.coolant_transport.thermo_object.calculate(P = p_coolant[i]) 
-
-                            #If using a mixture, take the lowest boiling point and cap the temperature at that.
-                            if type(self.cooling_jacket.coolant_transport.thermo_object) is thermo.mixture.Mixture:
-                                if min(self.cooling_jacket.coolant_transport.thermo_object.Tbs) < T_wall_outer[i-1]:
-                                    liquid_wall_temp = min(self.cooling_jacket.coolant_transport.thermo_object.Tbs) - 0.001 #Make it a bit smaller just to avoid thermo using the gas phase.
-
-                            #If using a pure substance
-                            elif self.cooling_jacket.coolant_transport.thermo_object.Tb < T_wall_outer[i-1]:
-                                liquid_wall_temp = self.cooling_jacket.coolant_transport.thermo_object.Tb - 0.001 #Make it a bit smaller just to avoid thermo using the gas phase.
-
-
                         h_coolant[i] = cool.h_coolant_sieder_tate(rho_coolant[i], 
                                                         v_coolant[i], 
                                                         self.cooling_jacket.D(x=x, y=self.y(x=x, up_to = "wall in")), 
                                                         mu_coolant[i], 
-                                                        self.cooling_jacket.coolant_transport.mu(T = liquid_wall_temp, p = p_coolant[i]), 
+                                                        self.cooling_jacket.coolant_transport.mu(T = T_wall_outer[i-1], p = p_coolant[i]), 
                                                         Pr_coolant[i], 
                                                         k_coolant[i])
 
@@ -1610,11 +1590,6 @@ class Engine:
 
                 else:
                     raise AttributeError(f"Could not find the h_coolant_model '{h_coolant_model}'. Try 'rpe', 'sieder-tate' or 'dittus-boelter'.")
-                
-                #Check for coolant boil off 
-                if boil_off_position == None and self.cooling_jacket.coolant_transport.check_liquid(T = T_coolant[i], p = p_coolant[i]) == False:
-                    print(f"WARNING: Coolant boiled off at x = {x} m")
-                    boil_off_position = x
 
                 #Thermal circuit analysis
                 #Combined ablative and regen:
@@ -1669,10 +1644,6 @@ class Engine:
                 T_wall_inner[i] = T_gas[i]
                 T_wall_outer[i] = T_gas[i]
 
-        #Not sure if the Sieder-Tate equation is valid with your coolant above the boiling temperature at the wall.
-        if h_coolant_model == '2' and self.cooling_jacket.coolant_transport.check_liquid(T = np.amax(T_wall_outer[i]), p = p_coolant[-1]) == False:
-            print("Wall tempreature was above coolant boiling point when using the Sieder-Tate equation (h_coolant_model = '2') - coolant boiling temperature was used instead of wall temperature.")
-
         #Dictionary containing results
         output_dict = {"x" : list(discretised_x),
                 "q_dot" : list(q_dot),
@@ -1697,8 +1668,7 @@ class Engine:
                 "k_coolant" : list(k_coolant),
                 "cp_coolant" : list(cp_coolant),
                 "rho_coolant" : list(rho_coolant),
-                "v_coolant" : list(v_coolant),
-                "boil_off_position" : boil_off_position}
+                "v_coolant" : list(v_coolant)}
 
         #Export a .JSON file if required
         if to_json != False:

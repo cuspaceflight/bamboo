@@ -23,9 +23,6 @@ def plot_temperatures(data_dict, **kwargs):
     ax_T.plot(data_dict["x"], np.array(data_dict["T_wall_outer"])- 273.15, label = "Wall (outer)")
     ax_T.plot(data_dict["x"], np.array(data_dict["T_coolant"]) - 273.15, label = "Coolant")
 
-    if data_dict["boil_off_position"] != None:
-        ax_T.axvline(data_dict["boil_off_position"], color = 'red', linestyle = '--', label = "Coolant boil-off")
-
     if "show_gas" in kwargs:
         if kwargs["show_gas"] == True:
             ax_T.plot(data_dict["x"], np.array(data_dict["T_gas"]) - 273.15, label = "Exhaust gas")
@@ -54,10 +51,7 @@ def plot_h(data_dict, **kwargs):
     """
     h_figs, h_axs = plt.subplots()
     h_axs.plot(data_dict["x"], data_dict["h_gas"], label = "Gas")
-    h_axs.plot(data_dict["x"], data_dict["h_coolant"], label = "Coolant", )
-
-    if data_dict["boil_off_position"] != None:
-        h_axs.axvline(data_dict["boil_off_position"], color = 'red', linestyle = '--', label = "Coolant boil-off")
+    h_axs.plot(data_dict["x"], data_dict["h_coolant"], label = "Coolant")
 
     if "qdot" in kwargs:
         if kwargs["qdot"] == True:
@@ -83,29 +77,30 @@ def plot_qdot(data_dict, **kwargs):
     q_figs, q_axs = plt.subplots()
     q_axs.plot(data_dict["x"], data_dict["q_dot"], label = "Heat transfer rate (W/m)", color = 'red')
 
-    if data_dict["boil_off_position"] != None:
-        q_axs.axvline(data_dict["boil_off_position"], color = 'red', linestyle = '--', label = "Coolant boil-off")
-
     q_axs.legend()
     q_axs.grid()
     q_axs.set_xlabel("Position (m)")
     q_axs.set_ylabel("Heat transfer rate (W/m)")
 
-def plot_jacket_pressure(data_dict, **kwargs):
+def plot_jacket_pressure(data_dict, plot_static = True, plot_stagnation = True, **kwargs):
     """Given the output dictionary from a engine cooling analysis, plot the cooling jacket pressure against x position. 
     Note you will have to run matplotlib.pyplot.show() to see the plot.
 
     Args:
         data_dict (dict): Dictionary contaning the cooling analysis results.
+        plot_static (bool): Whether or not to plot the static pressure.
+        plot_stagnation (bool): Whether or not to plot the stagnation pressure.
 
     """
 
     p_figs, p_axs = plt.subplots()
-    p_axs.plot(data_dict["x"], np.array(data_dict["p_coolant"])/1e5, label = "Coolant static pressure (bar)")
 
-    if data_dict["boil_off_position"] != None:
-        p_axs.axvline(data_dict["boil_off_position"], color = 'red', linestyle = '--', label = "Coolant boil-off")
+    if plot_stagnation == True:
+        p_axs.plot(data_dict["x"], np.array(data_dict["p0_coolant"])/1e5, label = "Coolant stagnation pressure (bar)")
 
+    if plot_static == True:
+        p_axs.plot(data_dict["x"], np.array(data_dict["p_coolant"])/1e5, label = "Coolant static pressure (bar)")
+        
     p_axs.legend()
     p_axs.grid()
     p_axs.set_xlabel("Position (m)")
@@ -198,6 +193,25 @@ def plot_coolant_properties(data_dict, **kwargs):
             axs[i, j].set_xlabel("Position (m)")
 
     fig.tight_layout()
+
+def plot_coolant_velocities(data_dict, **kwargs):
+    """Given the output dictionary from a engine cooling analysis, plot the cooling jacket velocity against x position. 
+    Note you will have to run matplotlib.pyplot.show() to see the plot.
+
+    Args:
+        data_dict (dict): Dictionary contaning the cooling analysis results.
+
+    """
+
+    fig, axs = plt.subplots()
+
+    axs.plot(data_dict["x"], np.array(data_dict["v_coolant"]), label = "Coolant velocity (m/s)")
+        
+    axs.legend()
+    axs.grid()
+    axs.set_xlabel("Position (m)")
+    axs.set_ylabel("Coolant velocity (m/s)")
+
 
 def animate_transient_temperatures(data_dict, speed = 1, **kwargs): 
     """Animates transient heating analysis data.

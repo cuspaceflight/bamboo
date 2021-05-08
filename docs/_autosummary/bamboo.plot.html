@@ -38,6 +38,7 @@
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="bamboo.materials" href="bamboo.materials.html" />
     <link rel="prev" title="bamboo.cooling" href="bamboo.cooling.html" /> 
 </head>
 
@@ -87,6 +88,7 @@
 <li class="toctree-l1"><a class="reference internal" href="bamboo.main.html">bamboo.main</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bamboo.cooling.html">bamboo.cooling</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">bamboo.plot</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bamboo.materials.html">bamboo.materials</a></li>
 </ul>
 
             
@@ -170,22 +172,25 @@
 <tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_coolant_properties" title="bamboo.plot.plot_coolant_properties"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_coolant_properties</span></code></a>(data_dict, **kwargs)</p></td>
 <td><p>Given the output dictionary from a engine cooling analysis, plot the coolant transport properties</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_exhaust_properties" title="bamboo.plot.plot_exhaust_properties"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_exhaust_properties</span></code></a>(data_dict, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_coolant_velocities" title="bamboo.plot.plot_coolant_velocities"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_coolant_velocities</span></code></a>(data_dict, **kwargs)</p></td>
+<td><p>Given the output dictionary from a engine cooling analysis, plot the cooling jacket velocity against x position.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_exhaust_properties" title="bamboo.plot.plot_exhaust_properties"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_exhaust_properties</span></code></a>(data_dict, **kwargs)</p></td>
 <td><p>Given the output dictionary from a engine cooling analysis, plot the exhaust gas transport properties</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_h" title="bamboo.plot.plot_h"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_h</span></code></a>(data_dict, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_h" title="bamboo.plot.plot_h"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_h</span></code></a>(data_dict, **kwargs)</p></td>
 <td><p>Given the output dictionary from a engine cooling analysis, plot the convective heat transfer coefficients against position.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_jacket_pressure" title="bamboo.plot.plot_jacket_pressure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_jacket_pressure</span></code></a>(data_dict, **kwargs)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_jacket_pressure" title="bamboo.plot.plot_jacket_pressure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_jacket_pressure</span></code></a>(data_dict[, …])</p></td>
 <td><p>Given the output dictionary from a engine cooling analysis, plot the cooling jacket pressure against x position.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_qdot" title="bamboo.plot.plot_qdot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_qdot</span></code></a>(data_dict, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_qdot" title="bamboo.plot.plot_qdot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_qdot</span></code></a>(data_dict, **kwargs)</p></td>
 <td><p>Given the output dictionary from a engine cooling analysis, plot the heat transfer rate against position.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_resistances" title="bamboo.plot.plot_resistances"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_resistances</span></code></a>(data_dict, **kwargs)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_resistances" title="bamboo.plot.plot_resistances"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_resistances</span></code></a>(data_dict, **kwargs)</p></td>
 <td><p>Given the output dictionary from a engine cooling analysis, plot the thermal resistances of all the components.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_temperatures" title="bamboo.plot.plot_temperatures"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_temperatures</span></code></a>(data_dict, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_temperatures" title="bamboo.plot.plot_temperatures"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_temperatures</span></code></a>(data_dict, **kwargs)</p></td>
 <td><p>Given the output dictionary from an engine cooling analysis, plot the temperatures against position.</p></td>
 </tr>
 </tbody>
@@ -198,6 +203,7 @@
           </div>
           <footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="bamboo.materials.html" class="btn btn-neutral float-right" title="bamboo.materials" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
         <a href="bamboo.cooling.html" class="btn btn-neutral float-left" title="bamboo.cooling" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 

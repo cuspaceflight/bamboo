@@ -87,6 +87,7 @@
 <li class="toctree-l1"><a class="reference internal" href="_autosummary/bamboo.main.html">bamboo.main</a></li>
 <li class="toctree-l1"><a class="reference internal" href="_autosummary/bamboo.cooling.html">bamboo.cooling</a></li>
 <li class="toctree-l1"><a class="reference internal" href="_autosummary/bamboo.plot.html">bamboo.plot</a></li>
+<li class="toctree-l1"><a class="reference internal" href="_autosummary/bamboo.materials.html">bamboo.materials</a></li>
 </ul>
 
             
@@ -172,6 +173,9 @@ Use the ‘home’ buttons (with the small image of a house) to navigate back to
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#module-bamboo.plot" title="bamboo.plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bamboo.plot</span></code></a></p></td>
 <td><p>Module that provides plotting tools, to streamline the creation of plots.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#module-bamboo.materials" title="bamboo.materials"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bamboo.materials</span></code></a></p></td>
+<td><p>Pre-defined materials using the bamboo.cooling.Materials class</p></td>
 </tr>
 </tbody>
 </table>
@@ -1093,7 +1097,7 @@ To see the plot, you will need to run matplotlib.pyplot.show().</p>
 <dt class="field-even">Keyword Arguments</dt>
 <dd class="field-even"><ul class="simple">
 <li><p><strong>blockage_ratio</strong> (<em>float</em>) – Only relevant if configuration = ‘vertical’. This is the proportion (by area) of the channel cross section occupied by ribs.</p></li>
-<li><p><strong>number_of_ribs</strong> (<em>int</em>) – Only relevant if configuration = ‘vertical’ and ‘blockage_ratio’ !=0. This is the number of ribs present in the cooling channel.</p></li>
+<li><p><strong>number_of_ribs</strong> (<em>int</em>) – Only relevant if configuration = ‘vertical’ and ‘blockage_ratio’ != 0. This is the number of ribs present in the cooling channel.</p></li>
 <li><p><strong>channel_height</strong> (<em>float</em>) – This is the height of the channels, in the radial direction (m).</p></li>
 <li><p><strong>channel_width</strong> (<em>float</em>) – Only relevant if configuration = ‘spiral’. This is the width of the cooling channels (m).</p></li>
 <li><p><strong>outer_wall</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Wall material for the outer liner.</p></li>
@@ -1286,7 +1290,7 @@ number_of_points (int): Number of discrete liner positions</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Questionable decisions (especially when using mixtures) were made when implementing the Sieder-Tate method with wall temperature &gt; coolant boiling temperature. Ideally these should be looked into in more detail.</p>
+<p>Sometimes the wall temperature can be above the boiling point of your coolant, in which case you may get nucleate boiling or other effects, and the Sieder-Tate model may become questionable.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
@@ -1742,94 +1746,26 @@ At T = T_start, yield strength is sigma_y.</p>
 
 <dl class="py class">
 <dt id="bamboo.cooling.TransportProperties">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">TransportProperties</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'thermo'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_phase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">TransportProperties</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Container for transport properties of a fluid.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Sometimes ‘thermo’ uses a questionable choice of phase when calculating transport properties for mixtures (and sometimes pure chemicals),
-If you are getting questionable data, it may be useful to try out the ‘force_phase’ argument.</p>
-</div>
+<p>Container for specifying your transport properties. If using type = “constants”, submit a float for each argument.
+If using type = “functions”, the function arguments must be in the form func(T, p) where T is the temperature in K and p is pressure in Pa.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<em>str</em><em>, </em><em>optional</em>) – The module to use for modelling. Options include ‘thermo’ and ‘CoolProp’ and ‘custom’.</p></li>
-<li><p><strong>force_phase</strong> (<em>str</em><em>, </em><em>optional</em>) – ‘l’ for liquid or ‘g’ for gas. Forces thermo to use transport properties in the given phase. Does not affect other models. Defaults to None.</p></li>
+<li><p><strong>type</strong> (<em>str</em>) – “constants” or “functions”</p></li>
+<li><p><strong>Pr</strong> (<em>float</em><em> or </em><em>function</em>) – Prandtl number.</p></li>
+<li><p><strong>mu</strong> (<em>float</em><em> or </em><em>function</em>) – Absolute viscosity (Pa s).</p></li>
+<li><p><strong>k</strong> (<em>float</em><em> or </em><em>function</em>) – Thermal conductivity (W/m/K).</p></li>
+<li><p><strong>cp</strong> (<em>float</em><em> or </em><em>function</em><em>, </em><em>optional</em>) – Isobaric specific heat capacity (J/kg/K) - only required for coolants.</p></li>
+<li><p><strong>rho</strong> (<em>float</em><em> or </em><em>function</em><em>, </em><em>optional</em>) – Density (kg/m^3) - only required for coolants.</p></li>
 </ul>
 </dd>
 </dl>
-<dl class="simple">
-<dt>Keywords Args:</dt><dd><p>thermo_object (thermo.chemical.Chemical or thermo.mixture.Mixture): An object from the ‘thermo’ Python module.
-coolprop_name (str): Name of the chemcial or mixture for the CoolProp module. See <a class="reference external" href="http://www.coolprop.org/">http://www.coolprop.org/</a> for a list of available fluids.
-custom_Pr (float): Prandtl number to use for model = ‘custom’
-custom_mu (float): Absolute viscosity to use for model = ‘custom’ (Pa s)
-custom_k (float): Thermal conductivity to use for model = ‘custom’ (W/m/K)</p>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="bamboo.cooling.TransportProperties.check_liquid">
-<code class="sig-name descname"><span class="pre">check_liquid</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties.check_liquid" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns True if the fluid is a liquid at the given temperature and pressure. Used to check for coolant boil-off.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>T</strong> (<em>float</em>) – Temperature (K)</p></li>
-<li><p><strong>p</strong> (<em>float</em>) – Pressure (Pa)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>True if the fluid is liquid, False if it’s any other phase</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>bool</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="bamboo.cooling.TransportProperties.k">
-<code class="sig-name descname"><span class="pre">k</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties.k" title="Permalink to this definition">¶</a></dt>
-<dd><p>Thermal conductivity</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>T</strong> (<em>float</em>) – Temperature (K)</p></li>
-<li><p><strong>p</strong> (<em>float</em>) – Pressure (Pa)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Thermal conductivity</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="bamboo.cooling.TransportProperties.mu">
-<code class="sig-name descname"><span class="pre">mu</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties.mu" title="Permalink to this definition">¶</a></dt>
-<dd><p>Absolute viscosity</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>T</strong> (<em>float</em>) – Temperature (K)</p></li>
-<li><p><strong>p</strong> (<em>float</em>) – Pressure (Pa)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Absolute viscosity</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="py method">
 <dt id="bamboo.cooling.TransportProperties.Pr">
 <code class="sig-name descname"><span class="pre">Pr</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties.Pr" title="Permalink to this definition">¶</a></dt>
-<dd><p>Prandtl number</p>
+<dd><p>Prandtl number.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1847,9 +1783,9 @@ custom_k (float): Thermal conductivity to use for model = ‘custom’ (W/m/K)</
 </dd></dl>
 
 <dl class="py method">
-<dt id="bamboo.cooling.TransportProperties.cp">
-<code class="sig-name descname"><span class="pre">cp</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties.cp" title="Permalink to this definition">¶</a></dt>
-<dd><p>Specific heat capacity at constant pressure (J/kg/K)</p>
+<dt id="bamboo.cooling.TransportProperties.mu">
+<code class="sig-name descname"><span class="pre">mu</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties.mu" title="Permalink to this definition">¶</a></dt>
+<dd><p>Absolute viscosity (Pa s)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1858,7 +1794,47 @@ custom_k (float): Thermal conductivity to use for model = ‘custom’ (W/m/K)</
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Specific heat capacity at constant pressure (J/kg/K)</p>
+<dd class="field-even"><p>Absolute viscosity (Pa s)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.cooling.TransportProperties.k">
+<code class="sig-name descname"><span class="pre">k</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties.k" title="Permalink to this definition">¶</a></dt>
+<dd><p>Thermal conductivity (W/m/K)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>float</em>) – Temperature (K)</p></li>
+<li><p><strong>p</strong> (<em>float</em>) – Pressure (Pa)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Thermal conductivity (W/m/K)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.cooling.TransportProperties.cp">
+<code class="sig-name descname"><span class="pre">cp</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties.cp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Isobaric specific heat capacity (J/kg/K)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>float</em>) – Temperature (K)</p></li>
+<li><p><strong>p</strong> (<em>float</em>) – Pressure (Pa)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Isobaric specific heat capacity (J/kg/K)</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>float</p>
@@ -1869,7 +1845,7 @@ custom_k (float): Thermal conductivity to use for model = ‘custom’ (W/m/K)</
 <dl class="py method">
 <dt id="bamboo.cooling.TransportProperties.rho">
 <code class="sig-name descname"><span class="pre">rho</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties.rho" title="Permalink to this definition">¶</a></dt>
-<dd><p>Density (kg/m3)</p>
+<dd><p>Density (kg/m^3)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1878,7 +1854,7 @@ custom_k (float): Thermal conductivity to use for model = ‘custom’ (W/m/K)</
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Density (kg/m3)</p>
+<dd class="field-even"><p>Density (kg/m^3)</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>float</p>
@@ -2092,12 +2068,16 @@ Note you will have to run matplotlib.pyplot.show() to see the plot.</p>
 
 <dl class="py function">
 <dt id="bamboo.plot.plot_jacket_pressure">
-<code class="sig-prename descclassname"><span class="pre">bamboo.plot.</span></code><code class="sig-name descname"><span class="pre">plot_jacket_pressure</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.plot.plot_jacket_pressure" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">bamboo.plot.</span></code><code class="sig-name descname"><span class="pre">plot_jacket_pressure</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_static</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_stagnation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.plot.plot_jacket_pressure" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given the output dictionary from a engine cooling analysis, plot the cooling jacket pressure against x position.
 Note you will have to run matplotlib.pyplot.show() to see the plot.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>data_dict</strong> (<em>dict</em>) – Dictionary contaning the cooling analysis results.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data_dict</strong> (<em>dict</em>) – Dictionary contaning the cooling analysis results.</p></li>
+<li><p><strong>plot_static</strong> (<em>bool</em>) – Whether or not to plot the static pressure.</p></li>
+<li><p><strong>plot_stagnation</strong> (<em>bool</em>) – Whether or not to plot the stagnation pressure.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -2136,6 +2116,18 @@ Note you will have to run matplotlib.pyplot.show() to see the plot.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt id="bamboo.plot.plot_coolant_velocities">
+<code class="sig-prename descclassname"><span class="pre">bamboo.plot.</span></code><code class="sig-name descname"><span class="pre">plot_coolant_velocities</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.plot.plot_coolant_velocities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given the output dictionary from a engine cooling analysis, plot the cooling jacket velocity against x position.
+Note you will have to run matplotlib.pyplot.show() to see the plot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>data_dict</strong> (<em>dict</em>) – Dictionary contaning the cooling analysis results.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt id="bamboo.plot.animate_transient_temperatures">
 <code class="sig-prename descclassname"><span class="pre">bamboo.plot.</span></code><code class="sig-name descname"><span class="pre">animate_transient_temperatures</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.plot.animate_transient_temperatures" title="Permalink to this definition">¶</a></dt>
 <dd><p>Animates transient heating analysis data.</p>
@@ -2159,6 +2151,15 @@ Note you will have to run matplotlib.pyplot.show() to see the plot.</p>
 </dl>
 </dd></dl>
 
+</div>
+<div class="section" id="bamboo-materials-module">
+<h2>bamboo.materials module<a class="headerlink" href="#bamboo-materials-module" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="module-bamboo.materials"></span><p>Pre-defined materials using the bamboo.cooling.Materials class</p>
+<p class="rubric">References</p>
+<ul class="simple">
+<li><p>[1] - Physical and Mechanical Properties of Copper and Copper Alloys, M. Li and S. J. Zinkle, <a class="reference external" href="https://core.ac.uk/download/pdf/208176021.pdf">https://core.ac.uk/download/pdf/208176021.pdf</a></p></li>
+<li><p>[2] - AK Steel 304 / 304L Stainless Steel Product Data Bulletin, <a class="reference external" href="https://www.aksteel.com/sites/default/files/2018-01/304304L201706_1.pdf">https://www.aksteel.com/sites/default/files/2018-01/304304L201706_1.pdf</a></p></li>
+</ul>
 </div>
 </div>
 <div class="section" id="indices-and-tables">

@@ -15,6 +15,7 @@
    
       animate_transient_temperatures
       plot_coolant_properties
+      plot_coolant_velocities
       plot_exhaust_properties
       plot_h
       plot_jacket_pressure

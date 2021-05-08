@@ -23,17 +23,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy
 
-
-#Check if CoolProp is installed
-import imp
-try:
-    imp.find_module('CoolProp')
-    CoolProp_available = True
-    from CoolProp.CoolProp import PropsSI
-
-except ImportError:
-    CoolProp_available = False
-
 SIGMA = 5.670374419e-8      #Stefan-Boltzmann constant (W/m^2/K^4)
 
 
@@ -278,133 +267,30 @@ class Material:
         return np.sum([self.polyCoeffs[index] * T**index for index in range(self.polyOrder)])
 
 class TransportProperties:
-    """Container for transport properties of a fluid. 
+    def __init__(self, type, Pr, mu, k, cp = None, rho = None):
+        """Container for specifying your transport properties. If using type = "constants", submit a float for each argument. 
+        If using type = "functions", the function arguments must be in the form func(T, p) where T is the temperature in K and p is pressure in Pa.
+
+        Args:
+            type (str): "constants" or "functions"
+            Pr (float or function): Prandtl number.
+            mu (float or function): Absolute viscosity (Pa s).
+            k (float or function): Thermal conductivity (W/m/K).
+            cp (float or function, optional): Isobaric specific heat capacity (J/kg/K) - only required for coolants.
+            rho (float or function, optional): Density (kg/m^3) - only required for coolants.
+        """
+        if type != "constants" and type != "functions":
+            raise ValueError("Argument for transport properties 'type' can only be 'constants' or 'functions'.")
+
+        self.type = type
+        self.given_Pr = Pr
+        self.given_mu = mu
+        self.given_k = k
+        self.given_cp = cp
+        self.given_rho = rho
     
-    Note:
-        Sometimes 'thermo' uses a questionable choice of phase when calculating transport properties for mixtures (and sometimes pure chemicals), 
-        If you are getting questionable data, it may be useful to try out the 'force_phase' argument.
-
-    Args:
-        model (str, optional): The module to use for modelling. Options include 'thermo' and 'CoolProp' and 'custom'.
-        force_phase (str, optional): 'l' for liquid or 'g' for gas. Forces thermo to use transport properties in the given phase. Does not affect other models. Defaults to None.
-    
-    Keywords Args:
-        thermo_object (thermo.chemical.Chemical or thermo.mixture.Mixture): An object from the 'thermo' Python module.
-        coolprop_name (str): Name of the chemcial or mixture for the CoolProp module. See http://www.coolprop.org/ for a list of available fluids.
-        custom_Pr (float): Prandtl number to use for model = 'custom'
-        custom_mu (float): Absolute viscosity to use for model = 'custom' (Pa s)
-        custom_k (float): Thermal conductivity to use for model = 'custom' (W/m/K)
-    """
-
-    def __init__(self, model = "thermo", force_phase = None, **kwargs):
-        self.model = model
-        self.force_phase = force_phase
-
-        if model == "thermo":
-            self.thermo_object = kwargs["thermo_object"]
-
-        elif model == "CoolProp":
-            if CoolProp_available:
-                self.coolprop_name = kwargs["coolprop_name"]
-            else:
-                raise ImportError("Could not find the 'CoolProp' module, so can't use TransportProperties.model = 'CoolProp'")
-        
-        elif model == "custom":
-            self.custom_Pr = kwargs["custom_Pr"]
-            self.custom_mu = kwargs["custom_mu"]
-            self.custom_k = kwargs["custom_k"]
-
-        else:
-            raise ValueError(f"The model {model} is not a valid option.")
-
-    def check_liquid(self, T, p):
-        """Returns True if the fluid is a liquid at the given temperature and pressure. Used to check for coolant boil-off.
-
-        Args:
-            T (float): Temperature (K)
-            p (float): Pressure (Pa)
-
-        Returns:
-            bool: True if the fluid is liquid, False if it's any other phase
-        """
-        if self.model == "thermo":
-            self.thermo_object.calculate(T = T, P = p) 
-            if self.thermo_object.phase == 'l':
-                return True
-            else:
-                return False
-            
-        elif self.model == "CoolProp":
-            #CoolProp uses a phase index of '0' to refer to the liquid state
-            if PropsSI("PHASE", "T", T, "P", p, self.coolprop_name) == 0:
-                return True
-            else:
-                return False
-
-    def k(self, T, p):
-        """Thermal conductivity
-
-        Args:
-            T (float): Temperature (K)
-            p (float): Pressure (Pa)
-
-        Returns:
-            float: Thermal conductivity
-        """
-        if self.model == "thermo":
-            self.thermo_object.calculate(T = T, P = p)
-
-            if self.force_phase == 'l':
-                return self.thermo_object.kl
-            elif self.force_phase == 'g':
-                return self.thermo_object.kg
-            else:
-                #Manually check which phase we're in, and return the right conductivity (otherwise sometimes it seems to return odd results)
-                if self.thermo_object.phase == 'l':
-                    return self.thermo_object.kl
-                elif self.thermo_object.phase == 'g':
-                    return self.thermo_object.kg
-            
-        elif self.model == "CoolProp":
-            return PropsSI("CONDUCTIVITY", "T", T, "P", p, self.coolprop_name)
-
-        elif self.model == "custom":
-            return self.custom_k
-
-    def mu(self, T, p):
-        """Absolute viscosity
-
-        Args:
-            T (float): Temperature (K)
-            p (float): Pressure (Pa)
-
-        Returns:
-            float: Absolute viscosity
-        """
-        if self.model == "thermo":
-            self.thermo_object.calculate(T = T, P = p) 
-
-            if self.force_phase == 'l':
-                return self.thermo_object.mul
-            elif self.force_phase == 'g':
-                return self.thermo_object.mug
-            else:
-                #Manually check which phase we're in, and return the right viscosity (otherwise sometimes it seems to return odd results)
-                if self.thermo_object.phase == 'g':
-                    return self.thermo_object.mug
-                elif self.thermo_object.phase == 'l':
-                    return self.thermo_object.mul
-                else:
-                    return self.thermo_object.mu
-
-        elif self.model == "CoolProp":
-            return PropsSI("VISCOSITY", "T", T, "P", p, self.coolprop_name)
-
-        elif self.model == "custom":
-            return self.custom_mu
-
     def Pr(self, T, p):
-        """Prandtl number
+        """Prandtl number.
 
         Args:
             T (float): Temperature (K)
@@ -413,81 +299,76 @@ class TransportProperties:
         Returns:
             float: Prandtl number
         """
-        if self.model == "thermo":
-            self.thermo_object.calculate(T = T, P = p) 
+        if self.type == "constants":
+            return self.given_Pr
 
-            if self.force_phase == 'l':
-                return self.thermo_object.Prl
-            elif self.force_phase == 'g':
-                return self.thermo_object.Prg
-            else:
-                #Manually check which phase we're in, and return the right property
-                if self.thermo_object.phase == 'l':
-                    return self.thermo_object.Prl
-                elif self.thermo_object.phase == 'g':
-                    return self.thermo_object.Prg
+        elif self.type == "functions":
+            return self.given_Pr(T, p)
 
-        elif self.model == "CoolProp":
-            return PropsSI("PRANDTL", "T", T, "P", p, self.coolprop_name)
+    def mu(self, T, p):
+        """Absolute viscosity (Pa s)
 
-        elif self.model == "custom":
-            return self.custom_Pr
+        Args:
+            T (float): Temperature (K)
+            p (float): Pressure (Pa)
+
+        Returns:
+            float: Absolute viscosity (Pa s)
+        """
+        if self.type == "constants":
+            return self.given_mu
+
+        elif self.type == "functions":
+            return self.given_mu(T, p)
+
+    def k(self, T, p):
+        """Thermal conductivity (W/m/K)
+
+        Args:
+            T (float): Temperature (K)
+            p (float): Pressure (Pa)
+
+        Returns:
+            float: Thermal conductivity (W/m/K)
+        """
+        if self.type == "constants":
+            return self.given_k
+
+        elif self.type == "functions":
+            return self.given_k(T, p)
 
     def cp(self, T, p):
-        """Specific heat capacity at constant pressure (J/kg/K)
+        """Isobaric specific heat capacity (J/kg/K)
 
         Args:
             T (float): Temperature (K)
             p (float): Pressure (Pa)
 
         Returns:
-            float: Specific heat capacity at constant pressure (J/kg/K)
-
+            float: Isobaric specific heat capacity (J/kg/K)
         """
-        if self.model == "thermo":
-            self.thermo_object.calculate(T = T, P = p) 
+        if self.type == "constants":
+            return self.given_cp
 
-            if self.force_phase == 'l':
-                return self.thermo_object.Cpl
-            elif self.force_phase == 'g':
-                return self.thermo_object.Cpg
-            else:
-                #Manually check which phase we're in, and return the right property
-                if self.thermo_object.phase == 'l':
-                    return self.thermo_object.Cpl
-                elif self.thermo_object.phase == 'g':
-                    return self.thermo_object.Cpg
-        
-        elif self.model == "CoolProp":
-            return PropsSI("CPMASS", "T", T, "P", p, self.coolprop_name)
+        elif self.type == "functions":
+            return self.given_cp(T, p)
 
     def rho(self, T, p):
-        """Density (kg/m3)
+        """Density (kg/m^3)
 
         Args:
             T (float): Temperature (K)
             p (float): Pressure (Pa)
 
         Returns:
-            float: Density (kg/m3)
-
+            float: Density (kg/m^3)
         """
-        if self.model == "thermo":
-            self.thermo_object.calculate(T = T, P = p) 
+        if self.type == "constants":
+            return self.given_rho
 
-            if self.force_phase == 'l':
-                return self.thermo_object.rhol
-            elif self.force_phase == 'g':
-                return self.thermo_object.rhog
-            else:
-                #Manually check which phase we're in, and return the right property
-                if self.thermo_object.phase == 'l':
-                    return self.thermo_object.rhol
-                elif self.thermo_object.phase == 'g':
-                    return self.thermo_object.rhog
+        elif self.type == "functions":
+            return self.given_rho(T, p)
 
-        elif self.model == "CoolProp":
-            return PropsSI("DMASS", "T", T, "P", p, self.coolprop_name)
 
 class ThermalCircuit:
     def __init__(self, T1, T2, R):
@@ -633,6 +514,7 @@ class CoolingJacket:
         Returns:
             float: Coolant velocity (m/s)
         """
+
         return self.mdot_coolant/(rho_coolant * self.A(x, y))
 
 class Ablative:

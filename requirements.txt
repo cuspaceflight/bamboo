@@ -2,5 +2,5 @@ numpy
 scipy
 matplotlib
 ambiance
-thermo==0.1.40
+thermo
 pypropep

@@ -16,6 +16,7 @@ Use the 'home' buttons (with the small image of a house) to navigate back to thi
     bamboo.main
     bamboo.cooling
     bamboo.plot
+    bamboo.materials
 
 bamboo.main module
 ------------------
@@ -36,6 +37,14 @@ bamboo.cooling module
 bamboo.plot module
 ------------------
 .. automodule:: bamboo.plot
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :member-order: bysource
+
+bamboo.materials module
+------------------
+.. automodule:: bamboo.materials
     :members:
     :undoc-members:
     :show-inheritance:
