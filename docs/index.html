@@ -1746,10 +1746,18 @@ At T = T_start, yield strength is sigma_y.</p>
 
 <dl class="py class">
 <dt id="bamboo.cooling.TransportProperties">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">TransportProperties</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">TransportProperties</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Container for specifying your transport properties. If using type = “constants”, submit a float for each argument.
-If using type = “functions”, the function arguments must be in the form func(T, p) where T is the temperature in K and p is pressure in Pa.</p>
+If using type = “functions”, the function arguments (except for the T_from_enthalpy function) must be in the form func(T, p) where T is the temperature in K and p is pressure in Pa.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you specify “T_from_h”, this will be used to calculate temperature rises, instead of using cp. This can allow you to take into account latent heats of vapourisation, if desired.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The reference point for enthalpies is arbritrary, but ‘enthalpy_from_T’ and ‘T_from_enthalpy’ must use the same reference point (so the two have the same enthalpy for the same temperature).</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1759,6 +1767,12 @@ If using type = “functions”, the function arguments must be in the form func
 <li><p><strong>k</strong> (<em>float</em><em> or </em><em>function</em>) – Thermal conductivity (W/m/K).</p></li>
 <li><p><strong>cp</strong> (<em>float</em><em> or </em><em>function</em><em>, </em><em>optional</em>) – Isobaric specific heat capacity (J/kg/K) - only required for coolants.</p></li>
 <li><p><strong>rho</strong> (<em>float</em><em> or </em><em>function</em><em>, </em><em>optional</em>) – Density (kg/m^3) - only required for coolants.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>T_from_enthalpy</strong> (<em>function</em>) – Function to return temperature (K) if given specific enthalpy (J/kg) and pressure (Pa) in that order. i.e. func(enthalpy, p).</p></li>
+<li><p><strong>enthalpy_from_T</strong> (<em>function</em>) – Get specific enthalpy (J/kg) for a given temperature (K) and pressure (Pa). Takes arguments in the form func(T, p)</p></li>
 </ul>
 </dd>
 </dl>
@@ -1823,6 +1837,26 @@ If using type = “functions”, the function arguments must be in the form func
 </dd></dl>
 
 <dl class="py method">
+<dt id="bamboo.cooling.TransportProperties.rho">
+<code class="sig-name descname"><span class="pre">rho</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties.rho" title="Permalink to this definition">¶</a></dt>
+<dd><p>Density (kg/m^3)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>float</em>) – Temperature (K)</p></li>
+<li><p><strong>p</strong> (<em>float</em>) – Pressure (Pa)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Density (kg/m^3)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="bamboo.cooling.TransportProperties.cp">
 <code class="sig-name descname"><span class="pre">cp</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties.cp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Isobaric specific heat capacity (J/kg/K)</p>
@@ -1843,9 +1877,29 @@ If using type = “functions”, the function arguments must be in the form func
 </dd></dl>
 
 <dl class="py method">
-<dt id="bamboo.cooling.TransportProperties.rho">
-<code class="sig-name descname"><span class="pre">rho</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties.rho" title="Permalink to this definition">¶</a></dt>
-<dd><p>Density (kg/m^3)</p>
+<dt id="bamboo.cooling.TransportProperties.T_from_enthalpy">
+<code class="sig-name descname"><span class="pre">T_from_enthalpy</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enthalpy</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties.T_from_enthalpy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get temperature for a given specific enthalpy and pressure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>enthalpy</strong> (<em>float</em>) – Specific enthalpy (J/kg)</p></li>
+<li><p><strong>p</strong> (<em>float</em>) – Pressure (Pa)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Temperature (K)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bamboo.cooling.TransportProperties.enthalpy_from_T">
+<code class="sig-name descname"><span class="pre">enthalpy_from_T</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.TransportProperties.enthalpy_from_T" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get specific enthalpy from a given temperature and pressure.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1854,7 +1908,7 @@ If using type = “functions”, the function arguments must be in the form func
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Density (kg/m^3)</p>
+<dd class="field-even"><p>Specific enthalpy (J/kg)</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>float</p>

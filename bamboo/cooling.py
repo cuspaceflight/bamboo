@@ -267,9 +267,15 @@ class Material:
         return np.sum([self.polyCoeffs[index] * T**index for index in range(self.polyOrder)])
 
 class TransportProperties:
-    def __init__(self, type, Pr, mu, k, cp = None, rho = None):
+    def __init__(self, type, Pr, mu, k, cp = None, rho = None, **kwargs):
         """Container for specifying your transport properties. If using type = "constants", submit a float for each argument. 
-        If using type = "functions", the function arguments must be in the form func(T, p) where T is the temperature in K and p is pressure in Pa.
+        If using type = "functions", the function arguments (except for the T_from_enthalpy function) must be in the form func(T, p) where T is the temperature in K and p is pressure in Pa.
+        
+        Note: 
+            If you specify "T_from_h", this will be used to calculate temperature rises, instead of using cp. This can allow you to take into account latent heats of vapourisation, if desired.
+
+        Note: 
+            The reference point for enthalpies is arbritrary, but 'enthalpy_from_T' and 'T_from_enthalpy' must use the same reference point (so the two have the same enthalpy for the same temperature).
 
         Args:
             type (str): "constants" or "functions"
@@ -278,6 +284,10 @@ class TransportProperties:
             k (float or function): Thermal conductivity (W/m/K).
             cp (float or function, optional): Isobaric specific heat capacity (J/kg/K) - only required for coolants.
             rho (float or function, optional): Density (kg/m^3) - only required for coolants.
+
+        Keyword Args:
+            T_from_enthalpy (function): Function to return temperature (K) if given specific enthalpy (J/kg) and pressure (Pa) in that order. i.e. func(enthalpy, p).
+            enthalpy_from_T (function): Get specific enthalpy (J/kg) for a given temperature (K) and pressure (Pa). Takes arguments in the form func(T, p)
         """
         if type != "constants" and type != "functions":
             raise ValueError("Argument for transport properties 'type' can only be 'constants' or 'functions'.")
@@ -286,8 +296,16 @@ class TransportProperties:
         self.given_Pr = Pr
         self.given_mu = mu
         self.given_k = k
-        self.given_cp = cp
         self.given_rho = rho
+        self.given_cp = cp
+
+        if "T_from_enthalpy" in kwargs and "enthalpy_from_T" in kwargs:
+            self.given_T_from_enthalpy = kwargs["T_from_enthalpy"]
+            self.given_enthalpy_from_T = kwargs["enthalpy_from_T"]
+
+        elif "T_from_enthalpy" in kwargs or "enthalpy_from_T" in kwargs: 
+            raise ValueError("Must specify both T_from_enthalpy and enthalpy_from_T, or neither. Can't just specify one of them")
+
     
     def Pr(self, T, p):
         """Prandtl number.
@@ -337,22 +355,6 @@ class TransportProperties:
         elif self.type == "functions":
             return self.given_k(T, p)
 
-    def cp(self, T, p):
-        """Isobaric specific heat capacity (J/kg/K)
-
-        Args:
-            T (float): Temperature (K)
-            p (float): Pressure (Pa)
-
-        Returns:
-            float: Isobaric specific heat capacity (J/kg/K)
-        """
-        if self.type == "constants":
-            return self.given_cp
-
-        elif self.type == "functions":
-            return self.given_cp(T, p)
-
     def rho(self, T, p):
         """Density (kg/m^3)
 
@@ -369,6 +371,45 @@ class TransportProperties:
         elif self.type == "functions":
             return self.given_rho(T, p)
 
+    def cp(self, T, p):
+        """Isobaric specific heat capacity (J/kg/K)
+
+        Args:
+            T (float): Temperature (K)
+            p (float): Pressure (Pa)
+
+        Returns:
+            float: Isobaric specific heat capacity (J/kg/K)
+        """
+        if self.type == "constants":
+            return self.given_cp
+
+        elif self.type == "functions":
+            return self.given_cp(T, p)
+
+    def T_from_enthalpy(self, enthalpy, p):
+        """Get temperature for a given specific enthalpy and pressure.
+
+        Args:
+            enthalpy (float): Specific enthalpy (J/kg)
+            p (float): Pressure (Pa)
+
+        Returns:
+            float: Temperature (K)
+        """
+        return self.given_T_from_enthalpy(enthalpy, p)
+
+    def enthalpy_from_T(self, T, p):
+        """Get specific enthalpy from a given temperature and pressure.
+
+        Args:
+            T (float): Temperature (K)
+            p (float): Pressure (Pa)
+
+        Returns:
+            float: Specific enthalpy (J/kg)
+        """
+        return self.given_enthalpy_from_T(T, p)
 
 class ThermalCircuit:
     def __init__(self, T1, T2, R):

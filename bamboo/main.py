@@ -1352,6 +1352,12 @@ class Engine:
         
 
         '''Initialise variables and arrays'''
+        #Check if user specified enthalpy 
+        if hasattr(self.cooling_jacket.coolant_transport, 'given_T_from_enthalpy'):
+            use_coolant_enthalpy = True
+        else:
+            use_coolant_enthalpy = False
+            
         #Keep track of if the coolant pressure drops below chamber pressure.
         too_low_pressure = False
 
@@ -1377,6 +1383,7 @@ class Engine:
 
         #Only relevant if there's a cooling jacket:
         T_coolant = np.full(len(discretised_x), float('NaN'))       #Coolant bulk temperature
+        enthalpy_coolant = np.full(len(discretised_x), float('NaN'))#Coolant specific enthalpy (J/kg)
         h_coolant = np.full(len(discretised_x), float('NaN'))       #Cooling side convective heat transfer coefficient
         R_coolant = np.full(len(discretised_x), float('NaN'))       #Coolant side convective thermal resistance
         p_coolant = np.full(len(discretised_x), float('NaN'))       #Coolant static pressure
@@ -1511,9 +1518,23 @@ class Engine:
                     p0_coolant[i] = self.cooling_jacket.inlet_p0
                     p_coolant[i] = p0_coolant[i] - self.coolant_dynamic_pressure(T=T_coolant[i], p=p0_coolant[i], x=x, y=self.y(x))
 
+                    if p_coolant[i] <= 0:
+                        raise ValueError(f"Initial coolant static pressure was negative ({p_coolant[i]} Pa). Try raising the coolant inlet pressure or reducing coolant velocities.")
+
+                    if use_coolant_enthalpy:
+                        enthalpy_coolant[i] = self.cooling_jacket.coolant_transport.enthalpy_from_T(T_coolant[i], p_coolant[i])
+
                 else:
-                    #Increase in coolant temperature, q*dx = mdot*Cp*dT
-                    T_coolant[i] = T_coolant[i-1] + (q_dot[i-1]*dx)/(self.cooling_jacket.mdot_coolant*cp_coolant[i-1]) 
+                    if use_coolant_enthalpy:
+                        #Increase in coolant temperature, q*dx = mdot*dh (if user specified enthalpy function for coolant)
+                        dh = (q_dot[i-1]*dx)/self.cooling_jacket.mdot_coolant
+                        enthalpy_coolant[i] = enthalpy_coolant[i-1] + dh
+                        T_coolant[i] = self.cooling_jacket.coolant_transport.given_T_from_enthalpy(enthalpy_coolant[i], p_coolant[i-1])
+                        
+                    else:
+                        #Increase in coolant temperature, q*dx = mdot*Cp*dT (if user hasn't specified enthalpy function)
+                        dT = (q_dot[i-1]*dx)/(self.cooling_jacket.mdot_coolant*cp_coolant[i-1])
+                        T_coolant[i] = T_coolant[i-1] + dT
 
                     #Pressure drop in coolant channel
                     friction_factor = self.coolant_friction_factor(T = T_coolant[i], 
@@ -1531,10 +1552,10 @@ class Engine:
                     #Update static pressure of coolant
                     p_coolant[i] = p0_coolant[i] - self.coolant_dynamic_pressure(T = T_coolant[i], 
                                                                                  p = p_coolant[i-1],
-                                                                                x = x, 
-                                                                                y = self.y(x, up_to = "wall out")) 
+                                                                                 x = x, 
+                                                                                 y = self.y(x, up_to = "wall out")) 
 
-                    if p_coolant[i] <= 0 or p0_coolant[i] < 0:
+                    if p_coolant[i] <= 0:
                         raise ValueError(f"Coolant static pressure became negative at x = {x}. Try raising the coolant inlet pressure or reducing coolant velocities.")
 
                     if too_low_pressure == False and p0_coolant[i] < self.chamber_conditions.p0:
