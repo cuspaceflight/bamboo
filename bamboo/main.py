@@ -342,12 +342,19 @@ class Nozzle:
     """Object for calculating and storing nozzle geometry.
 
     Args:
+        type (str, optional): Desired shape, can be "rao", "cone" or "custom". Defaults to "rao".
+
+    Keyword Args:
         At (float): Throat area (m^2).
         Ae (float): Exit plane area (m^2)
-        type (str, optional): Desired shape, can be "rao" or "cone". Defaults to "rao".
-        length_fraction (float): Length fraction if a Rao nozzle is used. Defaults to 0.8.
-        cone_angle (float): Cone angle if a cone nozzle is used (deg). Defaults to 15.
-    
+        length_fraction (float): Length fraction for Rao nozzle - used if type = "rao". Defaults to 0.8.
+        cone_angle (float): Cone angle (deg) - used for type = "cone". Defaults to 15.
+        x (list) : Array containing x-positions for the data in the y array (m) - used for type = "custom".
+        y (list) : List of y positions corresponding to the nozzle contour (m) - used for type = "custom".
+
+    Note:
+        If using custom data, your x-array must start at zero, and the smallest y-value must be at x = 0. Bamboo using the convention that x = 0 is the throat location.
+
     Attributes:
         length (float): Length of the diverging section (distance between throat and nozzle exit) (m).
         At (float): Throat area (m^2)
@@ -355,20 +362,46 @@ class Nozzle:
         Rt (float): Throat radius (m)
         Re (float): Exit radius (m)
     """
-    def __init__(self, At, Ae, type = "rao", length_fraction = 0.8, cone_angle = 15):
-        self.At = At
-        self.Ae = Ae
-        self.Rt = (At/np.pi)**0.5   #Throat radius (m)
-        self.Re = (Ae/np.pi)**0.5   #Exit radius (m)
+    def __init__(self, type = "rao", **kwargs):
+    
+        if type != "rao" and type != "cone" and type != "custom":
+            raise ValueError(f"Nozzle type '{type}' is not currently implemented. Try 'rao', 'cone', or 'custom'")
+
         self.type = type
-        
+
+        if self.type == "custom":
+            self.x_data = kwargs["x"]
+            self.y_data = kwargs["y"]
+
+            assert self.x_data[0] == 0.0 and min(self.x_data) == 0, "x[0] for type = 'custom' must be equal to zero, and there must be no negative values anywhere."
+            assert self.y_data[0] == min(self.y_data), "Smallest value in the y-array must be at index 0, for type = 'custom'. Bamboo uses the convention that throats are at x = 0."
+
+            self.length = max(self.x_data)
+            self.Rt = self.y_data[list(self.x_data).index(0.0)]
+            self.Re = self.y_data[list(self.x_data).index(max(self.x_data))]
+            self.At = np.pi*self.Rt**2
+            self.Ae = np.pi*self.Re**2
+
+        else:
+            self.At = kwargs["At"]
+            self.Ae = kwargs["Ae"]
+            self.Rt = (self.At/np.pi)**0.5   #Throat radius (m)
+            self.Re = (self.Ae/np.pi)**0.5   #Exit radius (m)
+
         if self.type == "cone":
-            self.cone_angle = cone_angle
+            if "cone_angle" in kwargs:
+                self.cone_angle = kwargs["cone_angle"]
+            else:
+                self.cone_angle = 15
             self.dydx = np.tan(self.cone_angle*np.pi/180)
             self.length = (self.Re - self.Rt)/self.dydx
 
         elif self.type == "rao":
-            self.length_fraction = length_fraction
+            if "length_fraction" in kwargs:
+                self.length_fraction = kwargs["length_fraction"]
+            else:
+                self.length_fraction = 0.8
+
             self.theta_n = rao_theta_n(self.Ae/self.At)     #Inflection angle (rad), as defined in [1]
             self.theta_e = rao_theta_e(self.Ae/self.At)     #Exit angle (rad), as defined in [1]
 
@@ -390,14 +423,13 @@ class Nozzle:
             self.a, self.b, self.c = np.linalg.solve(A, b)
 
 
-        else:
-            raise ValueError(f"Nozzle type '{type}' is not currently implemented. Try 'conical' or 'rao'")
-
     def __repr__(self):
         if self.type == "rao":
             return f"Rao type nozzle (length fraction = {self.length_fraction}). \nLength = {self.length} m \nThroat area = {self.At} m^2 \nExit area = {self.Ae} m^2 \nArea ratio = {self.Ae/self.At} \nRao inflection angle = {self.theta_n*180/np.pi} deg \nRao exit angle = {self.theta_e*180/np.pi} deg"
         elif self.type == "cone":
-            return f"Cone type nozzle (Length = {self.length} m \nThroat area = {self.At} m^2 \nExit area = {self.Ae} m^2 \nArea ratio = {self.Ae/self.At} \n"
+            return f"Cone type nozzle (Cone angle = {self.cone_angle} deg \nLength = {self.length} m \nThroat area = {self.At} m^2 \nExit area = {self.Ae} m^2 \nArea ratio = {self.Ae/self.At} \n"
+        elif self.type == "custom":
+            return f"Custom nozzle shape (Length = {self.length} m \nThroat area = {self.At} m^2 \nExit area = {self.Ae} m^2 \nArea ratio = {self.Ae/self.At} \n"
 
     def y(self, x):
         """Returns the distance between the nozzle contour and the centreline, given the axial distance 'x' downstream from the throat. Based on Reference [1] page 5.
@@ -410,6 +442,9 @@ class Nozzle:
         """
         if x < 0:
             raise ValueError(f"x must be greater than zero. You tried to input {x}.")
+
+        if self.type == "custom":
+            return np.interp(x, self.x_data, self.y_data)
 
         elif self.type == "rao" and x <= self.length:
             #Circular throat section
@@ -444,20 +479,19 @@ class Nozzle:
         Args:
             number_of_points (int, optional): Numbers of discrete points to plot. Defaults to 1000.
         """
-        if self.type == "rao":
-            x = np.linspace(0, self.Ex, number_of_points)
-            y = np.zeros(len(x))
+        x = np.linspace(0, self.length, number_of_points)
+        y = np.zeros(len(x))
 
-            for i in range(len(x)):
-                y[i] = self.y(x[i])
+        for i in range(len(x)):
+            y[i] = self.y(x[i])
 
-            fig, axs = plt.subplots()
-            axs.plot(x, y, color="blue")
-            axs.plot(x, -y, color="blue")
-            axs.grid()
-            axs.set_aspect('equal')
-            plt.xlabel("x position (m)")
-            plt.ylabel("y position (m)")
+        fig, axs = plt.subplots()
+        axs.plot(x, y, color="blue")
+        axs.plot(x, -y, color="blue")
+        axs.grid()
+        axs.set_aspect('equal')
+        plt.xlabel("x position (m)")
+        plt.ylabel("y position (m)")
 
     @staticmethod
     def from_engine_components(perfect_gas, chamber_conditions, p_amb, type = "rao", length_fraction = 0.8):
@@ -484,51 +518,72 @@ class EngineGeometry:
         If an array, must be thicknesses at equally spaced x positions. This will be stretched to fill the engine length.
         E.g. [1e-3, 5e-3] will have 1mm thick walls at chamber entrance, 5mm thick at nozzle exit.
 
+    Note:
+        If using style = "custom", only specify the geometry up to the throat - everything downstream of the throat is specified by the Nozzle object. 
+        Keep in mind that Bamboo uses the convection that x = 0 at the throat (so all your x value should be negative).
+
     Args:
         nozzle (float): Nozzle of the engine.
+        inner_wall_thickness (float or array): Thickness of the inner liner wall (m). Can be constant (float), or variable (array). 
+        style (str, optional): Geometry style to use, can be "auto" or "custom". Defaults to "auto".
+
+    Keyword Args:
         chamber_length (float): Length of the combustion chamber (m)
         chamber_area (float): Cross sectional area of the combustion chamber (m^2)
-        inner_wall_thickness (float or array): Thickness of the inner liner wall (m). Can be constant (float), or variable (array). 
         outer_wall_thickness (float or array): Thickness of the outer liner wall (m). Can be constant (float), or variable (array).
-        style (str, optional): Geometry style to use. Currently the only option is 'auto'. Defaults to "auto".
+        x (list) : x-array corresponding to x positions (m) for the 'y' keyword argument - only used with style = "custom".
+        y (list): y positions specifying the engine contour (m) - only used with style = "custom."
 
     Attributes:
         x_min (float): Minimum x position (m).
         x_max (float): Maximum x position (m).
-        x_chamber_end (float): x position where the combustion chamber ends (m).
-        x_curved_converging_start (float): x position where the curved part of the converging section begins (m).
-        chamber_length (float): Chamber length (m).
-        chamber_area (float): Chamber area (m^2).
-        chamber_radius (float): Chamber radius (m).
-        
+        x_chamber_end (float): x position where the combustion chamber ends (m) - only available of style = "auto".
+        x_curved_converging_start (float): x position where the curved part of the converging section begins (m) - only available of style = "auto" and nozzle type = "rao".
+        chamber_length (float): Chamber length (m) - only available if style = "auto".
+        chamber_area (float): Chamber area (m^2) - only available if style = "auto".
+        chamber_radius (float): Chamber radius (m) - only available if style = "auto". 
 
     """
-    def __init__(self, nozzle, chamber_length, chamber_area, inner_wall_thickness, outer_wall_thickness, style="auto"):
-        self.chamber_length = chamber_length
-        self.chamber_area = chamber_area
-        self.chamber_radius = (chamber_area/np.pi)**0.5 
+    def __init__(self, nozzle, inner_wall_thickness, style = "auto", **kwargs):
+        self.style = style
+
+        self.x_max = nozzle.length
+
         if type(inner_wall_thickness) is float or type(inner_wall_thickness) is int:
             self.inner_wall_thickness = [inner_wall_thickness]  #Convert into a list so the interpolation works
         else:
             self.inner_wall_thickness = inner_wall_thickness
         
-        if type(outer_wall_thickness) is float or type(outer_wall_thickness) is int:
-            self.outer_wall_thickness = [outer_wall_thickness]  #Convert into a list so the interpolation works
-        else:
-            self.outer_wall_thickness = outer_wall_thickness
+        if "outer_wall_thickness" in kwargs:
+            if type(kwargs["outer_wall_thickness"]) is float or type(kwargs["outer_wall_thickness"]) is int:
+                self.outer_wall_thickness = [kwargs["outer_wall_thickness"]]  #Convert into a list so the interpolation works
+            else:
+                self.outer_wall_thickness = kwargs["outer_wall_thickness"]
 
-        if nozzle.At > self.chamber_area:
-            raise ValueError(f"The combustion chamber area {self.chamber_area} m^2 is smaller than the throat area {nozzle.At} m^2.")
-        
-        self.style = style
-        if self.style == "auto":
+        if self.style == "custom":
+            self.x_data = kwargs["x"]
+            self.y_data = kwargs["y"]
+
+            assert self.x_data[-1] == 0, "x[-1] must be equal to zero - this datapoint corresponds to the throat."
+            assert self.y_data[-1] == nozzle.Rt, "Discontinuity at the throat, y[-1] must the same as the"
+
+            self.x_min = self.x_data[0]
+
+        elif self.style == "auto":
+
+            self.chamber_length = kwargs["chamber_length"]
+            self.chamber_area = kwargs["chamber_area"]
+            self.chamber_radius = (self.chamber_area/np.pi)**0.5
+
+            if nozzle.At > self.chamber_area:
+                raise ValueError(f"The combustion chamber area {self.chamber_area} m^2 is smaller than the throat area {nozzle.At} m^2.")
+
             if nozzle.type == "cone":
                 self.dydx_conv = np.tan(-45*np.pi/180)
-                self.x_max = nozzle.length
                 self.x_chamber_end = (self.chamber_radius - nozzle.Rt)/self.dydx_conv
                 self.x_min = self.x_chamber_end - self.chamber_length
 
-            elif nozzle.type == "rao":
+            elif nozzle.type == "rao" or nozzle.type == "custom":
                 #Use the system defined in Reference [1] - mostly using Eqns (4)
                 #Make sure we cap the size of the converging section to the radius of the combustion chamber.
                 chamber_radius = (self.chamber_area/np.pi)**0.5
@@ -551,7 +606,13 @@ class EngineGeometry:
 
                 #Start and end points of the engine
                 self.x_min = self.x_chamber_end - self.chamber_length
-                self.x_max = nozzle.length
+            
+            else:
+                raise ValueError(f"Unrecognisable nozzle type when trying to generate chamber geometry {nozzle.type}")
+                
+
+        else:
+            raise ValueError("Argument for 'style' must be 'auto' or 'custom'.")
 
 class Engine:
     """Class for representing a liquid rocket engine.
@@ -579,8 +640,11 @@ class Engine:
 
         #Check if the nozzle is choked
         required_throat_area = get_throat_area(perfect_gas, chamber_conditions)
+        required_mdot = m_bar(1, self.perfect_gas.gamma)*self.nozzle.At*self.chamber_conditions.p0/(self.perfect_gas.cp*self.chamber_conditions.T0)**0.5
+
         if abs(self.nozzle.At - required_throat_area) > 1e-5:
-            raise ValueError(f"The nozzle throat area is incompatible with the specified chamber conditions. The required throat area is {required_throat_area} m^2")
+            raise ValueError(f"""The nozzle throat area is incompatible with the specified chamber conditions. 
+            The required throat area is {required_throat_area} m^2, or the required mass flow rate is {required_mdot} kg/s""")
 
     #Engine geometry functions
     def y(self, x, up_to = 'contour'):
@@ -598,15 +662,18 @@ class Engine:
             if x >= 0:
                 return self.nozzle.y(x)
 
-            #Converging section and combustion chamber
+            #Left hand side of throat
             else:
                 try:
                     self.geometry
                 except AttributeError:
                     raise AttributeError("Geometry is not defined for x < 0. You need to add geometry with the 'Engine.add_geometry()' function.")
 
-                if self.geometry.style == "auto":
-                    if self.nozzle.type == "rao":
+                if self.geometry.style == "custom":
+                    return np.interp(x, self.geometry.x_data, self.geometry.y_data)
+
+                elif self.geometry.style == "auto":
+                    if self.nozzle.type == "rao" or self.nozzle.type == "custom":
                         #Curved converging section
                         if x < 0 and x > self.geometry.x_curved_converging_start:
                             theta = -np.arccos(x/(1.5*self.nozzle.Rt))
@@ -1067,21 +1134,26 @@ class Engine:
 
 
     #Adding additional components and specifications to the engine
-    def add_geometry(self, chamber_length, chamber_area, inner_wall_thickness, style="auto", **kwargs):
+    def add_geometry(self, inner_wall_thickness, style="auto", **kwargs):
         """Specify extra geometry parameters. Required for running cooling system analyses.
 
+        Note:
+            If using style = "custom", only specify the geometry up to the throat - everything downstream of the throat is specified by the Nozzle object. 
+            Keep in mind that Bamboo uses the convection that x = 0 at the throat (so all your x value should be negative).
+
         Args:
-            nozzle (Nozzle): Nozzle of the engine.
+            inner_wall_thickness (float or array): Thickness of the inner liner wall (m). Can be constant (float), or variable (array). 
+            style (str, optional): Geometry style to use, can be "auto" or "custom". Defaults to "auto".
+
+        Keyword Args:
             chamber_length (float): Length of the combustion chamber (m)
             chamber_area (float): Cross sectional area of the combustion chamber (m^2)
-            inner_wall_thickness (float or array): Thickness of the inner liner wall (m). Can be constant (float), or variable (array).
-            style (str, optional): Geometry style to use. Currently the only option is 'auto'. Defaults to "auto".      
-            
-        Keyword Args:
             outer_wall_thickness (float or array): Thickness of the outer liner wall (m). Can be constant (float), or variable (array).
+            x (list) : x-array corresponding to x positions (m) for the 'y' keyword argument - only used with style = "custom".
+            y (list): y positions specifying the engine contour (m) - only used with style = "custom."
         """
 
-        self.geometry = EngineGeometry(self.nozzle, chamber_length, chamber_area, inner_wall_thickness, style, **kwargs)
+        self.geometry = EngineGeometry(self.nozzle, inner_wall_thickness, style, **kwargs)
         self.has_geometry = True
 
     def add_cooling_jacket(self, inner_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
