@@ -22,6 +22,7 @@ An introduction to the package can be found in the 'Introduction to Bamboo.ipynb
 - Add a regenerative cooling jacket to the engine.
 - Add a refractory (e.g. a graphite insert) into the engine.
 - Steady state heating simulations for cooling jackets on their own, or cooling jackets with refractories.
+- Transient and steady state stress analysis tools.
 
 ## Incomplete
 - Ablative cooling system modelling.
