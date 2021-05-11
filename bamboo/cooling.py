@@ -439,7 +439,7 @@ class CoolingJacket:
     """Container for cooling jacket information - e.g. for regenerative cooling. All channels are assumed to have rectangular cross sections.
 
     Args:
-        inner_wall (Material): Wall material on the inner side of the cooling jacket.
+        inner_wall_material (Material): Wall material on the inner side of the cooling jacket.
         inlet_T (float): Inlet coolant temperature (K)
         inlet_p0 (float): Inlet coolant stagnation pressure (Pa)
         coolant_transport (TransportProperties): Container for the coolant transport properties.
@@ -453,10 +453,10 @@ class CoolingJacket:
         number_of_ribs (int): Only relevant if configuration = 'vertical' and 'blockage_ratio' !=0. This is the number of ribs present in the cooling channel. 
         channel_height (float): This is the height of the channels, in the radial direction (m).
         channel_width (float): Only relevant if configuration = 'spiral'. This is the width of the cooling channels (m).
-        outer_wall (Material): Wall material for the outer liner.
+        outer_wall_material (Material): Wall material for the outer liner.
     """
-    def __init__(self, inner_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
-        self.inner_wall = inner_wall
+    def __init__(self, inner_wall_material, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
+        self.inner_wall_material = inner_wall_material
         self.coolant_transport = coolant_transport       
         self.mdot_coolant = mdot_coolant
         self.xs = xs
@@ -464,8 +464,8 @@ class CoolingJacket:
         self.inlet_p0 = inlet_p0
         self.configuration = configuration
 
-        if "outer_wall" in kwargs:
-            self.outer_wall = kwargs["outer_wall"]
+        if "outer_wall_material" in kwargs:
+            self.outer_wall_material = kwargs["outer_wall_material"]
         
         if self.configuration == 'spiral':
 
