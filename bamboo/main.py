@@ -1495,6 +1495,7 @@ class Engine:
             use_coolant_enthalpy = True
         else:
             use_coolant_enthalpy = False
+            print("NOTE: No enthalpy data provided for the coolant - will use specific heat capacity to predict temperature rises.")
             
         #Keep track of if the coolant pressure drops below chamber pressure.
         too_low_pressure = False
