@@ -1444,7 +1444,7 @@ class Engine:
 
         return q_dot, R_gas, R_ablative
 
-    def steady_heating_analysis(self, number_of_points = 1000, h_gas_model = "bartz-sigma", h_coolant_model = "sieder-tate", to_json = "heating_output.json"):
+    def steady_heating_analysis(self, number_of_points = 1000, h_gas_model = "bartz-sigma", h_coolant_model = "sieder-tate", to_json = "heating_output.json", **kwargs):
         """Steady state heating analysis. Can be used for regenarative cooling, or combined regenerative and ablative cooling.
 
         Args:
@@ -1452,12 +1452,16 @@ class Engine:
             h_gas_model (str, optional): Equation to use for the gas side convective heat transfer coefficients. Options are 'rpe', 'bartz' and 'bartz-sigma'. Defaults to "bartz-sigma".
             h_coolant_model (str, optional): Equation to use for the coolant side convective heat transfer coefficients. Options are 'rpe', 'sieder-tate' and 'dittus-boelter'. Defaults to "sieder-tate".
             to_json (str or bool, optional): Directory to export a .JSON file to, containing simulation results. If False, no .JSON file is saved. Defaults to 'heating_output.json'.
+        
+        Keyword Args:
+            gas_fudge_factor (float, optional): Fudge factor to multiply the gas side thermal resistance by. A factor of ~1.3 can sometimes help results match experimental data better.
 
         Note:
             See the bamboo.cooling module for details of each h_gas and h_coolant option. Defaults are Bartz (using sigma correlation) for gas side, and Sieder-Tate for coolant side. These are believed to be the most accurate.
 
         Note:
             Sometimes the wall temperature can be above the boiling point of your coolant, in which case you may get nucleate boiling or other effects, and the Sieder-Tate model may become questionable.
+
 
         Returns:
             dict: Results of the simulation. Contains the following dictionary keys: 
@@ -1534,6 +1538,11 @@ class Engine:
         T_ablative_inner = np.full(len(discretised_x), float('NaN'))    #Ablative inner side temperature
         R_ablative = np.full(len(discretised_x), float('NaN'))          #Ablative thermal resistance
 
+        #Check if the user wants to use a fudge factor on the gas side thermal resistance
+        if "gas_fudge_factor" in kwargs:
+            gas_fudge_factor = kwargs["gas_fudge_factor"]
+        else:
+            gas_fudge_factor = 1.0
 
         '''Main loop'''
         for i in range(len(discretised_x)):
@@ -1762,7 +1771,7 @@ class Engine:
                     A_coolant = 2 * np.pi * r_wall_out
 
                     #Thermal resistances
-                    R_gas[i] = 1/(h_gas[i]*A_gas)
+                    R_gas[i] = gas_fudge_factor*1/(h_gas[i]*A_gas)
                     R_wall[i] = np.log(r_wall_out/r_wall_in)/(2*np.pi*self.ablative.wall_material.k)
                     R_coolant[i] = 1/(h_coolant[i]*A_coolant)
                     R_ablative[i] = np.log(r_ablative_out/r_ablative_in)/(2*np.pi*self.ablative.ablative_material.k)
@@ -1785,7 +1794,7 @@ class Engine:
                     A_gas = 2 * np.pi * self.y(x, up_to = 'contour')    
                     A_coolant = 2 * np.pi * r_wall_out                
 
-                    R_gas[i] = 1/(h_gas[i]*A_gas)
+                    R_gas[i] = gas_fudge_factor*1/(h_gas[i]*A_gas)
                     R_wall[i] = np.log(r_wall_out/r_wall_in)/(2*np.pi*self.cooling_jacket.inner_wall_material.k)
                     R_coolant[i] = 1/(h_coolant[i]*A_coolant)
 

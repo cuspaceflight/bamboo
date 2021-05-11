@@ -352,7 +352,27 @@ Use the ‘home’ buttons (with the small image of a house) to navigate back to
 <dl class="py function">
 <dt id="bamboo.main.estimate_apogee">
 <code class="sig-prename descclassname"><span class="pre">bamboo.main.</span></code><code class="sig-name descname"><span class="pre">estimate_apogee</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dry_mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">propellant_mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cross_sectional_area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drag_coefficient</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.75</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.estimate_apogee" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Gets an estimate of the apogee reached by a rocket using an Engine object for propulsion.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dry_mass</strong> (<em>float</em>) – Dry mass of the rocket (kg).</p></li>
+<li><p><strong>propellant_mass</strong> (<em>float</em>) – Propellant mass of the rocket (kg)</p></li>
+<li><p><strong>engine</strong> (<a class="reference internal" href="#bamboo.main.Engine" title="bamboo.main.Engine"><em>Engine</em></a>) – Engine object to use for propulsion</p></li>
+<li><p><strong>cross_sectional_area</strong> (<em>float</em>) – Cross sectional area used to normalise the drag coefficient (m^2).</p></li>
+<li><p><strong>drag_coefficient</strong> (<em>float</em><em>, </em><em>optional</em>) – Approximate drag coefficient for the rocket. Defaults to 0.75.</p></li>
+<li><p><strong>dt</strong> (<em>float</em><em>, </em><em>optional</em>) – Timestep size to use. Defaults to 0.2.</p></li>
+<li><p><strong>show_plot</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to plot data at the end. Defaults to False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Apogee reached by the rocket (m).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
 <dt id="bamboo.main.rao_theta_n">
@@ -380,6 +400,10 @@ Data obtained by using <a class="reference external" href="http://www.graphreade
 <code class="sig-prename descclassname"><span class="pre">bamboo.main.</span></code><code class="sig-name descname"><span class="pre">rao_theta_e</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">area_ratio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.8</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.rao_theta_e" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the contour angle at the exit of the bell nozzle, by interpolating data.
 Data obtained by using <a class="reference external" href="http://www.graphreader.com/">http://www.graphreader.com/</a> on the graph in Reference [1].</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Not actually used by Bamboo (a quadratic only has three degrees of freedom, so Bamboo fits the nozzle contour quadratic to the inflection position, inflection angle, and exit position).</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -515,20 +539,28 @@ Data obtained by using <a class="reference external" href="http://www.graphreade
 
 <dl class="py class">
 <dt id="bamboo.main.Nozzle">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.main.</span></code><code class="sig-name descname"><span class="pre">Nozzle</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">At</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Ae</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rao'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cone_angle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Nozzle" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.main.</span></code><code class="sig-name descname"><span class="pre">Nozzle</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rao'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Nozzle" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Object for calculating and storing nozzle geometry.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>At</strong> (<em>float</em>) – Throat area (m^2).</p></li>
-<li><p><strong>Ae</strong> (<em>float</em>) – Exit plane area (m^2)</p></li>
-<li><p><strong>type</strong> (<em>str</em><em>, </em><em>optional</em>) – Desired shape, can be “rao” or “cone”. Defaults to “rao”.</p></li>
-<li><p><strong>length_fraction</strong> (<em>float</em>) – Length fraction if a Rao nozzle is used. Defaults to 0.8.</p></li>
-<li><p><strong>cone_angle</strong> (<em>float</em>) – Cone angle if a cone nozzle is used (deg). Defaults to 15.</p></li>
+<dd class="field-odd"><p><strong>type</strong> (<em>str</em><em>, </em><em>optional</em>) – Desired shape, can be “rao”, “cone” or “custom”. Defaults to “rao”.</p>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>At</strong> (<em>float</em>) – Throat area (m^2) - required for ‘rao’ and ‘cone’ nozzles.</p></li>
+<li><p><strong>Ae</strong> (<em>float</em>) – Exit plane area (m^2) - required for ‘rao’ and ‘cone’ nozzles.</p></li>
+<li><p><strong>length_fraction</strong> (<em>float</em><em>, </em><em>optional</em>) – Length fraction for ‘rao’ nozzle - used if type = “rao”. Defaults to 0.8.</p></li>
+<li><p><strong>cone_angle</strong> (<em>float</em><em>, </em><em>optional</em>) – Cone angle (deg) - used for ‘cone’ nozzles. Defaults to 15.</p></li>
+<li><p><strong>xs</strong> (<em>list</em>) – List of x positions that the data in the ‘ys’ argument corresponds to (m) - used for ‘custom’ nozzles.</p></li>
+<li><p><strong>ys</strong> (<em>list</em>) – List of y positions corresponding to your custom nozzle contour (m) - used for ‘custom’ nozzles</p></li>
 </ul>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If using custom data, your x-array must start at zero, and the smallest y-value must be at x = 0. Bamboo uses the convention that x = 0 is the throat location.</p>
+</div>
 <dl class="py attribute">
 <dt id="bamboo.main.Nozzle.length">
 <code class="sig-name descname"><span class="pre">length</span></code><a class="headerlink" href="#bamboo.main.Nozzle.length" title="Permalink to this definition">¶</a></dt>
@@ -656,23 +688,34 @@ Data obtained by using <a class="reference external" href="http://www.graphreade
 
 <dl class="py class">
 <dt id="bamboo.main.EngineGeometry">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.main.</span></code><code class="sig-name descname"><span class="pre">EngineGeometry</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nozzle</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chamber_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chamber_area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inner_wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outer_wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">style</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.EngineGeometry" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.main.</span></code><code class="sig-name descname"><span class="pre">EngineGeometry</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nozzle</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inner_wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">style</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.EngineGeometry" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Container for additional engine geometry parameters (mostly chamber geometry). Used internally for heating analyses.</p>
+<p>Container for additional engine geometry parameters (mostly chamber geometry). Generally only used internally.</p>
 <dl class="simple">
 <dt>Using the ‘inner_wall_thickness’ (or ‘outer_wall_thickness’, if also provided) argument:</dt><dd><p>If an array, must be thicknesses at equally spaced x positions. This will be stretched to fill the engine length.
 E.g. [1e-3, 5e-3] will have 1mm thick walls at chamber entrance, 5mm thick at nozzle exit.</p>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If using style = “custom”, only specify the geometry up to the throat - everything downstream of the throat is specified by the Nozzle object.
+Keep in mind that Bamboo uses the convection that x = 0 at the throat (so all your x value should be negative).</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>nozzle</strong> (<em>float</em>) – Nozzle of the engine.</p></li>
+<li><p><strong>inner_wall_thickness</strong> (<em>float</em><em> or </em><em>array</em>) – Thickness of the inner liner wall (m). Can be constant (float), or variable (array).</p></li>
+<li><p><strong>style</strong> (<em>str</em><em>, </em><em>optional</em>) – Geometry style to use, can be “auto” or “custom”. Defaults to “auto”.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><ul class="simple">
 <li><p><strong>chamber_length</strong> (<em>float</em>) – Length of the combustion chamber (m)</p></li>
 <li><p><strong>chamber_area</strong> (<em>float</em>) – Cross sectional area of the combustion chamber (m^2)</p></li>
-<li><p><strong>inner_wall_thickness</strong> (<em>float</em><em> or </em><em>array</em>) – Thickness of the inner liner wall (m). Can be constant (float), or variable (array).</p></li>
 <li><p><strong>outer_wall_thickness</strong> (<em>float</em><em> or </em><em>array</em>) – Thickness of the outer liner wall (m). Can be constant (float), or variable (array).</p></li>
-<li><p><strong>style</strong> (<em>str</em><em>, </em><em>optional</em>) – Geometry style to use. Currently the only option is ‘auto’. Defaults to “auto”.</p></li>
+<li><p><strong>xs</strong> (<em>list</em>) – x-array corresponding to x positions (m) for the ‘ys’ keyword argument - only used with style = “custom”.</p></li>
+<li><p><strong>ys</strong> (<em>list</em>) – y positions specifying the engine contour (m) - only used with style = “custom.”</p></li>
 </ul>
 </dd>
 </dl>
@@ -701,7 +744,7 @@ E.g. [1e-3, 5e-3] will have 1mm thick walls at chamber entrance, 5mm thick at no
 <dl class="py attribute">
 <dt id="bamboo.main.EngineGeometry.x_chamber_end">
 <code class="sig-name descname"><span class="pre">x_chamber_end</span></code><a class="headerlink" href="#bamboo.main.EngineGeometry.x_chamber_end" title="Permalink to this definition">¶</a></dt>
-<dd><p>x position where the combustion chamber ends (m).</p>
+<dd><p>x position where the combustion chamber ends (m) - only available of style = “auto”.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
 <dd class="field-odd"><p>float</p>
@@ -712,7 +755,7 @@ E.g. [1e-3, 5e-3] will have 1mm thick walls at chamber entrance, 5mm thick at no
 <dl class="py attribute">
 <dt id="bamboo.main.EngineGeometry.x_curved_converging_start">
 <code class="sig-name descname"><span class="pre">x_curved_converging_start</span></code><a class="headerlink" href="#bamboo.main.EngineGeometry.x_curved_converging_start" title="Permalink to this definition">¶</a></dt>
-<dd><p>x position where the curved part of the converging section begins (m).</p>
+<dd><p>x position where the curved part of the converging section begins (m) - only available of style = “auto” and nozzle type = “rao”.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
 <dd class="field-odd"><p>float</p>
@@ -723,7 +766,7 @@ E.g. [1e-3, 5e-3] will have 1mm thick walls at chamber entrance, 5mm thick at no
 <dl class="py attribute">
 <dt id="bamboo.main.EngineGeometry.chamber_length">
 <code class="sig-name descname"><span class="pre">chamber_length</span></code><a class="headerlink" href="#bamboo.main.EngineGeometry.chamber_length" title="Permalink to this definition">¶</a></dt>
-<dd><p>Chamber length (m).</p>
+<dd><p>Chamber length (m) - only available if style = “auto”.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
 <dd class="field-odd"><p>float</p>
@@ -734,7 +777,7 @@ E.g. [1e-3, 5e-3] will have 1mm thick walls at chamber entrance, 5mm thick at no
 <dl class="py attribute">
 <dt id="bamboo.main.EngineGeometry.chamber_area">
 <code class="sig-name descname"><span class="pre">chamber_area</span></code><a class="headerlink" href="#bamboo.main.EngineGeometry.chamber_area" title="Permalink to this definition">¶</a></dt>
-<dd><p>Chamber area (m^2).</p>
+<dd><p>Chamber area (m^2) - only available if style = “auto”.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
 <dd class="field-odd"><p>float</p>
@@ -745,7 +788,7 @@ E.g. [1e-3, 5e-3] will have 1mm thick walls at chamber entrance, 5mm thick at no
 <dl class="py attribute">
 <dt id="bamboo.main.EngineGeometry.chamber_radius">
 <code class="sig-name descname"><span class="pre">chamber_radius</span></code><a class="headerlink" href="#bamboo.main.EngineGeometry.chamber_radius" title="Permalink to this definition">¶</a></dt>
-<dd><p>Chamber radius (m).</p>
+<dd><p>Chamber radius (m) - only available if style = “auto”.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
 <dd class="field-odd"><p>float</p>
@@ -1059,20 +1102,33 @@ To see the plot, you will need to run matplotlib.pyplot.show().</p>
 
 <dl class="py method">
 <dt id="bamboo.main.Engine.add_geometry">
-<code class="sig-name descname"><span class="pre">add_geometry</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chamber_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chamber_area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inner_wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">style</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.add_geometry" title="Permalink to this definition">¶</a></dt>
-<dd><p>Specify extra geometry parameters. Required for running cooling system analyses.</p>
+<code class="sig-name descname"><span class="pre">add_geometry</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inner_wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">style</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.add_geometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify extra geometry parameters. Required for running cooling system and stress analyses.</p>
+<dl class="simple">
+<dt>Using the ‘inner_wall_thickness’ (or ‘outer_wall_thickness’, if also provided) argument:</dt><dd><p>If an array, must be thicknesses at equally spaced x positions. This will be stretched to fill the engine length.
+E.g. [1e-3, 5e-3] will have 1mm thick walls at chamber entrance, 5mm thick at nozzle exit.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If using style = “custom”, only specify the geometry up to the throat - everything downstream of the throat is specified by the Nozzle object.
+Keep in mind that Bamboo uses the convection that x = 0 at the throat (so all your x values should be negative).</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>nozzle</strong> (<a class="reference internal" href="#bamboo.main.Nozzle" title="bamboo.main.Nozzle"><em>Nozzle</em></a>) – Nozzle of the engine.</p></li>
-<li><p><strong>chamber_length</strong> (<em>float</em>) – Length of the combustion chamber (m)</p></li>
-<li><p><strong>chamber_area</strong> (<em>float</em>) – Cross sectional area of the combustion chamber (m^2)</p></li>
 <li><p><strong>inner_wall_thickness</strong> (<em>float</em><em> or </em><em>array</em>) – Thickness of the inner liner wall (m). Can be constant (float), or variable (array).</p></li>
-<li><p><strong>style</strong> (<em>str</em><em>, </em><em>optional</em>) – Geometry style to use. Currently the only option is ‘auto’. Defaults to “auto”.</p></li>
+<li><p><strong>style</strong> (<em>str</em><em>, </em><em>optional</em>) – Geometry style to use, can be “auto” or “custom”. Defaults to “auto”.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Keyword Arguments</dt>
-<dd class="field-even"><p><strong>outer_wall_thickness</strong> (<em>float</em><em> or </em><em>array</em>) – Thickness of the outer liner wall (m). Can be constant (float), or variable (array).</p>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>chamber_length</strong> (<em>float</em>) – Length of the combustion chamber (m) - needed for style = ‘auto’.</p></li>
+<li><p><strong>chamber_area</strong> (<em>float</em>) – Cross sectional area of the combustion chamber (m^2) - needed for style = ‘auto’.</p></li>
+<li><p><strong>xs</strong> (<em>list</em>) – x-array corresponding to x positions (m) for the ‘ys’ argument - needed for style = ‘custom’.</p></li>
+<li><p><strong>ys</strong> (<em>list</em>) – y positions specifying the engine contour (m) - needed for style = ‘custom.</p></li>
+<li><p><strong>outer_wall_thickness</strong> (<em>float</em><em> or </em><em>array</em><em>, </em><em>optional</em>) – Thickness of the outer liner wall (m). Can be constant (float), or variable (array). Used for stress analyses.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -1120,7 +1176,11 @@ To see the plot, you will need to run matplotlib.pyplot.show().</p>
 <dl class="py method">
 <dt id="bamboo.main.Engine.add_ablative">
 <code class="sig-name descname"><span class="pre">add_ablative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ablative_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_material</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[-</span> <span class="pre">1000,</span> <span class="pre">1000]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ablative_thickness</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.add_ablative" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The wall material you add will override the inner wall material of any cooling jackets that are present.</p>
+</div>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ablative_material</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Ablative material.</p></li>
@@ -1272,7 +1332,7 @@ number_of_points (int): Number of discrete liner positions</p>
 
 <dl class="py method">
 <dt id="bamboo.main.Engine.steady_heating_analysis">
-<code class="sig-name descname"><span class="pre">steady_heating_analysis</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_gas_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bartz-sigma'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_coolant_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'sieder-tate'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_json</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'heating_output.json'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.steady_heating_analysis" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">steady_heating_analysis</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_gas_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bartz-sigma'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_coolant_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'sieder-tate'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_json</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'heating_output.json'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.steady_heating_analysis" title="Permalink to this definition">¶</a></dt>
 <dd><p>Steady state heating analysis. Can be used for regenarative cooling, or combined regenerative and ablative cooling.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1282,6 +1342,9 @@ number_of_points (int): Number of discrete liner positions</p>
 <li><p><strong>h_coolant_model</strong> (<em>str</em><em>, </em><em>optional</em>) – Equation to use for the coolant side convective heat transfer coefficients. Options are ‘rpe’, ‘sieder-tate’ and ‘dittus-boelter’. Defaults to “sieder-tate”.</p></li>
 <li><p><strong>to_json</strong> (<em>str</em><em> or </em><em>bool</em><em>, </em><em>optional</em>) – Directory to export a .JSON file to, containing simulation results. If False, no .JSON file is saved. Defaults to ‘heating_output.json’.</p></li>
 </ul>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><p><strong>gas_fudge_factor</strong> (<em>float</em><em>, </em><em>optional</em>) – Fudge factor to multiply the gas side thermal resistance by. A factor of ~1.3 can sometimes help results match experimental data better.</p>
 </dd>
 </dl>
 <div class="admonition note">
@@ -1958,13 +2021,13 @@ If using type = “functions”, the function arguments (except for the T_from_e
 
 <dl class="py class">
 <dt id="bamboo.cooling.CoolingJacket">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">CoolingJacket</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inner_wall</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inlet_T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inlet_p0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coolant_transport</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot_coolant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[-</span> <span class="pre">1000,</span> <span class="pre">1000]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">configuration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'spiral'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.CoolingJacket" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">CoolingJacket</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inner_wall_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inlet_T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inlet_p0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coolant_transport</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot_coolant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[-</span> <span class="pre">1000,</span> <span class="pre">1000]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">configuration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'spiral'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.CoolingJacket" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Container for cooling jacket information - e.g. for regenerative cooling. All channels are assumed to have rectangular cross sections.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>inner_wall</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Wall material on the inner side of the cooling jacket.</p></li>
+<li><p><strong>inner_wall_material</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Wall material on the inner side of the cooling jacket.</p></li>
 <li><p><strong>inlet_T</strong> (<em>float</em>) – Inlet coolant temperature (K)</p></li>
 <li><p><strong>inlet_p0</strong> (<em>float</em>) – Inlet coolant stagnation pressure (Pa)</p></li>
 <li><p><strong>coolant_transport</strong> (<a class="reference internal" href="#bamboo.cooling.TransportProperties" title="bamboo.cooling.TransportProperties"><em>TransportProperties</em></a>) – Container for the coolant transport properties.</p></li>
@@ -1980,7 +2043,7 @@ If using type = “functions”, the function arguments (except for the T_from_e
 <li><p><strong>number_of_ribs</strong> (<em>int</em>) – Only relevant if configuration = ‘vertical’ and ‘blockage_ratio’ !=0. This is the number of ribs present in the cooling channel.</p></li>
 <li><p><strong>channel_height</strong> (<em>float</em>) – This is the height of the channels, in the radial direction (m).</p></li>
 <li><p><strong>channel_width</strong> (<em>float</em>) – Only relevant if configuration = ‘spiral’. This is the width of the cooling channels (m).</p></li>
-<li><p><strong>outer_wall</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Wall material for the outer liner.</p></li>
+<li><p><strong>outer_wall_material</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Wall material for the outer liner.</p></li>
 </ul>
 </dd>
 </dl>
