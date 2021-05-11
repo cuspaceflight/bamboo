@@ -387,7 +387,7 @@ class Nozzle:
                 self.x_data = kwargs["xs"]
                 self.y_data = kwargs["ys"]
             except KeyError:
-                raise KeyError("You must specify both the 'xs' and 'ys' arguments when using nozzle type = 'custom'")
+                raise KeyError("You must specify both  'xs' and 'ys' when using nozzle type = 'custom'")
 
             assert self.x_data[0] == 0.0 and min(self.x_data) == 0, "x[0] for type = 'custom' must be equal to zero, and there must be no negative values anywhere."
             assert self.y_data[0] == min(self.y_data), "Smallest value in the y-array must be at index 0, for type = 'custom'. Bamboo uses the convention that throats are at x = 0."
@@ -403,7 +403,7 @@ class Nozzle:
                 self.At = kwargs["At"]
                 self.Ae = kwargs["Ae"]
             except KeyError:
-                raise KeyError("You must specify both the 'At' and 'Ae' arguments if not using nozzle type = 'custom.")
+                raise KeyError("You must specify both 'At' and 'Ae' if not using nozzle type = 'custom.")
 
             self.Rt = (self.At/np.pi)**0.5   #Throat radius (m)
             self.Re = (self.Ae/np.pi)**0.5   #Exit radius (m)
@@ -615,7 +615,7 @@ class EngineGeometry:
                 self.x_data = kwargs["xs"]
                 self.y_data = kwargs["ys"]
             except KeyError:
-                raise KeyError("You must specify both the 'xs' and 'ys' arguments when using geometry style = 'custom'")
+                raise KeyError("You must specify both 'xs' and 'ys' when using geometry style = 'custom'")
 
             assert self.x_data[-1] == 0, "x[-1] must be equal to zero - this datapoint corresponds to the throat."
             assert self.y_data[-1] == nozzle.Rt, "Discontinuity at the throat, y[-1] must the same as the"
@@ -627,7 +627,7 @@ class EngineGeometry:
                 self.chamber_length = kwargs["chamber_length"]
                 self.chamber_area = kwargs["chamber_area"]
             except KeyError:
-                raise KeyError("You must specify both the 'chamber_length' and 'chamber_area' arguments when using geometry style = 'auto'")
+                raise KeyError("You must specify both 'chamber_length' and 'chamber_area' when using geometry style = 'auto'")
 
             self.chamber_radius = (self.chamber_area/np.pi)**0.5
 
