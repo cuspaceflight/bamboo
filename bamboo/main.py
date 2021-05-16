@@ -1215,11 +1215,11 @@ class Engine:
         self.geometry = EngineGeometry(self.nozzle, inner_wall_thickness, style, **kwargs)
         self.has_geometry = True
 
-    def add_cooling_jacket(self, inner_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
+    def add_cooling_jacket(self, inner_wall_material, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
         """Container for cooling jacket information - e.g. for regenerative cooling.
 
         Args:
-            inner_wall (Material): Wall material on the inner side of the cooling jacket.
+            inner_wall_material (Material): Wall material on the inner side of the cooling jacket.
             inlet_T (float): Inlet coolant temperature (K)
             inlet_p0 (float): Inlet coolant stagnation pressure (Pa)
             coolant_transport (TransportProperties): Container for the coolant transport properties.
@@ -1236,7 +1236,7 @@ class Engine:
             outer_wall (Material): Wall material for the outer liner.
         """
         
-        self.cooling_jacket = cool.CoolingJacket(inner_wall,
+        self.cooling_jacket = cool.CoolingJacket(inner_wall_material,
                                                 inlet_T, 
                                                 inlet_p0, 
                                                 coolant_transport, 
