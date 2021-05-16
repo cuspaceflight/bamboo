@@ -21,6 +21,7 @@ An introduction to the package can be found in the 'Introduction to Bamboo.ipynb
 ## Tools for cooling system modelling
 - Add a regenerative cooling jacket to the engine.
 - Add a refractory (e.g. a graphite insert) into the engine.
+- Specify your own coolant and exhaust gas transport properties.
 - Steady state heating simulations for cooling jackets on their own, or cooling jackets with refractories.
 - Transient and steady state stress analysis tools.
 
