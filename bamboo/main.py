@@ -130,6 +130,20 @@ def p(p0, M, gamma):
 
 
 def estimate_apogee(dry_mass, propellant_mass, engine, cross_sectional_area, drag_coefficient = 0.75, dt = 0.2, show_plot = False):
+    """Gets an estimate of the apogee reached by a rocket using an Engine object for propulsion.
+
+    Args:
+        dry_mass (float): Dry mass of the rocket (kg).
+        propellant_mass (float): Propellant mass of the rocket (kg)
+        engine (Engine): Engine object to use for propulsion
+        cross_sectional_area (float): Cross sectional area used to normalise the drag coefficient (m^2).
+        drag_coefficient (float, optional): Approximate drag coefficient for the rocket. Defaults to 0.75.
+        dt (float, optional): Timestep size to use. Defaults to 0.2.
+        show_plot (bool, optional): Whether or not to plot data at the end. Defaults to False.
+
+    Returns:
+        float: Apogee reached by the rocket (m).
+    """
     global g0
 
     #Use the convention that everything is positive upwards
@@ -223,9 +237,7 @@ def rao_theta_n(area_ratio, length_fraction = 0.8):
     
     #Make sure we're not outside the bounds of our data
     if area_ratio < 3.7 or area_ratio > 47:
-        print("bamboo.main.rao_theta_n(): Area ratio is outside the range of the Rao inflection angle data, returning 15 deg instead.")
-        return 15.0*np.pi/180
-        #raise ValueError(f"The area ratio provided ({area_ratio}) is outside of the range of available data. Maximum available is {data['area_ratio'][-1]}, minimum is {data['area_ratio'][0]}.")
+        raise ValueError(f"The area ratio provided ({area_ratio}) is outside of the range of available data. Maximum available is {data['area_ratio'][-1]}, minimum is {data['area_ratio'][0]}.")
     
     else:
         #Linearly interpolate and return the result, after converting it to radians.
@@ -234,6 +246,9 @@ def rao_theta_n(area_ratio, length_fraction = 0.8):
 def rao_theta_e(area_ratio, length_fraction = 0.8):
     """Returns the contour angle at the exit of the bell nozzle, by interpolating data.  
     Data obtained by using http://www.graphreader.com/ on the graph in Reference [1].
+
+    Note:
+        Not actually used by Bamboo (a quadratic only has three degrees of freedom, so Bamboo fits the nozzle contour quadratic to the inflection position, inflection angle, and exit position).
 
     Args:
         area_ratio (float): Area ratio of the nozzle (A2/At)
@@ -253,9 +268,7 @@ def rao_theta_e(area_ratio, length_fraction = 0.8):
     
     #Check if we're outside the bounds of our data
     if area_ratio < 3.7 or area_ratio > 47:
-        print("bamboo.main.rao_theta_e(): Area ratio is outside the range of the Rao exit angle data, returning 14.999 deg instead.")
-        return 14.999*np.pi/180
-        #raise ValueError(f"The area ratio provided ({area_ratio}) is outside of the range of available data. Maximum available is {data['area_ratio'][-1]}, minimum is {data['area_ratio'][0]}.")
+        raise ValueError(f"The area ratio provided ({area_ratio}) is outside of the range of available data. Maximum available is {data['area_ratio'][-1]}, minimum is {data['area_ratio'][0]}.")
     
     else:
         #Linearly interpolate and return the result, after converting it to radians
@@ -342,12 +355,19 @@ class Nozzle:
     """Object for calculating and storing nozzle geometry.
 
     Args:
-        At (float): Throat area (m^2).
-        Ae (float): Exit plane area (m^2)
-        type (str, optional): Desired shape, can be "rao" or "cone". Defaults to "rao".
-        length_fraction (float): Length fraction if a Rao nozzle is used. Defaults to 0.8.
-        cone_angle (float): Cone angle if a cone nozzle is used (deg). Defaults to 15.
-    
+        type (str, optional): Desired shape, can be "rao", "cone" or "custom". Defaults to "rao".
+
+    Keyword Args:
+        At (float): Throat area (m^2) - required for 'rao' and 'cone' nozzles.
+        Ae (float): Exit plane area (m^2) - required for 'rao' and 'cone' nozzles.
+        length_fraction (float, optional): Length fraction for 'rao' nozzle - used if type = "rao". Defaults to 0.8.
+        cone_angle (float, optional): Cone angle (deg) - used for 'cone' nozzles. Defaults to 15.
+        xs (list) : List of x positions that the data in the 'ys' argument corresponds to (m) - used for 'custom' nozzles.
+        ys (list) : List of y positions corresponding to your custom nozzle contour (m) - used for 'custom' nozzles
+
+    Note:
+        If using custom data, your x-array must start at zero, and the smallest y-value must be at x = 0. Bamboo uses the convention that x = 0 is the throat location.
+
     Attributes:
         length (float): Length of the diverging section (distance between throat and nozzle exit) (m).
         At (float): Throat area (m^2)
@@ -355,49 +375,106 @@ class Nozzle:
         Rt (float): Throat radius (m)
         Re (float): Exit radius (m)
     """
-    def __init__(self, At, Ae, type = "rao", length_fraction = 0.8, cone_angle = 15):
-        self.At = At
-        self.Ae = Ae
-        self.Rt = (At/np.pi)**0.5   #Throat radius (m)
-        self.Re = (Ae/np.pi)**0.5   #Exit radius (m)
+    def __init__(self, type = "rao", **kwargs):
+    
+        if type != "rao" and type != "cone" and type != "custom":
+            raise ValueError(f"Nozzle type '{type}' is not currently implemented. Try 'rao', 'cone', or 'custom'")
+
         self.type = type
-        
+
+        if self.type == "custom":
+            try:
+                self.x_data = kwargs["xs"]
+                self.y_data = kwargs["ys"]
+            except KeyError:
+                raise KeyError("You must specify both  'xs' and 'ys' when using nozzle type = 'custom'")
+
+            assert self.x_data[0] == 0.0 and min(self.x_data) == 0, "x[0] for type = 'custom' must be equal to zero, and there must be no negative values anywhere."
+            assert self.y_data[0] == min(self.y_data), "Smallest value in the y-array must be at index 0, for type = 'custom'. Bamboo uses the convention that throats are at x = 0."
+
+            self.length = max(self.x_data)
+            self.Rt = self.y_data[list(self.x_data).index(0.0)]
+            self.Re = self.y_data[list(self.x_data).index(max(self.x_data))]
+            self.At = np.pi*self.Rt**2
+            self.Ae = np.pi*self.Re**2
+
+        else:
+            try:
+                self.At = kwargs["At"]
+                self.Ae = kwargs["Ae"]
+            except KeyError:
+                raise KeyError("You must specify both 'At' and 'Ae' if not using nozzle type = 'custom.")
+
+            self.Rt = (self.At/np.pi)**0.5   #Throat radius (m)
+            self.Re = (self.Ae/np.pi)**0.5   #Exit radius (m)
+
         if self.type == "cone":
-            self.cone_angle = cone_angle
+            if "cone_angle" in kwargs:
+                self.cone_angle = kwargs["cone_angle"]
+            else:
+                self.cone_angle = 15
             self.dydx = np.tan(self.cone_angle*np.pi/180)
             self.length = (self.Re - self.Rt)/self.dydx
 
         elif self.type == "rao":
-            self.length_fraction = length_fraction
-            self.theta_n = rao_theta_n(self.Ae/self.At)     #Inflection angle (rad), as defined in [1]
-            self.theta_e = rao_theta_e(self.Ae/self.At)     #Exit angle (rad), as defined in [1]
+            if "length_fraction" in kwargs:
+                self.length_fraction = kwargs["length_fraction"]
+            else:
+                self.length_fraction = 0.8
 
-            #Page 5 of Reference [1]:
-            self.Nx = 0.382*self.Rt*np.cos(self.theta_n - np.pi/2)                              #Inflection point x-value
-            self.Ny = 0.382*self.Rt*np.sin(self.theta_n - np.pi/2) + 0.382*self.Rt + self.Rt    #Inflection point y-value
-            self.Ex = 0.8*((self.Re/self.Rt) - 1)*self.Rt/np.tan(np.pi/12)                      #Exit x-value
-            self.Ey = self.Re                                                                   #Exit y-value (same as Re)
-            self.length = self.Ex                                                               #Nozzle length
+            #Our Rao bell nozzle data is taken from a graph, and data is unavailable below an area ratio of 3.7 or above an area ratio of 47.
+            if self.Ae/self.At < 3.7 or self.Ae/self.At > 47:
+                print("NOTE: Area ratio is outside of data range for Rao bell nozzle graphs (minimum 3.7, maximum 47). Using a 15 deg cone nozzle instead.")
+                self.theta_n = 15*np.pi/180
+                self.theta_e_graph = float("NaN")
 
-            #Similar to page 2 of Reference [3]. Set up the matrix problem to get the coefficients for x = ay^2 + by + c
-            #We will fit the quadratic using the inflection point and exit coordinates, and the exit gradient. The inflection gradient is ignored.
-            A = np.array([[2*self.Ey, 1, 0],
-                          [self.Ny**2, self.Ny, 1],
-                          [self.Ey**2, self.Ey, 1]], dtype='float')
-            
-            b = np.array([1/np.tan(self.theta_e), self.Nx, self.Ex], dtype='float')
+                self.x_n = 0.382*self.Rt*np.cos(self.theta_n - np.pi/2)                              #Inflection point x-value
+                self.y_n = 0.382*self.Rt*np.sin(self.theta_n - np.pi/2) + 0.382*self.Rt + self.Rt    #Inflection point y-value
+                self.y_e = self.Re                                                                   #Exit y-value (same as Re)
 
-            self.a, self.b, self.c = np.linalg.solve(A, b)
+                #Quadratic is normally: x = ay^2 + by + c, but we set a = 0 to make it a linear cone nozzle.
+                self.a = 0
 
+                A = np.array([[1,        0],
+                              [self.y_n, 1]], dtype='float')
+                
+                b = np.array([1/np.tan(self.theta_n), self.x_n], dtype='float')
 
-        else:
-            raise ValueError(f"Nozzle type '{type}' is not currently implemented. Try 'conical' or 'rao'")
+                self.b, self.c = np.linalg.solve(A, b)
+
+                self.x_e = self.b*self.y_e + self.c
+                self.length = self.x_e
+
+            else:
+                self.theta_n = rao_theta_n(self.Ae/self.At)             #Inflection angle (rad), as defined in [1]
+                self.theta_e_graph = rao_theta_e(self.Ae/self.At)       #Exit angle (rad) read off the Rao graph, as defined in [1] - not actually used in bamboo for the quadratic fitting (just here for reference)
+
+                #Page 5 of Reference [1]:
+                self.x_n = 0.382*self.Rt*np.cos(self.theta_n - np.pi/2)                              #Inflection point x-value
+                self.y_n = 0.382*self.Rt*np.sin(self.theta_n - np.pi/2) + 0.382*self.Rt + self.Rt    #Inflection point y-value
+                self.x_e = 0.8*((self.Re/self.Rt) - 1)*self.Rt/np.tan(np.pi/12)                      #Exit x-value - corresponds to 80% the length of a 15 deg cone I believe
+                self.y_e = self.Re                                                                   #Exit y-value (same as Re)
+                self.length = self.x_e                                                               #Nozzle length
+
+                #Similar to page 2 of Reference [3]. Set up the matrix problem to get the coefficients for x = ay^2 + by + c
+                #We will fit the quadratic using the inflection point and exit coordinates, and the inflection gradient. The exit gradient is ignored.
+                A = np.array([[2*self.y_n, 1, 0],
+                            [self.y_n**2, self.y_n, 1],
+                            [self.y_e**2, self.y_e, 1]], dtype='float')
+                
+                b = np.array([1/np.tan(self.theta_n), self.x_n, self.x_e], dtype='float')
+
+                self.a, self.b, self.c = np.linalg.solve(A, b)
+
+            self.theta_e = np.arctan2(1, 2*self.a*self.x_e + self.b)
 
     def __repr__(self):
         if self.type == "rao":
-            return f"Rao type nozzle (length fraction = {self.length_fraction}). \nLength = {self.length} m \nThroat area = {self.At} m^2 \nExit area = {self.Ae} m^2 \nArea ratio = {self.Ae/self.At} \nRao inflection angle = {self.theta_n*180/np.pi} deg \nRao exit angle = {self.theta_e*180/np.pi} deg"
+            return f"Rao type nozzle (length fraction = {self.length_fraction}). \nLength = {self.length} m \nThroat area = {self.At} m^2 \nExit area = {self.Ae} m^2 \nArea ratio = {self.Ae/self.At} \nRao inflection angle = {self.theta_n*180/np.pi} deg \nRao exit angle = {self.theta_e*180/np.pi} deg from bamboo ({self.theta_e_graph*180/np.pi} deg from Rao graphs) "
         elif self.type == "cone":
-            return f"Cone type nozzle (Length = {self.length} m \nThroat area = {self.At} m^2 \nExit area = {self.Ae} m^2 \nArea ratio = {self.Ae/self.At} \n"
+            return f"Cone type nozzle (Cone angle = {self.cone_angle} deg \nLength = {self.length} m \nThroat area = {self.At} m^2 \nExit area = {self.Ae} m^2 \nArea ratio = {self.Ae/self.At} \n"
+        elif self.type == "custom":
+            return f"Custom nozzle shape (Length = {self.length} m \nThroat area = {self.At} m^2 \nExit area = {self.Ae} m^2 \nArea ratio = {self.Ae/self.At} \n"
 
     def y(self, x):
         """Returns the distance between the nozzle contour and the centreline, given the axial distance 'x' downstream from the throat. Based on Reference [1] page 5.
@@ -411,15 +488,23 @@ class Nozzle:
         if x < 0:
             raise ValueError(f"x must be greater than zero. You tried to input {x}.")
 
+        if self.type == "custom":
+            return np.interp(x, self.x_data, self.y_data)
+
         elif self.type == "rao" and x <= self.length:
             #Circular throat section
-            if x < self.Nx:
+            if x < self.x_n:
                 theta = -np.arccos(x/(0.382*self.Rt)) #Take the negative, because we want an answer in the range [-90 to 0 deg], but numpy gives us the one in the range [0 to 180 deg]
                 return 0.382*self.Rt*np.sin(theta) + 0.382*self.Rt + self.Rt
             
             #Parabolic section.
             else:
-                return ((4*self.a*(x-self.c) + self.b**2)**0.5 - self.b)/(2*self.a)   #Rearranging the quadratic on page 2 of Reference [3] to solve for y
+                if self.a == 0: #This occurs if the area ratio is outside the Rao bell nozzle graph range.
+                    #x = by + c
+                    return (x-self.c)/self.b
+                else:
+                    #x = ay^2 + by + c
+                    return ((4*self.a*(x-self.c) + self.b**2)**0.5 - self.b)/(2*self.a)   #Rearranging the quadratic on page 2 of Reference [3] to solve for y
 
         elif self.type == "cone" and x <= self.length:
             return self.Rt + self.dydx*x
@@ -444,20 +529,19 @@ class Nozzle:
         Args:
             number_of_points (int, optional): Numbers of discrete points to plot. Defaults to 1000.
         """
-        if self.type == "rao":
-            x = np.linspace(0, self.Ex, number_of_points)
-            y = np.zeros(len(x))
+        x = np.linspace(0, self.length, number_of_points)
+        y = np.zeros(len(x))
 
-            for i in range(len(x)):
-                y[i] = self.y(x[i])
+        for i in range(len(x)):
+            y[i] = self.y(x[i])
 
-            fig, axs = plt.subplots()
-            axs.plot(x, y, color="blue")
-            axs.plot(x, -y, color="blue")
-            axs.grid()
-            axs.set_aspect('equal')
-            plt.xlabel("x position (m)")
-            plt.ylabel("y position (m)")
+        fig, axs = plt.subplots()
+        axs.plot(x, y, color="blue")
+        axs.plot(x, -y, color="blue")
+        axs.grid()
+        axs.set_aspect('equal')
+        plt.xlabel("x position (m)")
+        plt.ylabel("y position (m)")
 
     @staticmethod
     def from_engine_components(perfect_gas, chamber_conditions, p_amb, type = "rao", length_fraction = 0.8):
@@ -478,57 +562,84 @@ class Nozzle:
                     type = type, length_fraction = length_fraction)
 
 class EngineGeometry:
-    """Container for additional engine geometry parameters (mostly chamber geometry). Used internally for heating analyses.
+    """Container for additional engine geometry parameters (mostly chamber geometry). Generally only used internally.
 
     Using the 'inner_wall_thickness' (or 'outer_wall_thickness', if also provided) argument:
         If an array, must be thicknesses at equally spaced x positions. This will be stretched to fill the engine length.
         E.g. [1e-3, 5e-3] will have 1mm thick walls at chamber entrance, 5mm thick at nozzle exit.
 
+    Note:
+        If using style = "custom", only specify the geometry up to the throat - everything downstream of the throat is specified by the Nozzle object. 
+        Keep in mind that Bamboo uses the convection that x = 0 at the throat (so all your x value should be negative).
+
     Args:
         nozzle (float): Nozzle of the engine.
+        inner_wall_thickness (float or array): Thickness of the inner liner wall (m). Can be constant (float), or variable (array). 
+        style (str, optional): Geometry style to use, can be "auto" or "custom". Defaults to "auto".
+
+    Keyword Args:
         chamber_length (float): Length of the combustion chamber (m)
         chamber_area (float): Cross sectional area of the combustion chamber (m^2)
-        inner_wall_thickness (float or array): Thickness of the inner liner wall (m). Can be constant (float), or variable (array). 
         outer_wall_thickness (float or array): Thickness of the outer liner wall (m). Can be constant (float), or variable (array).
-        style (str, optional): Geometry style to use. Currently the only option is 'auto'. Defaults to "auto".
+        xs (list) : x-array corresponding to x positions (m) for the 'ys' keyword argument - only used with style = "custom".
+        ys (list): y positions specifying the engine contour (m) - only used with style = "custom."
 
     Attributes:
         x_min (float): Minimum x position (m).
         x_max (float): Maximum x position (m).
-        x_chamber_end (float): x position where the combustion chamber ends (m).
-        x_curved_converging_start (float): x position where the curved part of the converging section begins (m).
-        chamber_length (float): Chamber length (m).
-        chamber_area (float): Chamber area (m^2).
-        chamber_radius (float): Chamber radius (m).
-        
+        x_chamber_end (float): x position where the combustion chamber ends (m) - only available of style = "auto".
+        x_curved_converging_start (float): x position where the curved part of the converging section begins (m) - only available of style = "auto" and nozzle type = "rao".
+        chamber_length (float): Chamber length (m) - only available if style = "auto".
+        chamber_area (float): Chamber area (m^2) - only available if style = "auto".
+        chamber_radius (float): Chamber radius (m) - only available if style = "auto". 
 
     """
-    def __init__(self, nozzle, chamber_length, chamber_area, inner_wall_thickness, outer_wall_thickness, style="auto"):
-        self.chamber_length = chamber_length
-        self.chamber_area = chamber_area
-        self.chamber_radius = (chamber_area/np.pi)**0.5 
+    def __init__(self, nozzle, inner_wall_thickness, style = "auto", **kwargs):
+        self.style = style
+
+        self.x_max = nozzle.length
+
         if type(inner_wall_thickness) is float or type(inner_wall_thickness) is int:
             self.inner_wall_thickness = [inner_wall_thickness]  #Convert into a list so the interpolation works
         else:
             self.inner_wall_thickness = inner_wall_thickness
         
-        if type(outer_wall_thickness) is float or type(outer_wall_thickness) is int:
-            self.outer_wall_thickness = [outer_wall_thickness]  #Convert into a list so the interpolation works
-        else:
-            self.outer_wall_thickness = outer_wall_thickness
+        if "outer_wall_thickness" in kwargs:
+            if type(kwargs["outer_wall_thickness"]) is float or type(kwargs["outer_wall_thickness"]) is int:
+                self.outer_wall_thickness = [kwargs["outer_wall_thickness"]]  #Convert into a list so the interpolation works
+            else:
+                self.outer_wall_thickness = kwargs["outer_wall_thickness"]
 
-        if nozzle.At > self.chamber_area:
-            raise ValueError(f"The combustion chamber area {self.chamber_area} m^2 is smaller than the throat area {nozzle.At} m^2.")
-        
-        self.style = style
-        if self.style == "auto":
+        if self.style == "custom":
+            try:
+                self.x_data = kwargs["xs"]
+                self.y_data = kwargs["ys"]
+            except KeyError:
+                raise KeyError("You must specify both 'xs' and 'ys' when using geometry style = 'custom'")
+
+            assert self.x_data[-1] == 0, "x[-1] must be equal to zero - this datapoint corresponds to the throat."
+            assert self.y_data[-1] == nozzle.Rt, "Discontinuity at the throat, y[-1] must the same as the"
+
+            self.x_min = self.x_data[0]
+
+        elif self.style == "auto":
+            try:
+                self.chamber_length = kwargs["chamber_length"]
+                self.chamber_area = kwargs["chamber_area"]
+            except KeyError:
+                raise KeyError("You must specify both 'chamber_length' and 'chamber_area' when using geometry style = 'auto'")
+
+            self.chamber_radius = (self.chamber_area/np.pi)**0.5
+
+            if nozzle.At > self.chamber_area:
+                raise ValueError(f"The combustion chamber area {self.chamber_area} m^2 is smaller than the throat area {nozzle.At} m^2.")
+
             if nozzle.type == "cone":
                 self.dydx_conv = np.tan(-45*np.pi/180)
-                self.x_max = nozzle.length
                 self.x_chamber_end = (self.chamber_radius - nozzle.Rt)/self.dydx_conv
                 self.x_min = self.x_chamber_end - self.chamber_length
 
-            elif nozzle.type == "rao":
+            elif nozzle.type == "rao" or nozzle.type == "custom":
                 #Use the system defined in Reference [1] - mostly using Eqns (4)
                 #Make sure we cap the size of the converging section to the radius of the combustion chamber.
                 chamber_radius = (self.chamber_area/np.pi)**0.5
@@ -551,7 +662,13 @@ class EngineGeometry:
 
                 #Start and end points of the engine
                 self.x_min = self.x_chamber_end - self.chamber_length
-                self.x_max = nozzle.length
+            
+            else:
+                raise ValueError(f"Unrecognisable nozzle type when trying to generate chamber geometry {nozzle.type}")
+                
+
+        else:
+            raise ValueError("Argument for 'style' must be 'auto' or 'custom'.")
 
 class Engine:
     """Class for representing a liquid rocket engine.
@@ -579,8 +696,11 @@ class Engine:
 
         #Check if the nozzle is choked
         required_throat_area = get_throat_area(perfect_gas, chamber_conditions)
+        required_mdot = m_bar(1, self.perfect_gas.gamma)*self.nozzle.At*self.chamber_conditions.p0/(self.perfect_gas.cp*self.chamber_conditions.T0)**0.5
+
         if abs(self.nozzle.At - required_throat_area) > 1e-5:
-            raise ValueError(f"The nozzle throat area is incompatible with the specified chamber conditions. The required throat area is {required_throat_area} m^2")
+            raise ValueError(f"""The nozzle throat area is incompatible with the specified chamber conditions. 
+            The required throat area is {required_throat_area} m^2, or the required mass flow rate is {required_mdot} kg/s""")
 
     #Engine geometry functions
     def y(self, x, up_to = 'contour'):
@@ -598,15 +718,24 @@ class Engine:
             if x >= 0:
                 return self.nozzle.y(x)
 
-            #Converging section and combustion chamber
+            #If x is beyond the front of the engine
+            elif x < self.geometry.x_min:
+                raise ValueError(f"x is beyond the front of the engine. You tried to input {x} but the minimum value you're allowed is {self.geometry.x_min}")
+
+            #Left hand side of throat
             else:
                 try:
                     self.geometry
                 except AttributeError:
                     raise AttributeError("Geometry is not defined for x < 0. You need to add geometry with the 'Engine.add_geometry()' function.")
 
-                if self.geometry.style == "auto":
-                    if self.nozzle.type == "rao":
+                #Custom geometry
+                if self.geometry.style == "custom":
+                    return np.interp(x, self.geometry.x_data, self.geometry.y_data)
+
+                elif self.geometry.style == "auto":
+                    #Rao bell nozzle
+                    if self.nozzle.type == "rao" or self.nozzle.type == "custom":
                         #Curved converging section
                         if x < 0 and x > self.geometry.x_curved_converging_start:
                             theta = -np.arccos(x/(1.5*self.nozzle.Rt))
@@ -625,10 +754,7 @@ class Engine:
                                                 [self.geometry.x_chamber_end, self.geometry.x_curved_converging_start], 
                                                 [self.geometry.chamber_radius, self.geometry.y_curved_converging_start])
 
-                            #Outside of the engine
-                            else:
-                                raise ValueError(f"x is beyond the front of the engine. You tried to input {x} but the minimum value you're allowed is {self.geometry.x_chamber_end - self.geometry.chamber_length}")
-                    
+                    #Cone nozzle
                     elif self.nozzle.type == "cone":
                         #If between the end of the chamber and the throat
                         if x < 0 and x >= self.geometry.x_chamber_end:
@@ -638,10 +764,6 @@ class Engine:
                         #If in the chamber
                         elif x >= self.geometry.x_min and x < self.geometry.x_chamber_end:
                             return self.geometry.chamber_radius
-
-                        else:
-                            raise ValueError(f"x is beyond the front of the engine. You tried to input {x} but the minimum value you're allowed is {self.geometry.x_min}")
-                    
 
         elif up_to == 'ablative in':
             if self.has_ablative == False:
@@ -1067,28 +1189,37 @@ class Engine:
 
 
     #Adding additional components and specifications to the engine
-    def add_geometry(self, chamber_length, chamber_area, inner_wall_thickness, style="auto", **kwargs):
-        """Specify extra geometry parameters. Required for running cooling system analyses.
+    def add_geometry(self, inner_wall_thickness, style="auto", **kwargs):
+        """Specify extra geometry parameters. Required for running cooling system and stress analyses.
+
+        Using the 'inner_wall_thickness' (or 'outer_wall_thickness', if also provided) argument:
+            If an array, must be thicknesses at equally spaced x positions. This will be stretched to fill the engine length.
+            E.g. [1e-3, 5e-3] will have 1mm thick walls at chamber entrance, 5mm thick at nozzle exit.
+
+        Note:
+            If using style = "custom", only specify the geometry up to the throat - everything downstream of the throat is specified by the Nozzle object. 
+            Keep in mind that Bamboo uses the convection that x = 0 at the throat (so all your x values should be negative).
 
         Args:
-            nozzle (Nozzle): Nozzle of the engine.
-            chamber_length (float): Length of the combustion chamber (m)
-            chamber_area (float): Cross sectional area of the combustion chamber (m^2)
-            inner_wall_thickness (float or array): Thickness of the inner liner wall (m). Can be constant (float), or variable (array).
-            style (str, optional): Geometry style to use. Currently the only option is 'auto'. Defaults to "auto".      
-            
+            inner_wall_thickness (float or array): Thickness of the inner liner wall (m). Can be constant (float), or variable (array). 
+            style (str, optional): Geometry style to use, can be "auto" or "custom". Defaults to "auto".
+
         Keyword Args:
-            outer_wall_thickness (float or array): Thickness of the outer liner wall (m). Can be constant (float), or variable (array).
+            chamber_length (float): Length of the combustion chamber (m) - needed for style = 'auto'.
+            chamber_area (float): Cross sectional area of the combustion chamber (m^2) - needed for style = 'auto'.
+            xs (list) : x-array corresponding to x positions (m) for the 'ys' argument - needed for style = 'custom'.
+            ys (list): y positions specifying the engine contour (m) - needed for style = 'custom.
+            outer_wall_thickness (float or array, optional): Thickness of the outer liner wall (m). Can be constant (float), or variable (array). Used for stress analyses.
         """
 
-        self.geometry = EngineGeometry(self.nozzle, chamber_length, chamber_area, inner_wall_thickness, style, **kwargs)
+        self.geometry = EngineGeometry(self.nozzle, inner_wall_thickness, style, **kwargs)
         self.has_geometry = True
 
-    def add_cooling_jacket(self, inner_wall, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
+    def add_cooling_jacket(self, inner_wall_material, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
         """Container for cooling jacket information - e.g. for regenerative cooling.
 
         Args:
-            inner_wall (Material): Wall material on the inner side of the cooling jacket.
+            inner_wall_material (Material): Wall material on the inner side of the cooling jacket.
             inlet_T (float): Inlet coolant temperature (K)
             inlet_p0 (float): Inlet coolant stagnation pressure (Pa)
             coolant_transport (TransportProperties): Container for the coolant transport properties.
@@ -1105,7 +1236,7 @@ class Engine:
             outer_wall (Material): Wall material for the outer liner.
         """
         
-        self.cooling_jacket = cool.CoolingJacket(inner_wall,
+        self.cooling_jacket = cool.CoolingJacket(inner_wall_material,
                                                 inlet_T, 
                                                 inlet_p0, 
                                                 coolant_transport, 
@@ -1121,11 +1252,14 @@ class Engine:
         Args:
             transport_properties (TransportProperties): Container for the exhaust gas transport properties.
         """
-        self.exhaust_transport = transport_properties
+        self.x_ehaust_transport = transport_properties
         self.has_exhaust_transport = True
 
     def add_ablative(self, ablative_material, wall_material = None, xs = [-1000, 1000], ablative_thickness = None, regression_rate = 0.0):
         """
+        Note:
+            The wall material you add will override the inner wall material of any cooling jackets that are present.
+
         Args:
             ablative_material (Material): Ablative material.
             wall_material (Material): Wall material on the outside of the ablative (will override the cooling jacket wall material). Defaults to None, in which case the cooling jacket material will be used.
@@ -1138,7 +1272,7 @@ class Engine:
         if wall_material == None:
             if self.has_cooling_jacket == False:
                 raise AttributeError("You need to specify a wall material for the ablative (there is no cooling jacket wall material to use)")
-            wall_material_to_use = self.cooling_jacket.inner_wall
+            wall_material_to_use = self.cooling_jacket.inner_wall_material
 
         else:
             wall_material_to_use = wall_material
@@ -1310,7 +1444,7 @@ class Engine:
 
         return q_dot, R_gas, R_ablative
 
-    def steady_heating_analysis(self, number_of_points = 1000, h_gas_model = "bartz-sigma", h_coolant_model = "sieder-tate", to_json = "heating_output.json"):
+    def steady_heating_analysis(self, number_of_points = 1000, h_gas_model = "bartz-sigma", h_coolant_model = "sieder-tate", to_json = "heating_output.json", **kwargs):
         """Steady state heating analysis. Can be used for regenarative cooling, or combined regenerative and ablative cooling.
 
         Args:
@@ -1318,12 +1452,16 @@ class Engine:
             h_gas_model (str, optional): Equation to use for the gas side convective heat transfer coefficients. Options are 'rpe', 'bartz' and 'bartz-sigma'. Defaults to "bartz-sigma".
             h_coolant_model (str, optional): Equation to use for the coolant side convective heat transfer coefficients. Options are 'rpe', 'sieder-tate' and 'dittus-boelter'. Defaults to "sieder-tate".
             to_json (str or bool, optional): Directory to export a .JSON file to, containing simulation results. If False, no .JSON file is saved. Defaults to 'heating_output.json'.
+        
+        Keyword Args:
+            gas_fudge_factor (float, optional): Fudge factor to multiply the gas side thermal resistance by. A factor of ~1.3 can sometimes help results match experimental data better.
 
         Note:
             See the bamboo.cooling module for details of each h_gas and h_coolant option. Defaults are Bartz (using sigma correlation) for gas side, and Sieder-Tate for coolant side. These are believed to be the most accurate.
 
         Note:
             Sometimes the wall temperature can be above the boiling point of your coolant, in which case you may get nucleate boiling or other effects, and the Sieder-Tate model may become questionable.
+
 
         Returns:
             dict: Results of the simulation. Contains the following dictionary keys: 
@@ -1346,7 +1484,7 @@ class Engine:
             raise AttributeError("Cannot run heating analysis without additional geometry definitions. You need to add geometry with the 'Engine.add_geometry()' function.")
 
         try:
-            self.exhaust_transport
+            self.x_ehaust_transport
         except AttributeError:
             raise AttributeError("Cannot run heating analysis without an exhaust gas transport properties model. You need to add one with the 'Engine.add_exhaust_transport()' function.")
         
@@ -1357,6 +1495,7 @@ class Engine:
             use_coolant_enthalpy = True
         else:
             use_coolant_enthalpy = False
+            print("NOTE: No enthalpy data provided for the coolant - will use specific heat capacity to predict temperature rises.")
             
         #Keep track of if the coolant pressure drops below chamber pressure.
         too_low_pressure = False
@@ -1400,6 +1539,11 @@ class Engine:
         T_ablative_inner = np.full(len(discretised_x), float('NaN'))    #Ablative inner side temperature
         R_ablative = np.full(len(discretised_x), float('NaN'))          #Ablative thermal resistance
 
+        #Check if the user wants to use a fudge factor on the gas side thermal resistance
+        if "gas_fudge_factor" in kwargs:
+            gas_fudge_factor = kwargs["gas_fudge_factor"]
+        else:
+            gas_fudge_factor = 1.0
 
         '''Main loop'''
         for i in range(len(discretised_x)):
@@ -1407,9 +1551,9 @@ class Engine:
             T_gas[i] = self.T(x)
 
             #Get exhaust gas transport properties
-            mu_gas[i] = self.exhaust_transport.mu(T = T_gas[i], p = self.p(x))
-            k_gas[i] = self.exhaust_transport.k(T = T_gas[i], p = self.p(x))
-            Pr_gas[i] = self.exhaust_transport.Pr(T = T_gas[i], p = self.p(x))
+            mu_gas[i] = self.x_ehaust_transport.mu(T = T_gas[i], p = self.p(x))
+            k_gas[i] = self.x_ehaust_transport.k(T = T_gas[i], p = self.p(x))
+            Pr_gas[i] = self.x_ehaust_transport.Pr(T = T_gas[i], p = self.p(x))
 
             if self.has_cooling_jacket and self.cooling_jacket.xs[0] <= x <= self.cooling_jacket.xs[1]:
                 #Gas side heat transfer coefficient
@@ -1443,13 +1587,13 @@ class Engine:
 
                         ##Properties at arithmetic mean of T_wall and T_inf. Assume wall temperature = freestream temperature for the first step.
                         T_am = T_inf
-                        mu_am = self.exhaust_transport.mu(T = T_am, p = p_inf)
+                        mu_am = self.x_ehaust_transport.mu(T = T_am, p = p_inf)
                         rho_am = p_inf/(R*T_am)                                 #p = rho R T - pressure is roughly uniform across the boundary layer so p_inf ~= p_wall
 
                         #Stagnation properties
                         p0 = self.chamber_conditions.p0
                         T0 = self.chamber_conditions.T0
-                        mu0 = self.exhaust_transport.mu(T =  T0, p = p0)
+                        mu0 = self.x_ehaust_transport.mu(T =  T0, p = p0)
 
                         h_gas[i] = cool.h_gas_bartz(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0)
                          
@@ -1470,13 +1614,13 @@ class Engine:
 
                         #Properties at arithmetic mean of T_wall and T_inf
                         T_am = (T_inf + T_wall_inner[i-1]) / 2
-                        mu_am = self.exhaust_transport.mu(T = T_am, p = p_inf)
+                        mu_am = self.x_ehaust_transport.mu(T = T_am, p = p_inf)
                         rho_am = p_inf/(R*T_am)                                 #p = rho R T - pressure is roughly uniform across the boundary layer so p_inf ~= p_wall
 
                         #Stagnation properties
                         p0 = self.chamber_conditions.p0
                         T0 = self.chamber_conditions.T0
-                        mu0 = self.exhaust_transport.mu(T =  T0, p = p0)
+                        mu0 = self.x_ehaust_transport.mu(T =  T0, p = p0)
 
                         h_gas[i] = cool.h_gas_bartz(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0)
 
@@ -1628,7 +1772,7 @@ class Engine:
                     A_coolant = 2 * np.pi * r_wall_out
 
                     #Thermal resistances
-                    R_gas[i] = 1/(h_gas[i]*A_gas)
+                    R_gas[i] = gas_fudge_factor*1/(h_gas[i]*A_gas)
                     R_wall[i] = np.log(r_wall_out/r_wall_in)/(2*np.pi*self.ablative.wall_material.k)
                     R_coolant[i] = 1/(h_coolant[i]*A_coolant)
                     R_ablative[i] = np.log(r_ablative_out/r_ablative_in)/(2*np.pi*self.ablative.ablative_material.k)
@@ -1651,8 +1795,8 @@ class Engine:
                     A_gas = 2 * np.pi * self.y(x, up_to = 'contour')    
                     A_coolant = 2 * np.pi * r_wall_out                
 
-                    R_gas[i] = 1/(h_gas[i]*A_gas)
-                    R_wall[i] = np.log(r_wall_out/r_wall_in)/(2*np.pi*self.cooling_jacket.inner_wall.k)
+                    R_gas[i] = gas_fudge_factor*1/(h_gas[i]*A_gas)
+                    R_wall[i] = np.log(r_wall_out/r_wall_in)/(2*np.pi*self.cooling_jacket.inner_wall_material.k)
                     R_coolant[i] = 1/(h_coolant[i]*A_coolant)
 
                     #Thermal circuit object
@@ -1722,7 +1866,7 @@ class Engine:
             raise AttributeError("Cannot run heating analysis without additional geometry definitions. You need to add geometry with the 'Engine.add_geometry()' function.")
 
         try:
-            self.exhaust_transport
+            self.x_ehaust_transport
         except AttributeError:
             raise AttributeError("Cannot run heating analysis without an exhaust gas transport properties model. You need to add one with the 'Engine.add_exhaust_transport()' function.")
 
@@ -1773,9 +1917,9 @@ class Engine:
                                             self.rho(x),
                                             self.perfect_gas.gamma,
                                             self.perfect_gas.R,
-                                            self.exhaust_transport.mu(T = T_gas[i, j], p = self.p(x)),
-                                            self.exhaust_transport.k(T = T_gas[i, j], p = self.p(x)),
-                                            self.exhaust_transport.Pr(T = T_gas[i, j], p = self.p(x)))
+                                            self.x_ehaust_transport.mu(T = T_gas[i, j], p = self.p(x)),
+                                            self.x_ehaust_transport.k(T = T_gas[i, j], p = self.p(x)),
+                                            self.x_ehaust_transport.Pr(T = T_gas[i, j], p = self.p(x)))
 
                 elif h_gas_model == "2":
                     gamma = self.perfect_gas.gamma
@@ -1788,19 +1932,19 @@ class Engine:
                     rho_inf = self.rho(x)
                     M_inf = self.M(x)
                     v_inf = M_inf * (gamma*R*T_inf)**0.5    #Gas velocity
-                    mu_inf = self.exhaust_transport.mu(T = T_gas[i, j], p = p_inf)
-                    Pr_inf = self.exhaust_transport.Pr(T = T_gas[i, j], p = p_inf)
+                    mu_inf = self.x_ehaust_transport.mu(T = T_gas[i, j], p = p_inf)
+                    Pr_inf = self.x_ehaust_transport.Pr(T = T_gas[i, j], p = p_inf)
                     cp_inf = self.perfect_gas.cp
 
                     #Properties at arithmetic mean of T_wall and T_inf
                     T_am = (T_inf + T_ablative_inner[i, j-1]) / 2
-                    mu_am = self.exhaust_transport.mu(T = T_am, p = p_inf)
+                    mu_am = self.x_ehaust_transport.mu(T = T_am, p = p_inf)
                     rho_am = p_inf/(R*T_am)                                 #p = rho R T - pressure is roughly uniform across the boundary layer so p_inf ~= p_wall
 
                     #Stagnation properties
                     p0 = self.chamber_conditions.p0
                     T0 = self.chamber_conditions.T0
-                    mu0 = self.exhaust_transport.mu(T =  T0, p = p0)
+                    mu0 = self.x_ehaust_transport.mu(T =  T0, p = p0)
 
                     h_gas[i, j] = cool.h_gas_2(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0)
 
@@ -1812,10 +1956,10 @@ class Engine:
                                             self.chamber_conditions.T0, 
                                             self.M(x), 
                                             T_ablative_inner[i, j-1], 
-                                            self.exhaust_transport.mu(T = T_gas[i, j], p = self.p(x)), 
+                                            self.x_ehaust_transport.mu(T = T_gas[i, j], p = self.p(x)), 
                                             self.perfect_gas.cp, 
                                             self.perfect_gas.gamma, 
-                                            self.exhaust_transport.Pr(T = T_gas[i, j], p = self.p(x)))
+                                            self.x_ehaust_transport.Pr(T = T_gas[i, j], p = self.p(x)))
 
                 else:
                     raise AttributeError(f"Could not find the h_gas_model '{h_gas_model}'")
@@ -1892,11 +2036,11 @@ class Engine:
         wall_stress = np.zeros(length)
         wall_deltaT = np.zeros(length)
         tadjusted_yield = np.zeros(length)
-        mat_in = self.cooling_jacket.inner_wall
-        mat_out = self.cooling_jacket.outer_wall
+        mat_in = self.cooling_jacket.inner_wall_material
+        mat_out = self.cooling_jacket.outer_wall_material
 
-        E1 = self.cooling_jacket.inner_wall.E
-        E2 = self.cooling_jacket.outer_wall.E
+        E1 = self.cooling_jacket.inner_wall_material.E
+        E2 = self.cooling_jacket.outer_wall_material.E
         t1_hoop = self.map_thickness_profile(self.geometry.inner_wall_thickness, length)
         t1 = t1_hoop + self.cooling_jacket.channel_height*self.cooling_jacket.blockage_ratio
         # The blockage ratio is used to scale the contribution of the ribs to the
@@ -1908,7 +2052,7 @@ class Engine:
         # constant as the nozzle geometry is created with this instead of
         # the cooling jacket.
         if self.has_ablative is True or self.cooling_jacket.has_ablative is True:
-            if self.ablative.wall_material != self.cooling_jacket.inner_wall:
+            if self.ablative.wall_material != self.cooling_jacket.inner_wall_material:
                 raise AttributeError("Change of material behind ablator is not "
                                      "currently supported in stress analysis")
             R1 = [self.geometry.chamber_radius]*length + t1/2
