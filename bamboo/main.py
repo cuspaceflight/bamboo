@@ -1384,6 +1384,7 @@ class Engine:
     def coolant_friction_factor(self, T, p, x, y):
         """Determine the friction factor of the coolant at the current position.
            Formula from reference [4] page 29 - seems to be a friction factor equation from Petukhov, described in the 'Fundamentals of Heat and Mass Transfer' textbook.
+           Works for turbulent flow in smooth tubes, in the Reynolds number range (3000 < Re_D < 5e6).
 
         Args:
             x (float): Axial position

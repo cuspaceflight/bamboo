@@ -1237,7 +1237,8 @@ number_of_points (int): Number of discrete liner positions</p>
 <dt id="bamboo.main.Engine.coolant_friction_factor">
 <code class="sig-name descname"><span class="pre">coolant_friction_factor</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.coolant_friction_factor" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="simple">
-<dt>Determine the friction factor of the coolant at the current position.</dt><dd><p>Formula from reference [5] page 29.</p>
+<dt>Determine the friction factor of the coolant at the current position.</dt><dd><p>Formula from reference [4] page 29 - seems to be a friction factor equation from Petukhov, described in the ‘Fundamentals of Heat and Mass Transfer’ textbook.
+Works for turbulent flow in smooth tubes, in the Reynolds number range (3000 &lt; Re_D &lt; 5e6).</p>
 </dd>
 </dl>
 <dl class="field-list simple">
