@@ -449,10 +449,10 @@ class CoolingJacket:
         has_ablative (bool, optional): Whether or not the engine has an ablative.
     
     Keyword Args:
-        blockage_ratio (float): Only relevant if configuration = 'vertical'. This is the proportion (by area) of the channel cross section occupied by ribs.
-        number_of_ribs (int): Only relevant if configuration = 'vertical' and 'blockage_ratio' !=0. This is the number of ribs present in the cooling channel. 
+        blockage_ratio (float): This is the proportion (by area) of the channel cross section occupied by ribs.
+        number_of_ribs (int): Only relevant if 'blockage_ratio' !=0. This is the number of ribs present in the cooling channel. For spiral channels this is the number of ribs 'per pitch' - it is numerically equal to the number of parallel spiral channels.
         channel_height (float): This is the height of the channels, in the radial direction (m).
-        channel_width (float): Only relevant if configuration = 'spiral'. This is the width of the cooling channels (m).
+        channel_width (float): Only relevant if configuration = 'spiral'. This is the total width (i.e. pitch) of the cooling channels (m).
         outer_wall_material (Material): Wall material for the outer liner.
     """
     def __init__(self, inner_wall_material, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
@@ -468,18 +468,36 @@ class CoolingJacket:
             self.outer_wall_material = kwargs["outer_wall_material"]
         
         if self.configuration == 'spiral':
+            #Blockage ratio
+            if "blockage_ratio" in kwargs:
+                self.blockage_ratio = kwargs["blockage_ratio"]
+                
+                if "number_of_ribs" in kwargs:
+                    if type(kwargs["number_of_ribs"]) is not int:
+                        raise ValueError("Keyword argument 'number_of_ribs' must be an integer")
+                    elif kwargs["number_of_ribs"] < 1:
+                        raise ValueError("Keyword argument 'number_of_ribs' must be at least 1 for spiral channels (it is numerically equal to the number of parallel spiralling channels).")
+                    else:
+                        self.number_of_ribs =  kwargs["number_of_ribs"]
+                else:
+                    raise ValueError("Must also specify 'number_of_ribs' if you want to specify 'blockage_ratio'")
+
+            else:
+                self.blockage_ratio = 0.0
+                self.number_of_ribs = 1
 
             #Page 317 of RPE 7th Edition
             self.channel_width = kwargs["channel_width"]
             self.channel_height = kwargs["channel_height"]
-            self.perimeter = 2*self.channel_width + 2*self.channel_height
-            self.flow_area = self.channel_width*self.channel_height
+            self.perimeter = 2*self.channel_width + 2*self.channel_height + 2*self.channel_height*self.number_of_ribs
+            self.flow_area = self.channel_width*self.channel_height*(1 - self.blockage_ratio)
             self.hydraulic_radius = self.flow_area/self.perimeter
             self.effective_diameter = 4*self.hydraulic_radius
-
         
         elif self.configuration == 'vertical':
             self.channel_height = kwargs["channel_height"]
+
+            #Blockage ratio
             if "blockage_ratio" in kwargs:
                 self.blockage_ratio = kwargs["blockage_ratio"]
                 
@@ -564,11 +582,11 @@ class Ablative:
     Args:
         ablative_material (Material): Ablative material.
         regression_rate (float): (Not currently used) (m/s)
-        xs (list, optional): x positions that the ablative is present between, [xmin, xmax]. Defaults to [-1000, 1000].
+        xs (list): x positions that the ablative is present between, [xmin, xmax]. 
         wall_material (Material): Wall material on the outside of the ablative (will override the cooling jacket wall material).
         ablative_thickness (float or list): Thickness of ablative. If a list is given, it must correspond to thickness at regular x intervals, which will be stretched out over the inverval of 'xs'. Defaults to None (in which case the ablative extends from the engine contour to combustion chamber radius).
     """
-    def __init__(self, ablative_material, wall_material, xs = [-1000, 1000], ablative_thickness = None, regression_rate = 0.0):
+    def __init__(self, ablative_material, wall_material, xs, ablative_thickness = None, regression_rate = 0.0):
         self.ablative_material = ablative_material
         self.wall_material = wall_material
         self.regression_rate = regression_rate

@@ -744,7 +744,7 @@ Keep in mind that Bamboo uses the convection that x = 0 at the throat (so all yo
 <dl class="py attribute">
 <dt id="bamboo.main.EngineGeometry.x_chamber_end">
 <code class="sig-name descname"><span class="pre">x_chamber_end</span></code><a class="headerlink" href="#bamboo.main.EngineGeometry.x_chamber_end" title="Permalink to this definition">¶</a></dt>
-<dd><p>x position where the combustion chamber ends (m) - only available of style = “auto”.</p>
+<dd><p>x position where the combustion chamber ends and the converging section of the nozzle begins (m) - only available of style = “auto”.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
 <dd class="field-odd"><p>float</p>
@@ -1152,11 +1152,11 @@ Keep in mind that Bamboo uses the convection that x = 0 at the throat (so all yo
 </dd>
 <dt class="field-even">Keyword Arguments</dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>blockage_ratio</strong> (<em>float</em>) – Only relevant if configuration = ‘vertical’. This is the proportion (by area) of the channel cross section occupied by ribs.</p></li>
-<li><p><strong>number_of_ribs</strong> (<em>int</em>) – Only relevant if configuration = ‘vertical’ and ‘blockage_ratio’ != 0. This is the number of ribs present in the cooling channel.</p></li>
+<li><p><strong>blockage_ratio</strong> (<em>float</em>) – This is the proportion (by area) of the channel cross section occupied by ribs.</p></li>
+<li><p><strong>number_of_ribs</strong> (<em>int</em>) – Only relevant if ‘blockage_ratio’ !=0. This is the number of ribs present in the cooling channel. For spiral channels this is the number of ribs ‘per pitch’ - it is numerically equal to the number of parallel spiral channels.</p></li>
 <li><p><strong>channel_height</strong> (<em>float</em>) – This is the height of the channels, in the radial direction (m).</p></li>
-<li><p><strong>channel_width</strong> (<em>float</em>) – Only relevant if configuration = ‘spiral’. This is the width of the cooling channels (m).</p></li>
-<li><p><strong>outer_wall</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Wall material for the outer liner.</p></li>
+<li><p><strong>channel_width</strong> (<em>float</em>) – Only relevant if configuration = ‘spiral’. This is the total width (i.e. pitch) of the cooling channels (m).</p></li>
+<li><p><strong>outer_wall_material</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Wall material for the outer liner.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1175,7 +1175,7 @@ Keep in mind that Bamboo uses the convection that x = 0 at the throat (so all yo
 
 <dl class="py method">
 <dt id="bamboo.main.Engine.add_ablative">
-<code class="sig-name descname"><span class="pre">add_ablative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ablative_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_material</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[-</span> <span class="pre">1000,</span> <span class="pre">1000]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ablative_thickness</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.add_ablative" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">add_ablative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ablative_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_material</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ablative_thickness</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.main.Engine.add_ablative" title="Permalink to this definition">¶</a></dt>
 <dd><div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The wall material you add will override the inner wall material of any cooling jackets that are present.</p>
@@ -1185,7 +1185,7 @@ Keep in mind that Bamboo uses the convection that x = 0 at the throat (so all yo
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ablative_material</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Ablative material.</p></li>
 <li><p><strong>wall_material</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Wall material on the outside of the ablative (will override the cooling jacket wall material). Defaults to None, in which case the cooling jacket material will be used.</p></li>
-<li><p><strong>xs</strong> (<em>list</em><em>, </em><em>optional</em>) – x positions that the ablative is present between, [xmin, xmax]. Defaults to [-1000, 1000].</p></li>
+<li><p><strong>xs</strong> (<em>list</em><em>, </em><em>optional</em>) – x positions that the ablative is present between, [xmin, xmax]. By default will encompass the whole engine.</p></li>
 <li><p><strong>ablative_thickness</strong> (<em>float</em><em> or </em><em>list</em>) – Thickness of ablative. If a list is given, it must correspond to thickness at regular x intervals, which will be stretched out over the inverval of ‘xs’. Defaults to None (in which case the ablative extends from the engine contour to combustion chamber radius).</p></li>
 <li><p><strong>regression_rate</strong> (<em>float</em>) – (Not currently used) (m/s). Defaults to 0.0.</p></li>
 </ul>
@@ -2039,10 +2039,10 @@ If using type = “functions”, the function arguments (except for the T_from_e
 </dd>
 <dt class="field-even">Keyword Arguments</dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>blockage_ratio</strong> (<em>float</em>) – Only relevant if configuration = ‘vertical’. This is the proportion (by area) of the channel cross section occupied by ribs.</p></li>
-<li><p><strong>number_of_ribs</strong> (<em>int</em>) – Only relevant if configuration = ‘vertical’ and ‘blockage_ratio’ !=0. This is the number of ribs present in the cooling channel.</p></li>
+<li><p><strong>blockage_ratio</strong> (<em>float</em>) – This is the proportion (by area) of the channel cross section occupied by ribs.</p></li>
+<li><p><strong>number_of_ribs</strong> (<em>int</em>) – Only relevant if ‘blockage_ratio’ !=0. This is the number of ribs present in the cooling channel. For spiral channels this is the number of ribs ‘per pitch’ - it is numerically equal to the number of parallel spiral channels.</p></li>
 <li><p><strong>channel_height</strong> (<em>float</em>) – This is the height of the channels, in the radial direction (m).</p></li>
-<li><p><strong>channel_width</strong> (<em>float</em>) – Only relevant if configuration = ‘spiral’. This is the width of the cooling channels (m).</p></li>
+<li><p><strong>channel_width</strong> (<em>float</em>) – Only relevant if configuration = ‘spiral’. This is the total width (i.e. pitch) of the cooling channels (m).</p></li>
 <li><p><strong>outer_wall_material</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Wall material for the outer liner.</p></li>
 </ul>
 </dd>
@@ -2118,7 +2118,7 @@ If using type = “functions”, the function arguments (except for the T_from_e
 
 <dl class="py class">
 <dt id="bamboo.cooling.Ablative">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">Ablative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ablative_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[-</span> <span class="pre">1000,</span> <span class="pre">1000]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ablative_thickness</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.Ablative" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">Ablative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ablative_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ablative_thickness</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.Ablative" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Container for refractory or ablative properties.</p>
 <dl class="field-list simple">
@@ -2126,7 +2126,7 @@ If using type = “functions”, the function arguments (except for the T_from_e
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ablative_material</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Ablative material.</p></li>
 <li><p><strong>regression_rate</strong> (<em>float</em>) – (Not currently used) (m/s)</p></li>
-<li><p><strong>xs</strong> (<em>list</em><em>, </em><em>optional</em>) – x positions that the ablative is present between, [xmin, xmax]. Defaults to [-1000, 1000].</p></li>
+<li><p><strong>xs</strong> (<em>list</em>) – x positions that the ablative is present between, [xmin, xmax].</p></li>
 <li><p><strong>wall_material</strong> (<a class="reference internal" href="#bamboo.cooling.Material" title="bamboo.cooling.Material"><em>Material</em></a>) – Wall material on the outside of the ablative (will override the cooling jacket wall material).</p></li>
 <li><p><strong>ablative_thickness</strong> (<em>float</em><em> or </em><em>list</em>) – Thickness of ablative. If a list is given, it must correspond to thickness at regular x intervals, which will be stretched out over the inverval of ‘xs’. Defaults to None (in which case the ablative extends from the engine contour to combustion chamber radius).</p></li>
 </ul>

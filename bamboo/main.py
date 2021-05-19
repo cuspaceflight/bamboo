@@ -587,7 +587,7 @@ class EngineGeometry:
     Attributes:
         x_min (float): Minimum x position (m).
         x_max (float): Maximum x position (m).
-        x_chamber_end (float): x position where the combustion chamber ends (m) - only available of style = "auto".
+        x_chamber_end (float): x position where the combustion chamber ends and the converging section of the nozzle begins (m) - only available of style = "auto".
         x_curved_converging_start (float): x position where the curved part of the converging section begins (m) - only available of style = "auto" and nozzle type = "rao".
         chamber_length (float): Chamber length (m) - only available if style = "auto".
         chamber_area (float): Chamber area (m^2) - only available if style = "auto".
@@ -823,9 +823,9 @@ class Engine:
                 raise AttributeError("This engine does not have an ablative attached")
 
             #Check if there is ablative in this region of the engine
-            if self.ablative.xs[0] < x < self.ablative.xs[1]:
-                if self.ablative.ablative_thickness == None:
-                    #If self.ablative_thickness == None, fill up the distance between the nozzle contour and the chamber radius with ablative
+            if self.ablative.xs[0] <= x <= self.ablative.xs[1]:
+                if self.ablative.ablative_thickness is None:
+                    #If self.ablative_thickness is None, fill up the distance between the nozzle contour and the chamber radius with ablative
                     return self.geometry.chamber_radius - self.y(x)
 
                 else:
@@ -896,7 +896,7 @@ class Engine:
         return self.p(x)/(self.T(x)*self.perfect_gas.R)
 
     
-    #Thrust and performance functions
+    #Thrust related functions
     def check_separation(self, p_amb):
         """Approximate check for nozzle separation. Based off page 17 of Reference [2].  
         separation occurs when P_wall/P_amb = 0.583 * (P_amb/P_chamber)^(0.195)
@@ -1102,19 +1102,35 @@ class Engine:
                     W = self.cooling_jacket.channel_width
                     H = self.cooling_jacket.channel_height
 
-                    regen_xs = np.linspace(xmin, xmax, int((xmax - xmin)/W))
+                    spirals_to_fit = int((xmax - xmin)/W) + 1
+                    regen_xs = np.linspace(xmin, xmin + W*spirals_to_fit, spirals_to_fit + 1)
 
                     if len(regen_xs) > 5000:
                         print(f"WARNING: Large number of channels to plot for the cooling jacket ({len(regen_xs)}) - this may take a while.")
 
-                    axs.plot(0, 0, color = 'green', label = 'Cooling channels')  #Just for the legend
+                    #Just for the legends
+                    axs.plot(0, 0, color = 'green', label = 'Cooling channels')  
+                    axs.plot(0, 0, color = 'red', label = 'Channel ribs')  
 
                     for i in range(len(regen_xs) - 1):
                         y_jacket_inner = np.interp(regen_xs[i], x, wall_outer)
 
-                        #Plot the cooling channels as rectangles with the right width and height.
+                        #Show the ribs as filled in rectangles
+                        area_per_rib = W*H*self.cooling_jacket.blockage_ratio/self.cooling_jacket.number_of_ribs
+                        rib_width = area_per_rib/self.cooling_jacket.channel_height
+
+                        for j in range(self.cooling_jacket.number_of_ribs):
+                            distance_to_next_rib = (regen_xs[i+1] - regen_xs[i])/self.cooling_jacket.number_of_ribs
+
+                            #Make all ribs red
+                            axs.add_patch(matplotlib.patches.Rectangle([regen_xs[i] + j*distance_to_next_rib, y_jacket_inner], rib_width, H, color = 'red', fill = True))
+                            axs.add_patch(matplotlib.patches.Rectangle([regen_xs[i] + j*distance_to_next_rib, -y_jacket_inner-H], rib_width, H, color = 'red', fill = True))
+
+
+                        #Plot 'outer' cooling channel (i.e. the amount moved per spiral)
                         axs.add_patch(matplotlib.patches.Rectangle([regen_xs[i], y_jacket_inner], W, H, color = 'green', fill = False))
                         axs.add_patch(matplotlib.patches.Rectangle([regen_xs[i], -y_jacket_inner-H], W, H, color = 'green', fill = False))
+
 
                 #If using a vertical channels cooling jacket
                 if self.cooling_jacket.configuration == 'vertical':
@@ -1229,11 +1245,11 @@ class Engine:
             has_ablative (bool, optional): Whether or not the engine has an ablative.
         
         Keyword Args:
-            blockage_ratio (float): Only relevant if configuration = 'vertical'. This is the proportion (by area) of the channel cross section occupied by ribs.
-            number_of_ribs (int): Only relevant if configuration = 'vertical' and 'blockage_ratio' != 0. This is the number of ribs present in the cooling channel. 
+            blockage_ratio (float): This is the proportion (by area) of the channel cross section occupied by ribs.
+            number_of_ribs (int): Only relevant if 'blockage_ratio' !=0. This is the number of ribs present in the cooling channel. For spiral channels this is the number of ribs 'per pitch' - it is numerically equal to the number of parallel spiral channels.
             channel_height (float): This is the height of the channels, in the radial direction (m).
-            channel_width (float): Only relevant if configuration = 'spiral'. This is the width of the cooling channels (m).
-            outer_wall (Material): Wall material for the outer liner.
+            channel_width (float): Only relevant if configuration = 'spiral'. This is the total width (i.e. pitch) of the cooling channels (m).
+            outer_wall_material (Material): Wall material for the outer liner.
         """
         
         self.cooling_jacket = cool.CoolingJacket(inner_wall_material,
@@ -1255,7 +1271,7 @@ class Engine:
         self.x_ehaust_transport = transport_properties
         self.has_exhaust_transport = True
 
-    def add_ablative(self, ablative_material, wall_material = None, xs = [-1000, 1000], ablative_thickness = None, regression_rate = 0.0):
+    def add_ablative(self, ablative_material, wall_material = None, xs = None, ablative_thickness = None, regression_rate = 0.0):
         """
         Note:
             The wall material you add will override the inner wall material of any cooling jackets that are present.
@@ -1263,12 +1279,11 @@ class Engine:
         Args:
             ablative_material (Material): Ablative material.
             wall_material (Material): Wall material on the outside of the ablative (will override the cooling jacket wall material). Defaults to None, in which case the cooling jacket material will be used.
-            xs (list, optional): x positions that the ablative is present between, [xmin, xmax]. Defaults to [-1000, 1000].
+            xs (list, optional): x positions that the ablative is present between, [xmin, xmax]. By default will encompass the whole engine.
             ablative_thickness (float or list): Thickness of ablative. If a list is given, it must correspond to thickness at regular x intervals, which will be stretched out over the inverval of 'xs'. Defaults to None (in which case the ablative extends from the engine contour to combustion chamber radius).
             regression_rate (float): (Not currently used) (m/s). Defaults to 0.0.
         """
         #Use the cooling jacket's wall material if the user inputs 'wall_material = None'
-        
         if wall_material == None:
             if self.has_cooling_jacket == False:
                 raise AttributeError("You need to specify a wall material for the ablative (there is no cooling jacket wall material to use)")
@@ -1279,7 +1294,13 @@ class Engine:
         
         if self.has_cooling_jacket is True:
             self.cooling_jacket.has_ablative = True
-        # Update the cooling jacket if an ablator is added after the jacket
+        
+        if xs is None:
+            xs = [self.geometry.x_min, self.geometry.x_max]
+        elif xs[0] < self.geometry.x_min:
+            raise ValueError(f"xs[0] is upstream of the front of the engine (x = {self.geometry.x_min} m)")
+        elif xs[1] > self.geometry.x_max:
+            raise ValueError(f"xs[1] is downstream of the end of the engine (x = {self.geometry.x_max} m)")
 
         self.ablative = cool.Ablative(ablative_material = ablative_material,
                                       wall_material = wall_material_to_use, 
