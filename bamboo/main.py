@@ -1496,6 +1496,7 @@ class Engine:
                 - "q_dot" : Heat transfer rate per unit length (axially along the engine) (W/m)
                 - "h_gas" : Convective heat transfer rate for the exhaust gas side
                 - "h_coolant" : Convective heat transfer rate for the coolant side
+                - "enthalpy_coolant" : Coolant specific enthalpy (J/kg) - will only contain data if enthalpy functions were provided.
                 - "boil_off_position" : x position of any coolant boil off. Equal to None if the coolant does not boil.
                 - (and some more)
         """
@@ -1857,7 +1858,8 @@ class Engine:
                 "k_coolant" : list(k_coolant),
                 "cp_coolant" : list(cp_coolant),
                 "rho_coolant" : list(rho_coolant),
-                "v_coolant" : list(v_coolant)}
+                "v_coolant" : list(v_coolant),
+                "enthalpy_coolant" : list(enthalpy_coolant)}
 
         #Export a .JSON file if required
         if to_json != False:
