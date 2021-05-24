@@ -444,18 +444,18 @@ class CoolingJacket:
         inlet_p0 (float): Inlet coolant stagnation pressure (Pa)
         coolant_transport (TransportProperties): Container for the coolant transport properties.
         mdot_coolant (float): Coolant mass flow rate (kg/s)
-        xs (list): x positions that the cooling jacket starts and ends at, [x_min, x_max]. Defaults to [-1000, 1000].
+        xs (list): x positions that the cooling jacket starts and ends at, [x_min, x_max].
         configuration (str, optional): Options include 'spiral' and 'vertical'. Defaults to "vertical".
         has_ablative (bool, optional): Whether or not the engine has an ablative.
     
     Keyword Args:
         blockage_ratio (float): This is the proportion (by area) of the channel cross section occupied by ribs.
         number_of_ribs (int): Only relevant if 'blockage_ratio' !=0. This is the number of ribs present in the cooling channel. For spiral channels this is the number of ribs 'per pitch' - it is numerically equal to the number of parallel spiral channels.
-        channel_height (float): This is the height of the channels, in the radial direction (m).
-        channel_width (float): Only relevant if configuration = 'spiral'. This is the total width (i.e. pitch) of the cooling channels (m).
+        channel_height (float or list): This is the height of the channels, in the radial direction (m). Can be a constant (float) or list. If list, it must be an channel heights at regularly spaced x positions, which will be stretched to fit the xs input.
+        channel_width (float): Only relevant if configuration = 'spiral'. This is the total width (i.e. pitch) of the cooling channels (m). Can be a constant (float) or list. If list, it must be an channel heights at regularly spaced x positions, which will be stretched to fit the xs input.
         outer_wall_material (Material): Wall material for the outer liner.
     """
-    def __init__(self, inner_wall_material, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
+    def __init__(self, inner_wall_material, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs, configuration = "spiral", **kwargs):
         self.inner_wall_material = inner_wall_material
         self.coolant_transport = coolant_transport       
         self.mdot_coolant = mdot_coolant
@@ -463,6 +463,7 @@ class CoolingJacket:
         self.inlet_T = inlet_T
         self.inlet_p0 = inlet_p0
         self.configuration = configuration
+        self.channel_height_input = kwargs["channel_height"]
 
         if "outer_wall_material" in kwargs:
             self.outer_wall_material = kwargs["outer_wall_material"]
@@ -470,6 +471,7 @@ class CoolingJacket:
         if self.configuration == 'spiral':
             #Blockage ratio
             if "blockage_ratio" in kwargs:
+                assert kwargs["blockage_ratio"] < 1, "Blockage ratio must be less than 1"
                 self.blockage_ratio = kwargs["blockage_ratio"]
                 
                 if "number_of_ribs" in kwargs:
@@ -486,19 +488,13 @@ class CoolingJacket:
                 self.blockage_ratio = 0.0
                 self.number_of_ribs = 1
 
-            #Page 317 of RPE 7th Edition
-            self.channel_width = kwargs["channel_width"]
-            self.channel_height = kwargs["channel_height"]
-            self.perimeter = 2*self.channel_width + 2*self.channel_height + 2*self.channel_height*self.number_of_ribs
-            self.flow_area = self.channel_width*self.channel_height*(1 - self.blockage_ratio)
-            self.hydraulic_radius = self.flow_area/self.perimeter
-            self.effective_diameter = 4*self.hydraulic_radius
+            self.channel_width_input = kwargs["channel_width"]
+
         
         elif self.configuration == 'vertical':
-            self.channel_height = kwargs["channel_height"]
-
             #Blockage ratio
             if "blockage_ratio" in kwargs:
+                assert kwargs["blockage_ratio"] < 1, "Blockage ratio must be less than 1"
                 self.blockage_ratio = kwargs["blockage_ratio"]
                 
                 if "number_of_ribs" in kwargs:
@@ -513,6 +509,38 @@ class CoolingJacket:
                 self.blockage_ratio = 0.0
                 self.number_of_ribs = 0
 
+    def channel_height(self, x):
+        """Get channel height at a given x postiion. Will interpolate if self.channel_height_input is a list.
+
+        Args:
+            x (float): x position in engine (m).
+
+        Returns:
+            float: Cooling channel height (m).
+        """
+        if type(self.channel_height_input) is float or type(self.channel_height_input) is int:
+            return self.channel_height_input
+        else:
+            x_array = np.linspace(self.xs[0], self.xs[1], len(self.channel_height_input))
+
+            return np.interp(x, x_array, self.channel_height_input)
+
+    def channel_width(self, x):
+        """Get channel width at a given x postiion. Will interpolate if self.channel_height_input is a list. Only works for spiral channels.
+
+        Args:
+            x (float): x position in engine (m).
+
+        Returns:
+            float: Cooling channel width (m).
+        """
+        if type(self.channel_width_input) is float or type(self.channel_width_input) is int:
+            return self.channel_width_input
+        else:
+            x_array = np.linspace(self.xs[0], self.xs[1], len(self.channel_width_input))
+
+            return np.interp(x, x_array, self.channel_width_input)
+
     def A(self, x, y):
         """Get coolant channel cross flow cross sectional area.
 
@@ -525,16 +553,16 @@ class CoolingJacket:
         """
 
         if self.configuration == 'spiral':
-            return self.flow_area
+            return self.channel_width(x)*self.channel_height(x)*(1 - self.blockage_ratio)
 
         elif self.configuration == 'vertical':
-            return np.pi*((y + self.channel_height)**2 - y**2) * (1 - self.blockage_ratio)
+            return np.pi*((y + self.channel_height(x))**2 - y**2) * (1 - self.blockage_ratio)
     
         else:
             raise ValueError(f"The cooling jacket configuration {self.configuration} is not recognised. Try 'spiral' or 'vertical'. ")
 
     def D(self, x, y):
-        """Get the 'effective diameter' of the cooling channel. This is equal 4*channel_area / wetted_channel_perimeter.
+        """Get the 'effective diameter' of the cooling channel. This is equal 4*channel_area / wetted_channel_perimeter - as defined in page 317 of RPE 7th Edition.
 
         Args:
             x (float, optional): Axial position along the engine. 
@@ -547,16 +575,19 @@ class CoolingJacket:
             float: Effective diameter (m)
         """
         if self.configuration == 'spiral':
-            return self.effective_diameter
+            perimeter = 2*self.channel_width(x) + 2*self.channel_height(x) + 2*self.channel_height(x)*self.number_of_ribs
+            hydraulic_radius = self.A(x, y)/perimeter
+            effective_diameter = 4*hydraulic_radius
+            return effective_diameter
 
         elif self.configuration == 'vertical':
             if self.blockage_ratio == 0.0:
-                perimeter = 2*np.pi*y + 2*np.pi*(y + self.channel_height) 
+                perimeter = 2*np.pi*y + 2*np.pi*(y + self.channel_height(x)) 
                 return 4*self.A(x, y)/perimeter
 
             else:
                 #Not entirely sure if I calculated the perimeter correctly with blockage ratio
-                perimeter = (2*np.pi*y + 2*np.pi*(y + self.channel_height))*(1 - self.blockage_ratio) + 2*self.number_of_ribs*self.channel_height
+                perimeter = (2*np.pi*y + 2*np.pi*(y + self.channel_height(x)))*(1 - self.blockage_ratio) + 2*self.number_of_ribs*self.channel_height(x)
                 return 4*self.A(x, y)/perimeter
 
         else:
