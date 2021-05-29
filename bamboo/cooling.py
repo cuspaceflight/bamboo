@@ -114,7 +114,7 @@ def h_coolant_rpe(A, D, mdot, mu, k, c_bar, rho):
 
     Args:
         A (float): Coolant flow area (m^2)
-        D (float): Coolant channel effective diameter (m)
+        D (float): Coolant channel hydraulic diameter (m)
         mdot (float): Coolant mass flow rate (kg/s)
         mu (float): Coolant absolute viscosity (Pa s)
         k (float): Coolant thermal conductivity (W/m/K)
@@ -133,7 +133,7 @@ def h_coolant_sieder_tate(rho, V, D, mu_bulk, mu_wall, Pr, k):
     Args:
         rho (float): Coolant bulk density (kg/m^3)
         V (float): Coolant bulk velocity (m/s)
-        D (float): Effective diameter of pipe (m)
+        D (float): Hydraulic diameter of pipe (m)
         mu_bulk (float): Absolute viscosity of the coolant at the bulk temperature (Pa s).
         mu_wall (float): Absolute viscosity of the coolant at the wall temperature (Pa s).
         Pr (float): Bulk Prandtl number of the coolant.
@@ -153,7 +153,7 @@ def h_coolant_dittus_boelter(rho, V, D, mu, Pr, k):
     Args:
         rho (float): Coolant bulk density (kg/m^3).
         V (float): Coolant bulk velocity (m/s)
-        D (float): Effective diameter of pipe (m)
+        D (float): Hydraulic diameter of pipe (m)
         mu (float): Coolant bulk viscosity (Pa s)
         Pr (float): Coolant bulk Prandtl number
         k (float): Coolant thermal conductivity
@@ -166,6 +166,22 @@ def h_coolant_dittus_boelter(rho, V, D, mu, Pr, k):
 
     return Nu*k/D
 
+def h_coolant_gnielinski(rho, V, D, mu, Pr, k, f):
+    """Convective heat transfer coefficient for the coolant side, using Gnielinski's correlation. Page 41 of Reference [4].
+
+    Args:
+        rho (float): Coolant density (kg/m3)
+        V (float): Coolant velocity (m/s)
+        D (float): Hydraulic diameter (m)
+        mu (float): Coolant viscosity (Pa s)
+        Pr (float): Prandtl number
+        k (float): Coolant thermal conductivity
+        f (float): Coolant friction factor
+    """
+    ReD = rho*V*D/mu
+    NuD = (f/8) * (ReD - 1000) * Pr / (1 + 12.7*(f/8)**(1/2) *(Pr**(2/3) - 1))
+    h = NuD * k / D
+    return h
 
 class Material:
     """Class used to specify a material and its properties. 
@@ -562,7 +578,7 @@ class CoolingJacket:
             raise ValueError(f"The cooling jacket configuration {self.configuration} is not recognised. Try 'spiral' or 'vertical'. ")
 
     def D(self, x, y):
-        """Get the 'effective diameter' of the cooling channel. This is equal 4*channel_area / wetted_channel_perimeter - as defined in page 317 of RPE 7th Edition.
+        """Hydraulic diameter of the cooling channel. This is equal 4*channel_area / wetted_channel_perimeter.
 
         Args:
             x (float, optional): Axial position along the engine. 
@@ -572,13 +588,11 @@ class CoolingJacket:
             Not entirely sure if I calculated the perimeter correctly when including blockage ratio.
 
         Returns:
-            float: Effective diameter (m)
+            float: Hydraulic diameter (m)
         """
         if self.configuration == 'spiral':
             perimeter = 2*self.channel_width(x) + 2*self.channel_height(x) + 2*self.channel_height(x)*self.number_of_ribs
-            hydraulic_radius = self.A(x, y)/perimeter
-            effective_diameter = 4*hydraulic_radius
-            return effective_diameter
+            return 4 * self.A(x, y)/perimeter
 
         elif self.configuration == 'vertical':
             if self.blockage_ratio == 0.0:

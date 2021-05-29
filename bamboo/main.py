@@ -1356,8 +1356,8 @@ class Engine:
 
         return mapped_thickness
 
-    def coolant_path_length(self, number_of_points = 1000):
-        """Finds the path length of the coolant in the jacket from engine geometry and channel configuration.
+    def channel_path_lengths(self, number_of_points = 1000):
+        """Finds the path length travelled by the coolant in between each pair of x points.
            Number_of_points input must be equal to number_of_points used in a heating analysis.
 
         Note:
@@ -1367,7 +1367,7 @@ class Engine:
             number_of_points (int, optional): Number of discretised points to split path into. Defaults to 1000.
 
         Returns:
-            array: Discretised coolant path length array with "number_of_sections" elements. (m).
+            array: Coolant path lengths (dl) between each pair of x points. e.g. discretised_length[10] = path length between xs[10] and xs[11]
         """
         discretised_x = np.linspace(self.geometry.x_max, self.geometry.x_min, number_of_points)
         dx = discretised_x[0] - discretised_x[1]
@@ -1495,20 +1495,20 @@ class Engine:
 
         return q_dot, R_gas, R_ablative
 
-    def steady_heating_analysis(self, number_of_points = 1000, h_gas_model = "bartz-sigma", h_coolant_model = "sieder-tate", to_json = "heating_output.json", **kwargs):
+    def steady_heating_analysis(self, number_of_points = 1000, h_gas_model = "bartz-sigma", h_coolant_model = "gnielinski", to_json = "heating_output.json", **kwargs):
         """Steady state heating analysis. Can be used for regenarative cooling, or combined regenerative and ablative cooling.
 
         Args:
             number_of_points (int, optional): Number of discrete points to divide the engine into. Defaults to 1000.
             h_gas_model (str, optional): Equation to use for the gas side convective heat transfer coefficients. Options are 'rpe', 'bartz' and 'bartz-sigma'. Defaults to "bartz-sigma".
-            h_coolant_model (str, optional): Equation to use for the coolant side convective heat transfer coefficients. Options are 'rpe', 'sieder-tate' and 'dittus-boelter'. Defaults to "sieder-tate".
+            h_coolant_model (str, optional): Equation to use for the coolant side convective heat transfer coefficients. Options are 'rpe', 'sieder-tate', 'dittus-boelter' and 'gnielinski'. Defaults to "gnielinski".
             to_json (str or bool, optional): Directory to export a .JSON file to, containing simulation results. If False, no .JSON file is saved. Defaults to 'heating_output.json'.
         
         Keyword Args:
             gas_fudge_factor (float, optional): Fudge factor to multiply the gas side thermal resistance by. A factor of ~1.3 can sometimes help results match experimental data better.
 
         Note:
-            See the bamboo.cooling module for details of each h_gas and h_coolant option. Defaults are Bartz (using sigma correlation) for gas side, and Sieder-Tate for coolant side. These are believed to be the most accurate.
+            See the bamboo.cooling module for details of each h_gas and h_coolant option. Defaults are Bartz (using sigma correlation) for gas side, and Gnielinski for coolant side.
 
         Note:
             Sometimes the wall temperature can be above the boiling point of your coolant, in which case you may get nucleate boiling or other effects, and the Sieder-Tate model may become questionable.
@@ -1557,7 +1557,7 @@ class Engine:
         dx = discretised_x[0] - discretised_x[1]
 
         #Calculation of coolant channel length per "section"
-        channel_length = self.coolant_path_length(number_of_points=number_of_points)     #number_of_sections must be equal to number_of_points
+        channel_path_lengths = self.channel_path_lengths(number_of_points=number_of_points)     #number_of_sections must be equal to number_of_points
 
         #Data arrays to return
         T_wall_inner = np.full(len(discretised_x), float('NaN')) #Gas side wall temperature
@@ -1739,7 +1739,7 @@ class Engine:
                                                                    y = self.y(x, up_to = "wall out"))
 
                     p0_coolant[i] = p0_coolant[i-1] - self.coolant_p0_drop(friction_factor, 
-                                                                           dl = channel_length[i-1], 
+                                                                           dl = channel_path_lengths[i-1], 
                                                                            T = T_coolant[i], 
                                                                            p = p_coolant[i-1], 
                                                                            x = x, 
@@ -1806,8 +1806,24 @@ class Engine:
                                                                 Pr_coolant[i], 
                                                                 k_coolant[i])
 
+                elif h_coolant_model == "gnielinski":
+                    if i == 0:
+                        #Pressure drops aren't done for i = 0 so friction factor hasn't been gotten yet, so we need to get it here
+                        friction_factor = self.coolant_friction_factor(T = T_coolant[i], 
+                                                                        p = p_coolant[i], 
+                                                                        x = x, 
+                                                                        y = self.y(x, up_to = "wall out"))
+
+                    h_coolant[i] = cool.h_coolant_gnielinski(rho_coolant[i], 
+                                                                v_coolant[i], 
+                                                                self.cooling_jacket.D(x=x, y=self.y(x=x, up_to = "wall in")), 
+                                                                mu_coolant[i], 
+                                                                Pr_coolant[i], 
+                                                                k_coolant[i],
+                                                                friction_factor)
+
                 else:
-                    raise AttributeError(f"Could not find the h_coolant_model '{h_coolant_model}'. Try 'rpe', 'sieder-tate' or 'dittus-boelter'.")
+                    raise AttributeError(f"Could not find the h_coolant_model '{h_coolant_model}'. Try 'rpe', 'sieder-tate', 'dittus-boelter' or 'gnielinski'.")
 
                 #Thermal circuit analysis
                 #Combined ablative and regen:
