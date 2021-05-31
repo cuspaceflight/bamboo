@@ -5,13 +5,10 @@ Assumptions:
     - 1D flow.
     - Isentropic flow.
     - Perfect gases.
+    - No axial heat transfer (only radial) - this becomes inaccurate when there are large axial temperature gradients (e.g. sometimes along walls near the throat)
 
 Conventions:
     - Position (x) along the nozzle is defined by: x = 0 at the throat, x < 0 in the combustion chamber, x > 0 in the diverging section of the nozzle.
-
-Known issues:
-    - A hardcoded fix is in place for using area ratios outside the Rao angle data range (it tricks the code into making something close to a 15 degree cone). A more robust fix would be better.
-    - h_gas_model = '2' doesn't seem to work very well (if at all) right now.
 
 Room for improvement:
     - Should check if the Engine.channel_geometry() function is working as intended.
@@ -2116,7 +2113,12 @@ class Engine:
         E1 = self.cooling_jacket.inner_wall_material.E
         E2 = self.cooling_jacket.outer_wall_material.E
         t1_hoop = self.map_thickness_profile(self.geometry.inner_wall_thickness, length)
-        t1 = t1_hoop + self.cooling_jacket.channel_height(x)*self.cooling_jacket.blockage_ratio         #WARNING: Probably need to fix this line to accommodate variable channel heights
+
+        #WARNING: I added the lines below to deal with variable channel heights, but not 100% if I did it correctly
+        t1 = np.zeros(len(t1_hoop))
+        for i in range(len(t1_hoop)):
+            t1[i] = t1_hoop[i] + self.cooling_jacket.channel_height(heating_result["x"][i])*self.cooling_jacket.blockage_ratio    
+
         # The blockage ratio is used to scale the contribution of the ribs to the
         # effective total thickness of the inner liner (wider ribs = greater blockage ratio)
         t2 = self.map_thickness_profile(self.geometry.outer_wall_thickness, length)
