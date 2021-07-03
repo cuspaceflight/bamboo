@@ -5,13 +5,10 @@ Assumptions:
     - 1D flow.
     - Isentropic flow.
     - Perfect gases.
+    - No axial heat transfer (only radial) - this becomes inaccurate when there are large axial temperature gradients (e.g. sometimes along walls near the throat)
 
 Conventions:
     - Position (x) along the nozzle is defined by: x = 0 at the throat, x < 0 in the combustion chamber, x > 0 in the diverging section of the nozzle.
-
-Known issues:
-    - A hardcoded fix is in place for using area ratios outside the Rao angle data range (it tricks the code into making something close to a 15 degree cone). A more robust fix would be better.
-    - h_gas_model = '2' doesn't seem to work very well (if at all) right now.
 
 Room for improvement:
     - Should check if the Engine.channel_geometry() function is working as intended.
@@ -1099,47 +1096,52 @@ class Engine:
 
                 #If using a spiral cooling jacket
                 if self.cooling_jacket.configuration == 'spiral':
-                    W = self.cooling_jacket.channel_width
-                    H = self.cooling_jacket.channel_height
-
-                    spirals_to_fit = int((xmax - xmin)/W) + 1
-                    regen_xs = np.linspace(xmin, xmin + W*spirals_to_fit, spirals_to_fit + 1)
-
-                    if len(regen_xs) > 5000:
-                        print(f"WARNING: Large number of channels to plot for the cooling jacket ({len(regen_xs)}) - this may take a while.")
 
                     #Just for the legends
                     axs.plot(0, 0, color = 'green', label = 'Cooling channels')  
-                    axs.plot(0, 0, color = 'red', label = 'Channel ribs')  
+                    if self.cooling_jacket.number_of_ribs != 1:
+                        axs.plot(0, 0, color = 'red', label = 'Channel ribs')  
+                        rib_color = 'red'
+                    else:
+                        rib_color = 'green'
 
-                    for i in range(len(regen_xs) - 1):
-                        y_jacket_inner = np.interp(regen_xs[i], x, wall_outer)
+                    #Plot the spiral channels as rectangles
+                    current_x = self.geometry.x_min
+
+                    while current_x < self.geometry.x_max:
+                        y_jacket_inner = self.y(current_x, up_to = "wall out")   #y position of inner side of cooling channel wall
+                        H = self.cooling_jacket.channel_height(current_x)          #Current channel height
+                        W = self.cooling_jacket.channel_width(current_x)           #Current channel width
 
                         #Show the ribs as filled in rectangles
                         area_per_rib = W*H*self.cooling_jacket.blockage_ratio/self.cooling_jacket.number_of_ribs
-                        rib_width = area_per_rib/self.cooling_jacket.channel_height
+                        rib_width = area_per_rib/H
 
                         for j in range(self.cooling_jacket.number_of_ribs):
-                            distance_to_next_rib = (regen_xs[i+1] - regen_xs[i])/self.cooling_jacket.number_of_ribs
+                            distance_to_next_rib = W/self.cooling_jacket.number_of_ribs
 
                             #Make all ribs red
-                            axs.add_patch(matplotlib.patches.Rectangle([regen_xs[i] + j*distance_to_next_rib, y_jacket_inner], rib_width, H, color = 'red', fill = True))
-                            axs.add_patch(matplotlib.patches.Rectangle([regen_xs[i] + j*distance_to_next_rib, -y_jacket_inner-H], rib_width, H, color = 'red', fill = True))
-
+                            axs.add_patch(matplotlib.patches.Rectangle([current_x + j*distance_to_next_rib, y_jacket_inner], rib_width, H, color = rib_color, fill = True))
+                            axs.add_patch(matplotlib.patches.Rectangle([current_x + j*distance_to_next_rib, -y_jacket_inner-H], rib_width, H, color = rib_color, fill = True))
 
                         #Plot 'outer' cooling channel (i.e. the amount moved per spiral)
-                        axs.add_patch(matplotlib.patches.Rectangle([regen_xs[i], y_jacket_inner], W, H, color = 'green', fill = False))
-                        axs.add_patch(matplotlib.patches.Rectangle([regen_xs[i], -y_jacket_inner-H], W, H, color = 'green', fill = False))
+                        axs.add_patch(matplotlib.patches.Rectangle([current_x, y_jacket_inner], W, H, color = 'green', fill = False))
+                        axs.add_patch(matplotlib.patches.Rectangle([current_x, -y_jacket_inner-H], W, H, color = 'green', fill = False))
 
+                        current_x = current_x + W
 
                 #If using a vertical channels cooling jacket
                 if self.cooling_jacket.configuration == 'vertical':
                     regen_xs = np.linspace(xmin, xmax, 1000)
                     channel_inner_mapped = np.interp(regen_xs, x, wall_outer)
+                    channel_height_mapped = np.zeros(len(regen_xs))
+
+                    for i in range(len(regen_xs)):
+                        channel_height_mapped[i] = self.cooling_jacket.channel_height(regen_xs[i])
 
                     #Show the channel thickness to scale
-                    axs.fill_between(regen_xs, channel_inner_mapped, channel_inner_mapped+self.cooling_jacket.channel_height, color="green", label = 'Cooling channel')
-                    axs.fill_between(regen_xs, -channel_inner_mapped, -channel_inner_mapped-self.cooling_jacket.channel_height, color="green")
+                    axs.fill_between(regen_xs, channel_inner_mapped, channel_inner_mapped+channel_height_mapped, color="green", label = 'Cooling channel')
+                    axs.fill_between(regen_xs, -channel_inner_mapped, -channel_inner_mapped-channel_height_mapped, color="green")
             
             if legend:
                 axs.legend()
@@ -1231,7 +1233,7 @@ class Engine:
         self.geometry = EngineGeometry(self.nozzle, inner_wall_thickness, style, **kwargs)
         self.has_geometry = True
 
-    def add_cooling_jacket(self, inner_wall_material, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = [-1000, 1000], configuration = "spiral", **kwargs):
+    def add_cooling_jacket(self, inner_wall_material, inlet_T, inlet_p0, coolant_transport, mdot_coolant, xs = None, configuration = "spiral", **kwargs):
         """Container for cooling jacket information - e.g. for regenerative cooling.
 
         Args:
@@ -1240,17 +1242,27 @@ class Engine:
             inlet_p0 (float): Inlet coolant stagnation pressure (Pa)
             coolant_transport (TransportProperties): Container for the coolant transport properties.
             mdot_coolant (float): Coolant mass flow rate (kg/s)
-            xs (list): x positions that the cooling jacket starts and ends at, [x_min, x_max]. Defaults to [-1000, 1000].
+            xs (list): x positions that the cooling jacket starts and ends at, [x_min, x_max]. By default will encompass the entire engine.
             configuration (str, optional): Options include 'spiral' and 'vertical'. Defaults to "vertical".
             has_ablative (bool, optional): Whether or not the engine has an ablative.
         
         Keyword Args:
             blockage_ratio (float): This is the proportion (by area) of the channel cross section occupied by ribs.
             number_of_ribs (int): Only relevant if 'blockage_ratio' !=0. This is the number of ribs present in the cooling channel. For spiral channels this is the number of ribs 'per pitch' - it is numerically equal to the number of parallel spiral channels.
-            channel_height (float): This is the height of the channels, in the radial direction (m).
+            channel_height (float or list): This is the height of the channels, in the radial direction (m). Can be a constant (float) or list. If list, it must be an channel heights at regularly spaced x positions, which will be stretched to fit the xs input.
             channel_width (float): Only relevant if configuration = 'spiral'. This is the total width (i.e. pitch) of the cooling channels (m).
             outer_wall_material (Material): Wall material for the outer liner.
         """
+        if self.has_geometry == False:
+            raise AttributeError("Need to add geometry to the engine first with Engine.add_geometry() before adding a cooling jacket")
+
+        #Make sure the values in xs aren't outside of the engine
+        if xs is None:
+            xs = [self.geometry.x_min, self.geometry.x_max]
+        elif xs[0] < self.geometry.x_min:
+            raise ValueError(f"xs[0] is upstream of the front of the engine (x = {self.geometry.x_min} m)")
+        elif xs[1] > self.geometry.x_max:
+            raise ValueError(f"xs[1] is downstream of the end of the engine (x = {self.geometry.x_max} m)")
         
         self.cooling_jacket = cool.CoolingJacket(inner_wall_material,
                                                 inlet_T, 
@@ -1283,6 +1295,8 @@ class Engine:
             ablative_thickness (float or list): Thickness of ablative. If a list is given, it must correspond to thickness at regular x intervals, which will be stretched out over the inverval of 'xs'. Defaults to None (in which case the ablative extends from the engine contour to combustion chamber radius).
             regression_rate (float): (Not currently used) (m/s). Defaults to 0.0.
         """
+
+
         #Use the cooling jacket's wall material if the user inputs 'wall_material = None'
         if wall_material == None:
             if self.has_cooling_jacket == False:
@@ -1292,9 +1306,10 @@ class Engine:
         else:
             wall_material_to_use = wall_material
         
-        if self.has_cooling_jacket is True:
-            self.cooling_jacket.has_ablative = True
-        
+        if self.has_geometry == False:
+            raise AttributeError("Need to add geometry to the engine first with Engine.add_geometry() before adding an ablative")
+
+        #Make sure the values in xs aren't outside of the engine
         if xs is None:
             xs = [self.geometry.x_min, self.geometry.x_max]
         elif xs[0] < self.geometry.x_min:
@@ -1309,6 +1324,8 @@ class Engine:
                                       ablative_thickness = ablative_thickness)
         self.has_ablative = True
 
+        if self.has_cooling_jacket is True:
+            self.cooling_jacket.has_ablative = True
 
     #Cooling system functions
     def map_thickness_profile(self, thickness, number_of_points):
@@ -1336,45 +1353,53 @@ class Engine:
 
         return mapped_thickness
 
-    def coolant_path_length(self, number_of_sections = 1000):
-        """Finds the path length of the coolant in the jacket from engine geometry and channel configuration.
-           Number_of_sections must be equal to number_of_points when used in a heating analysis.
+    def channel_path_lengths(self, number_of_points = 1000):
+        """Finds the path length travelled by the coolant in between each pair of x points.
+           Number_of_points input must be equal to number_of_points used in a heating analysis.
 
         Note:
             Recently changed the system for finding the engine contour - would be useful to run some proper tests on this function to see if the values it returns still make sense.
 
         Args:
-            number_of_sections (int, optional): Number of sections to split path into. Defaults to 1000.
-
+            number_of_points (int, optional): Number of discretised points to split path into. Defaults to 1000.
 
         Returns:
-            array: Discretised coolant path length array with "number_of_sections" elements. (m).
+            array: Coolant path lengths (dl) between each pair of x points. e.g. discretised_length[10] = path length between xs[10] and xs[11]
         """
-        discretised_x = np.linspace(self.geometry.x_max, self.geometry.x_min, number_of_sections)
-        axis_length = self.geometry.x_max - self.geometry.x_min     # Axial engine length
-        discretised_length = []
+        discretised_x = np.linspace(self.geometry.x_max, self.geometry.x_min, number_of_points)
+        dx = discretised_x[0] - discretised_x[1]
+
+        #axis_length = self.geometry.x_max - self.geometry.x_min     # Axial engine length
+        discretised_length = np.zeros(number_of_points-1)
 
         if self.cooling_jacket.configuration == "spiral":
-            pitch = self.cooling_jacket.channel_width               # No gaps between channels so spiral pitch = width
-            section_turns = axis_length/(pitch*number_of_sections)  # Number of turns per discrete section
+            for i in range(number_of_points-1):     
+                pitch = self.cooling_jacket.channel_width(discretised_x[i])     # Pitch can vary - this is the instantaneous pitch
 
-            for i in range(number_of_sections-1):              
-                y_i = self.y(discretised_x[i], up_to = "wall out")
-                y_iplus1 = self.y(discretised_x[i+1], up_to = "wall out")
+                y_i = self.y(discretised_x[i], up_to = "wall out") + self.cooling_jacket.channel_height(discretised_x[i])/2
+                y_iplus1 = self.y(discretised_x[i+1], up_to = "wall out") + self.cooling_jacket.channel_height(discretised_x[i+1])/2
 
                 # Find the average radius for this section and use it to determine the spiral section length
                 radius_avg = (y_i + y_iplus1)/2 
-                discretised_length.append(section_turns * np.sqrt(pitch**2 + (radius_avg*2*np.pi)**2))
-                
+                dy = y_iplus1 - y_i
+
+                #[small path length]^2 = [tangential distance moved]^2 + [radial distance moved]^2 + [axial distance moved]^2
+                #[dl]^2 = [radius*(angle turned)]^2 + [dy]^2 + [dx]^2
+                angle_turned = (dx/pitch) * 2 *np.pi
+                dl = ((radius_avg*angle_turned)**2 + dy**2 + dx**2)**(1/2)
+
+                discretised_length[i] = dl
 
             return discretised_length
 
         if self.cooling_jacket.configuration == "vertical":
-            dx = discretised_x[0] - discretised_x[1]
+            for i in range(number_of_points-1):
 
-            for i in range(number_of_sections-1):
-                dy = np.abs(self.y(discretised_x[i], up_to = 'wall out') - self.y(discretised_x[i+1], up_to = 'wall out'))
-                discretised_length.append(np.sqrt(dy**2 + dx**2))
+                y_i = self.y(discretised_x[i], up_to = "wall out") + self.cooling_jacket.channel_height(discretised_x[i])/2
+                y_iplus1 = self.y(discretised_x[i+1], up_to = "wall out") + self.cooling_jacket.channel_height(discretised_x[i+1])/2
+
+                dy = y_iplus1 - y_i
+                discretised_length[i] = (np.sqrt(dy**2 + dx**2))
 
             return discretised_length
 
@@ -1467,20 +1492,20 @@ class Engine:
 
         return q_dot, R_gas, R_ablative
 
-    def steady_heating_analysis(self, number_of_points = 1000, h_gas_model = "bartz-sigma", h_coolant_model = "sieder-tate", to_json = "heating_output.json", **kwargs):
+    def steady_heating_analysis(self, number_of_points = 1000, h_gas_model = "bartz-sigma", h_coolant_model = "gnielinski", to_json = "heating_output.json", **kwargs):
         """Steady state heating analysis. Can be used for regenarative cooling, or combined regenerative and ablative cooling.
 
         Args:
             number_of_points (int, optional): Number of discrete points to divide the engine into. Defaults to 1000.
             h_gas_model (str, optional): Equation to use for the gas side convective heat transfer coefficients. Options are 'rpe', 'bartz' and 'bartz-sigma'. Defaults to "bartz-sigma".
-            h_coolant_model (str, optional): Equation to use for the coolant side convective heat transfer coefficients. Options are 'rpe', 'sieder-tate' and 'dittus-boelter'. Defaults to "sieder-tate".
+            h_coolant_model (str, optional): Equation to use for the coolant side convective heat transfer coefficients. Options are 'rpe', 'sieder-tate', 'dittus-boelter' and 'gnielinski'. Defaults to "gnielinski".
             to_json (str or bool, optional): Directory to export a .JSON file to, containing simulation results. If False, no .JSON file is saved. Defaults to 'heating_output.json'.
         
         Keyword Args:
             gas_fudge_factor (float, optional): Fudge factor to multiply the gas side thermal resistance by. A factor of ~1.3 can sometimes help results match experimental data better.
 
         Note:
-            See the bamboo.cooling module for details of each h_gas and h_coolant option. Defaults are Bartz (using sigma correlation) for gas side, and Sieder-Tate for coolant side. These are believed to be the most accurate.
+            See the bamboo.cooling module for details of each h_gas and h_coolant option. Defaults are Bartz (using sigma correlation) for gas side, and Gnielinski for coolant side.
 
         Note:
             Sometimes the wall temperature can be above the boiling point of your coolant, in which case you may get nucleate boiling or other effects, and the Sieder-Tate model may become questionable.
@@ -1529,7 +1554,7 @@ class Engine:
         dx = discretised_x[0] - discretised_x[1]
 
         #Calculation of coolant channel length per "section"
-        channel_length = self.coolant_path_length(number_of_sections=number_of_points)     #number_of_sections must be equal to number_of_points
+        channel_path_lengths = self.channel_path_lengths(number_of_points=number_of_points)     #number_of_sections must be equal to number_of_points
 
         #Data arrays to return
         T_wall_inner = np.full(len(discretised_x), float('NaN')) #Gas side wall temperature
@@ -1711,7 +1736,7 @@ class Engine:
                                                                    y = self.y(x, up_to = "wall out"))
 
                     p0_coolant[i] = p0_coolant[i-1] - self.coolant_p0_drop(friction_factor, 
-                                                                           dl = channel_length[i-1], 
+                                                                           dl = channel_path_lengths[i-1], 
                                                                            T = T_coolant[i], 
                                                                            p = p_coolant[i-1], 
                                                                            x = x, 
@@ -1778,8 +1803,24 @@ class Engine:
                                                                 Pr_coolant[i], 
                                                                 k_coolant[i])
 
+                elif h_coolant_model == "gnielinski":
+                    if i == 0:
+                        #Pressure drops aren't done for i = 0 so friction factor hasn't been gotten yet, so we need to get it here
+                        friction_factor = self.coolant_friction_factor(T = T_coolant[i], 
+                                                                        p = p_coolant[i], 
+                                                                        x = x, 
+                                                                        y = self.y(x, up_to = "wall out"))
+
+                    h_coolant[i] = cool.h_coolant_gnielinski(rho_coolant[i], 
+                                                                v_coolant[i], 
+                                                                self.cooling_jacket.D(x=x, y=self.y(x=x, up_to = "wall in")), 
+                                                                mu_coolant[i], 
+                                                                Pr_coolant[i], 
+                                                                k_coolant[i],
+                                                                friction_factor)
+
                 else:
-                    raise AttributeError(f"Could not find the h_coolant_model '{h_coolant_model}'. Try 'rpe', 'sieder-tate' or 'dittus-boelter'.")
+                    raise AttributeError(f"Could not find the h_coolant_model '{h_coolant_model}'. Try 'rpe', 'sieder-tate', 'dittus-boelter' or 'gnielinski'.")
 
                 #Thermal circuit analysis
                 #Combined ablative and regen:
@@ -2037,6 +2078,9 @@ class Engine:
         """Perform stress analysis on the liner, using a cooling result.
            Results should be taken only as a first approximation of some key stresses.
 
+        Note:
+            Will likely not work right now, as it has not been updated to accodomate variable cooling channel heights
+
         Args:
             heating_result (dict): Requires a heating analysis result to compute stress.
             condition (str, optional): Engine state for analysis. Options are "steady", or "transient". Defaults to "steady".
@@ -2064,10 +2108,17 @@ class Engine:
         mat_in = self.cooling_jacket.inner_wall_material
         mat_out = self.cooling_jacket.outer_wall_material
 
+        print("WARNING: The stress analysis function has not been updated to accommodate variable channel heights, and so may not work correctly at the moment")
+
         E1 = self.cooling_jacket.inner_wall_material.E
         E2 = self.cooling_jacket.outer_wall_material.E
         t1_hoop = self.map_thickness_profile(self.geometry.inner_wall_thickness, length)
-        t1 = t1_hoop + self.cooling_jacket.channel_height*self.cooling_jacket.blockage_ratio
+
+        #WARNING: I added the lines below to deal with variable channel heights, but not 100% if I did it correctly
+        t1 = np.zeros(len(t1_hoop))
+        for i in range(len(t1_hoop)):
+            t1[i] = t1_hoop[i] + self.cooling_jacket.channel_height(heating_result["x"][i])*self.cooling_jacket.blockage_ratio    
+
         # The blockage ratio is used to scale the contribution of the ribs to the
         # effective total thickness of the inner liner (wider ribs = greater blockage ratio)
         t2 = self.map_thickness_profile(self.geometry.outer_wall_thickness, length)
