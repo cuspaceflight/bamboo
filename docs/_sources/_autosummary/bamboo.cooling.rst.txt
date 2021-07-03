@@ -15,6 +15,7 @@
    
       black_body
       h_coolant_dittus_boelter
+      h_coolant_gnielinski
       h_coolant_rpe
       h_coolant_sieder_tate
       h_gas_bartz

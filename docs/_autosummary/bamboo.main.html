@@ -164,15 +164,11 @@
 <li><p>1D flow.</p></li>
 <li><p>Isentropic flow.</p></li>
 <li><p>Perfect gases.</p></li>
+<li><p>No axial heat transfer (only radial) - this becomes inaccurate when there are large axial temperature gradients (e.g. sometimes along walls near the throat)</p></li>
 </ul>
 </dd>
 <dt>Conventions:</dt><dd><ul class="simple">
 <li><p>Position (x) along the nozzle is defined by: x = 0 at the throat, x &lt; 0 in the combustion chamber, x &gt; 0 in the diverging section of the nozzle.</p></li>
-</ul>
-</dd>
-<dt>Known issues:</dt><dd><ul class="simple">
-<li><p>A hardcoded fix is in place for using area ratios outside the Rao angle data range (it tricks the code into making something close to a 15 degree cone). A more robust fix would be better.</p></li>
-<li><p>h_gas_model = ‘2’ doesn’t seem to work very well (if at all) right now.</p></li>
 </ul>
 </dd>
 <dt>Room for improvement:</dt><dd><ul class="simple">
