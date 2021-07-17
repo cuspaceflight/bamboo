@@ -83,7 +83,7 @@ def h_gas_bartz(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0):
 
     return (0.026/D**0.2) * (cp_inf*mu_inf**0.2)/(Pr_inf**0.6) * (rho_inf * v_inf)**0.8 * (rho_am/rho_inf) * (mu_am/mu0)**0.2
 
-def h_gas_bartz_sigma(c_star, At, A, pc, Tc, M, Tw, mu, cp, gamma, Pr):
+def h_gas_bartz_sigma(c_star, At, A, pc, Tc, M, Tw, mu0, cp0, gamma, Pr0):
     """Bartz heat transfer equation using the sigma correlation, from Reference [6].
 
     Args:
@@ -94,10 +94,10 @@ def h_gas_bartz_sigma(c_star, At, A, pc, Tc, M, Tw, mu, cp, gamma, Pr):
         Tc (float): Chamber temperature (K)
         M (float): Freestream Mach number
         Tw (float): Wall temperature (K)
-        mu (float): Freestream absolute viscosity (Pa s).
-        cp (float): Gas specific heat capacity (J/kg/K)
+        mu0 (float): Absolute viscosity at stagnation conditions (Pa s)
+        cp0 (float): Gas specific heat capacity at stagnation conditions (J/kg/K)
         gamma (float): Gas ratio of specific heats (cp/cv)
-        Pr (float): Freestream Prandtl number
+        Pr0 (float): Prandtl number at stagnation conditions
 
     Returns:
         float: Convective heat transfer coefficient, h, for the exhaust gas side (where q = h(T - T_inf)).
@@ -106,7 +106,7 @@ def h_gas_bartz_sigma(c_star, At, A, pc, Tc, M, Tw, mu, cp, gamma, Pr):
     Dt = (At *4/np.pi)**0.5
     sigma = (0.5 * (Tw/Tc) * (1 + (gamma-1)/2 * M**2) + 0.5)**(-0.68) * (1 + (gamma-1)/2 * M**2)**(-0.12)
 
-    return (0.026)/(Dt**0.2) * (mu**0.2*cp/Pr**0.6) * (pc/c_star)**0.8 * (At/A)**0.9 * sigma
+    return (0.026)/(Dt**0.2) * (mu0**0.2*cp0/Pr0**0.6) * (pc/c_star)**0.8 * (At/A)**0.9 * sigma
 
 def h_coolant_rpe(A, D, mdot, mu, k, c_bar, rho):
     """Get the convective heat transfer coefficient for the coolant side.

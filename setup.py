@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='bamboo',
-    version='0.1d',
+    version='0.1e',
     packages=find_packages(),
     install_requires=['numpy', 'matplotlib', 'scipy', 'ambiance', 'thermo', 'pypropep'],
     description='1D isentropic nozzle flow for perfect gases',

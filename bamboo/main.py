@@ -1280,7 +1280,7 @@ class Engine:
         Args:
             transport_properties (TransportProperties): Container for the exhaust gas transport properties.
         """
-        self.x_ehaust_transport = transport_properties
+        self.exhaust_transport = transport_properties
         self.has_exhaust_transport = True
 
     def add_ablative(self, ablative_material, wall_material = None, xs = None, ablative_thickness = None, regression_rate = 0.0):
@@ -1533,7 +1533,7 @@ class Engine:
             raise AttributeError("Cannot run heating analysis without additional geometry definitions. You need to add geometry with the 'Engine.add_geometry()' function.")
 
         try:
-            self.x_ehaust_transport
+            self.exhaust_transport
         except AttributeError:
             raise AttributeError("Cannot run heating analysis without an exhaust gas transport properties model. You need to add one with the 'Engine.add_exhaust_transport()' function.")
         
@@ -1594,15 +1594,19 @@ class Engine:
         else:
             gas_fudge_factor = 1.0
 
+        '''Calculate stagnation properties now - since we only need to do it once'''
+        mu_gas0 = self.exhaust_transport.mu(T = self.chamber_conditions.T0, p = self.chamber_conditions.p0)
+        Pr_gas0 = self.exhaust_transport.Pr(T = self.chamber_conditions.T0, p = self.chamber_conditions.p0)
+
         '''Main loop'''
         for i in range(len(discretised_x)):
             x = discretised_x[i]
             T_gas[i] = self.T(x)
 
             #Get exhaust gas transport properties
-            mu_gas[i] = self.x_ehaust_transport.mu(T = T_gas[i], p = self.p(x))
-            k_gas[i] = self.x_ehaust_transport.k(T = T_gas[i], p = self.p(x))
-            Pr_gas[i] = self.x_ehaust_transport.Pr(T = T_gas[i], p = self.p(x))
+            mu_gas[i] = self.exhaust_transport.mu(T = T_gas[i], p = self.p(x))
+            k_gas[i] = self.exhaust_transport.k(T = T_gas[i], p = self.p(x))
+            Pr_gas[i] = self.exhaust_transport.Pr(T = T_gas[i], p = self.p(x))
 
             if self.has_cooling_jacket and self.cooling_jacket.xs[0] <= x <= self.cooling_jacket.xs[1]:
                 #Gas side heat transfer coefficient
@@ -1636,13 +1640,13 @@ class Engine:
 
                         ##Properties at arithmetic mean of T_wall and T_inf. Assume wall temperature = freestream temperature for the first step.
                         T_am = T_inf
-                        mu_am = self.x_ehaust_transport.mu(T = T_am, p = p_inf)
+                        mu_am = self.exhaust_transport.mu(T = T_am, p = p_inf)
                         rho_am = p_inf/(R*T_am)                                 #p = rho R T - pressure is roughly uniform across the boundary layer so p_inf ~= p_wall
 
                         #Stagnation properties
                         p0 = self.chamber_conditions.p0
                         T0 = self.chamber_conditions.T0
-                        mu0 = self.x_ehaust_transport.mu(T =  T0, p = p0)
+                        mu0 = self.exhaust_transport.mu(T =  T0, p = p0)
 
                         h_gas[i] = cool.h_gas_bartz(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0)
                          
@@ -1663,18 +1667,14 @@ class Engine:
 
                         #Properties at arithmetic mean of T_wall and T_inf
                         T_am = (T_inf + T_wall_inner[i-1]) / 2
-                        mu_am = self.x_ehaust_transport.mu(T = T_am, p = p_inf)
+                        mu_am = self.exhaust_transport.mu(T = T_am, p = p_inf)
                         rho_am = p_inf/(R*T_am)                                 #p = rho R T - pressure is roughly uniform across the boundary layer so p_inf ~= p_wall
 
-                        #Stagnation properties
-                        p0 = self.chamber_conditions.p0
-                        T0 = self.chamber_conditions.T0
-                        mu0 = self.x_ehaust_transport.mu(T =  T0, p = p0)
-
-                        h_gas[i] = cool.h_gas_bartz(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0)
+                        h_gas[i] = cool.h_gas_bartz(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu_gas0)
 
                 elif h_gas_model == "bartz-sigma":
                     #We need the previous wall temperature to use h_gas_bartz_sigma. If we're on the first step, assume wall temperature = freestream temperature.
+
                     if i == 0:
                         h_gas[i] = cool.h_gas_bartz_sigma(self.c_star,
                                                 self.nozzle.At, 
@@ -1683,10 +1683,10 @@ class Engine:
                                                 self.chamber_conditions.T0, 
                                                 self.M(x), 
                                                 T_gas[i], 
-                                                mu_gas[i], 
+                                                mu_gas0, 
                                                 self.perfect_gas.cp, 
                                                 self.perfect_gas.gamma, 
-                                                Pr_gas[i])
+                                                Pr_gas0)
 
                     #For all other steps
                     else:
@@ -1697,10 +1697,10 @@ class Engine:
                                                 self.chamber_conditions.T0, 
                                                 self.M(x), 
                                                 T_wall_inner[i-1], 
-                                                mu_gas[i], 
+                                                mu_gas0, 
                                                 self.perfect_gas.cp, 
                                                 self.perfect_gas.gamma, 
-                                                Pr_gas[i])
+                                                Pr_gas0)
 
                 else:
                     raise AttributeError(f"Could not find the h_gas_model '{h_gas_model}'. Try 'rpe', 'bartz' or 'bartz-sigma'.")
@@ -1932,7 +1932,7 @@ class Engine:
             raise AttributeError("Cannot run heating analysis without additional geometry definitions. You need to add geometry with the 'Engine.add_geometry()' function.")
 
         try:
-            self.x_ehaust_transport
+            self.exhaust_transport
         except AttributeError:
             raise AttributeError("Cannot run heating analysis without an exhaust gas transport properties model. You need to add one with the 'Engine.add_exhaust_transport()' function.")
 
@@ -1983,9 +1983,9 @@ class Engine:
                                             self.rho(x),
                                             self.perfect_gas.gamma,
                                             self.perfect_gas.R,
-                                            self.x_ehaust_transport.mu(T = T_gas[i, j], p = self.p(x)),
-                                            self.x_ehaust_transport.k(T = T_gas[i, j], p = self.p(x)),
-                                            self.x_ehaust_transport.Pr(T = T_gas[i, j], p = self.p(x)))
+                                            self.exhaust_transport.mu(T = T_gas[i, j], p = self.p(x)),
+                                            self.exhaust_transport.k(T = T_gas[i, j], p = self.p(x)),
+                                            self.exhaust_transport.Pr(T = T_gas[i, j], p = self.p(x)))
 
                 elif h_gas_model == "2":
                     gamma = self.perfect_gas.gamma
@@ -1998,19 +1998,19 @@ class Engine:
                     rho_inf = self.rho(x)
                     M_inf = self.M(x)
                     v_inf = M_inf * (gamma*R*T_inf)**0.5    #Gas velocity
-                    mu_inf = self.x_ehaust_transport.mu(T = T_gas[i, j], p = p_inf)
-                    Pr_inf = self.x_ehaust_transport.Pr(T = T_gas[i, j], p = p_inf)
+                    mu_inf = self.exhaust_transport.mu(T = T_gas[i, j], p = p_inf)
+                    Pr_inf = self.exhaust_transport.Pr(T = T_gas[i, j], p = p_inf)
                     cp_inf = self.perfect_gas.cp
 
                     #Properties at arithmetic mean of T_wall and T_inf
                     T_am = (T_inf + T_ablative_inner[i, j-1]) / 2
-                    mu_am = self.x_ehaust_transport.mu(T = T_am, p = p_inf)
+                    mu_am = self.exhaust_transport.mu(T = T_am, p = p_inf)
                     rho_am = p_inf/(R*T_am)                                 #p = rho R T - pressure is roughly uniform across the boundary layer so p_inf ~= p_wall
 
                     #Stagnation properties
                     p0 = self.chamber_conditions.p0
                     T0 = self.chamber_conditions.T0
-                    mu0 = self.x_ehaust_transport.mu(T =  T0, p = p0)
+                    mu0 = self.exhaust_transport.mu(T =  T0, p = p0)
 
                     h_gas[i, j] = cool.h_gas_2(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0)
 
@@ -2022,10 +2022,10 @@ class Engine:
                                             self.chamber_conditions.T0, 
                                             self.M(x), 
                                             T_ablative_inner[i, j-1], 
-                                            self.x_ehaust_transport.mu(T = T_gas[i, j], p = self.p(x)), 
+                                            self.exhaust_transport.mu(T = T_gas[i, j], p = self.p(x)), 
                                             self.perfect_gas.cp, 
                                             self.perfect_gas.gamma, 
-                                            self.x_ehaust_transport.Pr(T = T_gas[i, j], p = self.p(x)))
+                                            self.exhaust_transport.Pr(T = T_gas[i, j], p = self.p(x)))
 
                 else:
                     raise AttributeError(f"Could not find the h_gas_model '{h_gas_model}'")
