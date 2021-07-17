@@ -1550,7 +1550,7 @@ using Equation (8-23) from page 312 of RPE 7th edition (Reference [2]). ‘am’
 
 <dl class="py function">
 <dt id="bamboo.cooling.h_gas_bartz_sigma">
-<code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">h_gas_bartz_sigma</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c_star</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">At</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Tc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Tw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.h_gas_bartz_sigma" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">bamboo.cooling.</span></code><code class="sig-name descname"><span class="pre">h_gas_bartz_sigma</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c_star</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">At</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Tc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Tw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cp0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.cooling.h_gas_bartz_sigma" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bartz heat transfer equation using the sigma correlation, from Reference [6].</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1562,10 +1562,10 @@ using Equation (8-23) from page 312 of RPE 7th edition (Reference [2]). ‘am’
 <li><p><strong>Tc</strong> (<em>float</em>) – Chamber temperature (K)</p></li>
 <li><p><strong>M</strong> (<em>float</em>) – Freestream Mach number</p></li>
 <li><p><strong>Tw</strong> (<em>float</em>) – Wall temperature (K)</p></li>
-<li><p><strong>mu</strong> (<em>float</em>) – Freestream absolute viscosity (Pa s).</p></li>
-<li><p><strong>cp</strong> (<em>float</em>) – Gas specific heat capacity (J/kg/K)</p></li>
+<li><p><strong>mu0</strong> (<em>float</em>) – Absolute viscosity at stagnation conditions (Pa s)</p></li>
+<li><p><strong>cp0</strong> (<em>float</em>) – Gas specific heat capacity at stagnation conditions (J/kg/K)</p></li>
 <li><p><strong>gamma</strong> (<em>float</em>) – Gas ratio of specific heats (cp/cv)</p></li>
-<li><p><strong>Pr</strong> (<em>float</em>) – Freestream Prandtl number</p></li>
+<li><p><strong>Pr0</strong> (<em>float</em>) – Prandtl number at stagnation conditions</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
