@@ -1502,7 +1502,7 @@ class Engine:
             to_json (str or bool, optional): Directory to export a .JSON file to, containing simulation results. If False, no .JSON file is saved. Defaults to 'heating_output.json'.
         
         Keyword Args:
-            gas_fudge_factor (float, optional): Fudge factor to multiply the gas side thermal resistance by. A factor of ~1.3 can sometimes help results match experimental data better.
+            gas_fudge_factor (float, optional): Fudge factor to multiply the gas side thermal resistance by - leave blank unless you have a good idea of what it should be.
 
         Note:
             See the bamboo.cooling module for details of each h_gas and h_coolant option. Defaults are Bartz (using sigma correlation) for gas side, and Gnielinski for coolant side.
