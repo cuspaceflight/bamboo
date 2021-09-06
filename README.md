@@ -35,7 +35,10 @@ An introduction to the package can be found in the 'Introduction to Bamboo.ipynb
 Made using Sphinx, available at: 
 https://cuspaceflight.github.io/bamboo/
 
-## Examples plots
+## pypropep
+[pypropep](https://github.com/jonnydyer/pypropep) is a very useful Python module that can be used to calculate combustion chamber and exhaust gas properties. It is not required by bamboo, but is used in the Vulcain example. It has been kept in requirements.txt, but excluded from setup.py, so it is not automatically installed with bamboo when using pip (e.g. when using the line shown in the 'Installation' section).
+
+## Example plots
 An example engine setup, using copper walls (blue) with a graphite nozzle insert (grey), and a spiralling regenerative cooling channel (green). The coolant travels into and out of the page.
 <p align="center">
 	<img width="500px" src="img/geometry_example.png">
@@ -45,5 +48,4 @@ Some corresponding data from a steady state heating analysis (ablation is ignore
 <p align="center">
 	<img width="1000px" src="img/heating_example.png">
 </p>
-
 
