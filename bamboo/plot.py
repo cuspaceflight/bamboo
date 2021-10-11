@@ -175,7 +175,7 @@ def plot_coolant_properties(data_dict, **kwargs):
     axs[0,0].set_title('Coolant Viscosity')
     axs[0,0].set_ylabel('Absolute Viscosity (Pa s)')
 
-    axs[0,1].plot(data_dict["x"], data_dict["k_gas"])
+    axs[0,1].plot(data_dict["x"], data_dict["k_coolant"])
     axs[0,1].set_title('Coolant Thermal Conductivity')
     axs[0,1].set_ylabel('Thermal Conductivity (W/m/K)')
 
