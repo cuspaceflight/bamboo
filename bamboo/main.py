@@ -446,6 +446,7 @@ class Nozzle:
             else:
                 if "theta_n" in kwargs:
                     self.theta_n = kwargs["theta_n"]
+                    self.theta_e_graph = float("NaN")
                 else:
                     self.theta_n = rao_theta_n(self.Ae/self.At)             #Inflection angle (rad), as defined in [1]
                     self.theta_e_graph = rao_theta_e(self.Ae/self.At)       #Exit angle (rad) read off the Rao graph, as defined in [1] - not actually used in bamboo for the quadratic fitting (just here for reference)
