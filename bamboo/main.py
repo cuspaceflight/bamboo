@@ -358,6 +358,7 @@ class Nozzle:
         At (float): Throat area (m^2) - required for 'rao' and 'cone' nozzles.
         Ae (float): Exit plane area (m^2) - required for 'rao' and 'cone' nozzles.
         length_fraction (float, optional): Length fraction for 'rao' nozzle - used if type = "rao". Defaults to 0.8.
+        theta_n (float, optional): theta_n for 'rao' nozzle - used if type = "rao". Defaults to interpolation ofthe graph in reference [1]
         cone_angle (float, optional): Cone angle (deg) - used for 'cone' nozzles. Defaults to 15.
         xs (list) : List of x positions that the data in the 'ys' argument corresponds to (m) - used for 'custom' nozzles.
         ys (list) : List of y positions corresponding to your custom nozzle contour (m) - used for 'custom' nozzles
@@ -420,7 +421,7 @@ class Nozzle:
                 self.length_fraction = 0.8
 
             #Our Rao bell nozzle data is taken from a graph, and data is unavailable below an area ratio of 3.7 or above an area ratio of 47.
-            if self.Ae/self.At < 3.7 or self.Ae/self.At > 47:
+            if (self.Ae/self.At < 3.7 or self.Ae/self.At > 47) and "theta_n" not in kwargs:
                 print("NOTE: Area ratio is outside of data range for Rao bell nozzle graphs (minimum 3.7, maximum 47). Using a 15 deg cone nozzle instead.")
                 self.theta_n = 15*np.pi/180
                 self.theta_e_graph = float("NaN")
@@ -443,8 +444,12 @@ class Nozzle:
                 self.length = self.x_e
 
             else:
-                self.theta_n = rao_theta_n(self.Ae/self.At)             #Inflection angle (rad), as defined in [1]
-                self.theta_e_graph = rao_theta_e(self.Ae/self.At)       #Exit angle (rad) read off the Rao graph, as defined in [1] - not actually used in bamboo for the quadratic fitting (just here for reference)
+                if "theta_n" in kwargs:
+                    self.theta_n = kwargs["theta_n"]
+                    self.theta_e_graph = float("NaN")
+                else:
+                    self.theta_n = rao_theta_n(self.Ae/self.At)             #Inflection angle (rad), as defined in [1]
+                    self.theta_e_graph = rao_theta_e(self.Ae/self.At)       #Exit angle (rad) read off the Rao graph, as defined in [1] - not actually used in bamboo for the quadratic fitting (just here for reference)
 
                 #Page 5 of Reference [1]:
                 self.x_n = 0.382*self.Rt*np.cos(self.theta_n - np.pi/2)                              #Inflection point x-value
