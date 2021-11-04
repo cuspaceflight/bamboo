@@ -41,7 +41,7 @@ https://cuspaceflight.github.io/bamboo/
 ## Example plots
 An example engine setup, using copper walls (blue) with a graphite nozzle insert (grey), and a spiralling regenerative cooling channel (green). The coolant travels into and out of the page.
 <p align="center">
-	<img width="500px" src="img/geometry_example.png">
+	<img width="500px" src="img/geometry_example2.png">
 </p>
 
 Some corresponding data from a steady state heating analysis (ablation is ignored, the graphite acts as a refractory), showing the copper wall temperatures and coolant temperatures against x position:
