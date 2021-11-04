@@ -31,7 +31,7 @@ def plot_temperatures(data_dict, **kwargs):
         if kwargs["show_ablative"] == False:
             pass
         else:
-            ax_T.plot(data_dict["x"], np.array(data_dict["T_ablative_inner"]) - 273.15, label = "Ablative (inner)")
+            ax_T.plot(data_dict["x"], np.array(data_dict["T_ablative_inner"]) - 273.15, label = "Refractory (inner)")
 
 
     ax_T.grid()
@@ -124,7 +124,7 @@ def plot_resistances(data_dict, **kwargs):
                 label = "Total resistance", linestyle = '--') 
 
     else:
-        axs.plot(data_dict["x"], data_dict["R_ablative"], label = "Ablative")
+        axs.plot(data_dict["x"], data_dict["R_ablative"], label = "Refractory")
         axs.plot(data_dict["x"], 
                 np.array(data_dict["R_gas"]) + np.array(data_dict["R_ablative"]) + np.array(data_dict["R_wall"]) + np.array(data_dict["R_coolant"]), 
                 label = "Total resistance", linestyle = '--')

@@ -40,7 +40,6 @@ import ambiance
 import bamboo.cooling as cool
 import json
 import matplotlib.patches
-import thermo.mixture
 
 R_BAR = 8.3144621e3         #Universal gas constant (J/K/kmol)
 g0 = 9.80665                #Standard gravitational acceleration (m/s^2)
@@ -1079,7 +1078,7 @@ class Engine:
 
             if self.has_ablative:
                 #Plot the ablative to scale
-                axs.fill_between(x, ablative_inner, ablative_outer, color="grey", label = 'Ablative')
+                axs.fill_between(x, ablative_inner, ablative_outer, color="grey", label = 'Refractory')
                 axs.fill_between(x, -ablative_inner, -ablative_outer, color="grey")
                 
             #Plot the engine wall thickness to scale
