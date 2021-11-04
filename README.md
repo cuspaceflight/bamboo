@@ -46,6 +46,6 @@ An example engine setup, using copper walls (blue) with a graphite nozzle insert
 
 Some corresponding data from a steady state heating analysis (ablation is ignored, the graphite acts as a refractory), showing the copper wall temperatures and coolant temperatures against x position:
 <p align="center">
-	<img width="1000px" src="img/heating_example.png">
+	<img width="1000px" src="img/heating_example2.png">
 </p>
 
