@@ -228,10 +228,11 @@ class Material:
             self.polyOrder = len(self.polyCoeffs)
             self.polyTmin = kwargs["Tsigma_range"][0]
             self.polyTmax = kwargs["Tsigma_range"][1]
-            self.polyFlag = True # A valid relationship exists
-            self.warned = False # Used to check if the user has been warned of inaccurate results, if they also set accuracy overrides
+            self.polyFlag = True            # A valid relationship exists
+            self.warned = False             # Used to check if the user has been warned of inaccurate results, if they also set accuracy overrides
         else:
-            print("Warning: Missing or invalid temperature-strength relationship. Stress results invalid for at least one material.")
+            pass
+            #print("Warning: Missing or invalid temperature-strength relationship. Stress results invalid for at least one material.")
 
         self.perf_therm = (1 - self.poisson) * self.k / (self.alpha * self.E)   #Performance coefficient for thermal stress, higher is better
 
