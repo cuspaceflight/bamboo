@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='bamboo',
-    version='0.1e',
+    version='0.1f',
     packages=find_packages(),
     install_requires=['numpy', 'matplotlib', 'scipy', 'ambiance'],
     description='Cooling system modelling for liquid rocket engines',
