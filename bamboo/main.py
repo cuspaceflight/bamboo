@@ -1527,6 +1527,7 @@ class Engine:
                 - "h_coolant" : Convective heat transfer rate for the coolant side
                 - "enthalpy_coolant" : Coolant specific enthalpy (J/kg) - will only contain data if enthalpy functions were provided.
                 - "boil_off_position" : x position of any coolant boil off. Equal to None if the coolant does not boil.
+                - "thermal_stress" : Thermal stress in the inner combustion chamber wall (Pa)
                 - (and some more)
         """
 
@@ -1572,6 +1573,8 @@ class Engine:
         mu_gas = np.full(len(discretised_x), float('NaN'))      #Exhaust gas absolute viscosity
         k_gas = np.full(len(discretised_x), float('NaN'))       #Exhaust gas thermal conductivity
         Pr_gas = np.full(len(discretised_x), float('NaN'))      #Exhaust gas Prandtl number
+
+        thermal_stress = np.full(len(discretised_x), float('NaN'))  #Thermal stress in the combustion chamber wall
 
         #Only relevant if there's a cooling jacket:
         T_coolant = np.full(len(discretised_x), float('NaN'))       #Coolant bulk temperature
@@ -1875,9 +1878,16 @@ class Engine:
                     T_wall_inner[i] = thermal_circuit.T[1]
                     T_wall_outer[i] = thermal_circuit.T[2]
 
+                # Pg 53 of Ref [7] - note the equation in RPE (Eqn 8-12, Reference [2]) looks like it could have a mistake in it
+                thermal_stress[i] = self.cooling_jacket.inner_wall_material.alpha * self.cooling_jacket.inner_wall_material.E * (T_wall_inner[i] - T_wall_outer[i]) \
+                                    / ( 2.0 * (1.0 - self.cooling_jacket.inner_wall_material.poisson) )
+
+
             else:
                 T_wall_inner[i] = T_gas[i]
                 T_wall_outer[i] = T_gas[i]
+
+
 
         #Dictionary containing results
         output_dict = {"x" : list(discretised_x),
@@ -1904,7 +1914,8 @@ class Engine:
                 "cp_coolant" : list(cp_coolant),
                 "rho_coolant" : list(rho_coolant),
                 "v_coolant" : list(v_coolant),
-                "enthalpy_coolant" : list(enthalpy_coolant)}
+                "enthalpy_coolant" : list(enthalpy_coolant),
+                "thermal_stress" : list(thermal_stress)}
 
         #Export a .JSON file if required
         if to_json != False:
@@ -2079,7 +2090,7 @@ class Engine:
 
     #Stress analysis functions
     def run_stress_analysis(self, heating_result, condition="steady", **kwargs):
-        """Perform stress analysis on the liner, using a cooling result.
+        """Perform additional stress analysis on the liner, using a cooling result.
            Results should be taken only as a first approximation of some key stresses.
 
         Note:

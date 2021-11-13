@@ -184,8 +184,7 @@ def h_coolant_gnielinski(rho, V, D, mu, Pr, k, f):
     return h
 
 class Material:
-    """Class used to specify a material and its properties. 
-    Used specifically for defining the inner liner of an engine.
+    """Class used to specify a material and its properties. For temperatures, only 'k' must be defined. For stresses, you also need E, alpha, and poisson.
 
     Args:
         E (float): Young's modulus (Pa)

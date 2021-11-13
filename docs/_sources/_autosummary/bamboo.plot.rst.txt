@@ -22,6 +22,7 @@
       plot_qdot
       plot_resistances
       plot_temperatures
+      plot_thermal_stress
    
    
 

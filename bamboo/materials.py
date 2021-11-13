@@ -28,8 +28,8 @@ Steel304_coeffs = [4.11044348e+01, -4.31300681e-01,  1.84371948e-03, -3.89169923
                    2.86934185e-13, -3.80214923e-15,  3.10261448e-18, -8.31599675e-22]
 Steel304_config = [273.15, 1033.15, 9]
 
-# Materials
-CopperC106 = cool.Material(E = 117e9, sigma_y = float('NaN'), poisson = float('NaN'), alpha = 16.9e-6, k = 391.2, c = 0.720)
+# Materials:
+CopperC106 = cool.Material(E = 117e9, sigma_y = float('NaN'), poisson = 0.34, alpha = 16.9e-6, k = 391.2, c = float('NaN'))
 CopperC700 = cool.Material(E = 140e9, sigma_y = 600e6, poisson = 0.355, alpha = 17.5e-6, k = 211, c = 385, rho = 8940, Tsigma_coeffs = CuNiBe_coeffs, Tsigma_range = CuNiBe_config)
 
 Graphite = cool.Material(E = float('NaN'), sigma_y = float('NaN'), poisson = float('NaN'), alpha = float('NaN'), k = 63.81001, c = 0.720)

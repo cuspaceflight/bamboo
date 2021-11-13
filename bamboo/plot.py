@@ -212,6 +212,22 @@ def plot_coolant_velocities(data_dict, **kwargs):
     axs.set_xlabel("Position (m)")
     axs.set_ylabel("Coolant velocity (m/s)")
 
+def plot_thermal_stress(data_dict, **kwargs):
+    """Given the output dictionary from a engine cooling analysis, plot the thermal stress in the inner chamber wall, against position. 
+    Note you will have to run matplotlib.pyplot.show() to see the plot.
+
+    Args:
+        data_dict (dict): Dictionary contaning the cooling analysis results.
+
+    """
+
+    fig, axs = plt.subplots()
+    axs.plot(data_dict["x"], np.array(data_dict["thermal_stress"])/1e6, label = "Thermal stress")
+
+    axs.grid()
+    axs.set_xlabel("Position (m)")
+    axs.set_ylabel("Thermal stress (MPa)")
+
 
 def animate_transient_temperatures(data_dict, speed = 1, **kwargs): 
     """Animates transient heating analysis data.
