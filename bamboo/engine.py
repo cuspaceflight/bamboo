@@ -1,9 +1,11 @@
 import numpy as np
+import scipy.optimize
 import matplotlib.pyplot as plt
+
 import bamboo.rao
 import bamboo.isen
 
-R_BAR = 8.3144621e3         #Universal gas constant (J/K/kmol)
+R_BAR = 8.3144621e3         # Universal gas constant (J/K/kmol)
 
 class PerfectGas:
     """Object to store a perfect gas model (i.e. an ideal gas with constant cp and cv). You only need to input 2 properties to fully define it.
@@ -36,7 +38,7 @@ class PerfectGas:
             self.molecular_weight = R_BAR/self.R
 
         else:
-            raise ValueError(f"Not enough inputs provided to fully define the Gas. You must provide exactly 2, but you provided {len(kwargs)}.")
+            raise ValueError(f"Not enough inputs provided to fully define the PerfectGas, or you used a combination of inputs that isn't currently allowable. You must provide exactly 2 inputs, but you provided {len(kwargs)}.")
 
     def __repr__(self):
         return f"<nozzle.perfect_gas object> with: \ngamma = {self.gamma} \ncp = {self.cp} \nmolecular_weight = {self.molecular_weight} \nR = {self.R}"
@@ -119,7 +121,7 @@ class Wall:
 
         Args:
             material (Material): Material object to define the material the wall is made of.
-            t (float or callable): Thickness of the wall (m). Can be a constant float, or a function of position, i.e. t(x), where x = 0 at the nozzle throat.
+            t (float or callable): Thickness of the wall (m). Can be a constant float, or a function of position, i.e. t(x).
         """
         self.material = material
         self.t = t
@@ -127,13 +129,8 @@ class Wall:
         assert type(self.t) is float or type(self.t) is callable, "'t' input must be a float or callable"
 
 class CoolingJacket:
-    def __init__(self):
+    def __init__(self, type, T_c_in, p0_c_in, ):
         pass
-
-class TransportProperties:
-    def __init__(self):
-        pass
-
 
 class Engine:
     """Class for representing a liquid rocket engine.
@@ -178,6 +175,73 @@ class Engine:
             self.cooling_jacket = kwargs["cooling_jacket"]
         
         if "exhaust_transport" in kwargs:
-            self.exhaust_transport = kwargs["exhaust_transport"]
-        
+            self.exhaust_transport = kwargs["exhaust_transport"]  
+
+    def M(self, x):
+        """Get exhaust gas Mach number.
+
+        Args:
+            x (float): Axial position along the engine (m). 
+
+        Returns:
+            float: Mach number of the freestream.
+        """
+        #If we're at the throat then M = 1 by default:
+        if x - self.geometry.xt <= 1e-12:
+            return 1.00
+
+        #If we're not at the throat:
+        else:
+            # Collect the relevant variables
+            A = self.geometry.A(x)
+            mdot = self.chamber_conditions.mdot
+            p0 = self.chamber_conditions.p0
+            cp = self.perfect_gas.cp
+            T0 = self.chamber_conditions.T0
+            gamma = self.perfect_gas.gamma
+
+            # Function to find the root of
+            def func_to_solve(Mach):
+                return mdot * (cp * T0)**0.5 / (A  * p0) - bamboo.isen.m_bar(M = Mach, gamma = gamma)
+            
+            if x > self.geometry.xt:
+                Mach = scipy.optimize.root_scalar(func_to_solve, bracket = [1, 500], x0 = 1).root
+            else:
+                Mach = scipy.optimize.root_scalar(func_to_solve, bracket = [0.0,1], x0 = 0.5).root
+            return Mach
+
+    def T(self, x):
+        """Get temperature at a position along the nozzle.
+        Args:
+            x (float): Distance from the throat, along the centreline (m)
+        Returns:
+            float: Temperature (K)
+        """
+        return self.isen.T(self.chamber_conditions.T0, self.M(x), self.perfect_gas.gamma)
+
+    def p(self, x):
+        """Get pressure at a position along the nozzle.
+        Args:
+            x (float): Distance from the throat, along the centreline (m)
+        Returns:
+            float: Pressure (Pa)
+        """
+        return self.isen.p(self.chamber_conditions.p0, self.M(x), self.perfect_gas.gamma)
+
+    def rho(self, x):
+        """Get exhaust gas density.
+        Args:
+            x (float): Axial position. Throat is at x = 0.
+        Returns:
+            float: Freestream gas density (kg/m3)
+        """
     
+        return self.p(x) / (self.T(x) * self.perfect_gas.R) # p = rho R T for an ideal gas, so rho = p/RT
+
+
+    def steady_cooling_simulation(self):
+        # Check that we have all the required inputs.
+        assert hasattr(self, "cooling_jacket"), "'cooling_jacket' input must be given to Engine object in order to run a steady cooling simulation"
+        assert hasattr(self, "exhaust_transport"), "'exhaust_transport' input must be given to Engine object in order to run a steady cooling simulation"
+        assert hasattr(self, "engine_wall"), "'engine_wall' input must be given to Engine object in order to run a cooling simulation"
+
