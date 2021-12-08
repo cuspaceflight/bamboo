@@ -1,3 +1,7 @@
+"""
+Main Engine class, as well as tools for specifying engine geometry and the perfect gas model used to calculate flow properties.
+"""
+
 import numpy as np
 import scipy.optimize
 import matplotlib.pyplot as plt
@@ -116,20 +120,20 @@ class Geometry:
         return np.pi * self.y(x)**2
 
 class Wall:
-    def __init__(self, material, t):
+    def __init__(self, material, thickness):
         """Object for representing an engine wall.
 
         Args:
             material (Material): Material object to define the material the wall is made of.
-            t (float or callable): Thickness of the wall (m). Can be a constant float, or a function of position, i.e. t(x).
+            thickness (float or callable): Thickness of the wall (m). Can be a constant float, or a function of position, i.e. t(x).
         """
         self.material = material
-        self.t = t
+        self.thickness = thickness
 
-        assert type(self.t) is float or type(self.t) is callable, "'t' input must be a float or callable"
+        assert type(self.thickness) is float or type(self.thickness) is callable, "'thickness' input must be a float or callable"
 
-class CoolingJacket:
-    def __init__(self, type, T_c_in, p0_c_in, ):
+class CoolingChannel:
+    def __init__(self, type, T_c_in, p0_c_in, mdot_coolant, channel_height, coolant_transport):
         pass
 
 class Engine:
@@ -158,16 +162,19 @@ class Engine:
         # Find the choked mass flow rate
         self.mdot = bamboo.isen.get_choked_mdot(self.perfect_gas, self.chamber_conditions, self.geometry.At)
 
-        # Extra attributes
+        # C* value, for convenience later
         self.c_star = self.chamber_conditions.p0 * self.geometry.At / self.mdot
 
         # Note that you can represent multiple layers of materials by giving a list as 'engine_wall'
         if "engine_wall" in kwargs:
             self.engine_wall = kwargs["engine_wall"]
 
+            # Multiple layers of wall
             if type(self.engine_wall) is list:
                 for item in self.engine_wall:
                     assert type(item) is Wall, "All items in the engine_wall list must be a Wall object. Otherwise a single Wall object must be given."
+            
+            # Only a single layer of wall
             else:
                 assert type(self.engine_wall) is Wall, "You must give a Wall object as an input for engine_wall, or a list of engine_wall objects"
 
