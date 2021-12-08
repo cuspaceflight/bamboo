@@ -24,10 +24,15 @@ class CoolingSimulation:
         self.dx = dx                # Constant                  - dx to move by for each step, corresponding to the direction that coolant flows in. Usually negative (if exhaust flows in positive x) (m)
         self.x_end = x_end          # Constant                  - Value of x to stop at (m)
 
-        # Initialise our 'state' list
+        self.initialise()
+    
+    def initialise(self):
+        """
+        Initialise our 'state' list and set self.i to zero.
+        """
         self.i = 0
-        self.state = [{}] * int( abs((x_end - x0) / dx) )       # Empty list of dictionaries
-        self.state[self.i]["x"] = x0
+        self.state = [{}] * int( abs((self.x_end - self.x0) / self.dx) )       # Empty list of dictionaries
+        self.state[self.i]["x"] = self.x0
         self.state[self.i]["T_c"] = self.T_c_in
         self.state[self.i]["T_cw"] = self.state["T_c"]
         self.state[self.i]["T_hw"] = self.T_h(self.state)
@@ -60,3 +65,33 @@ class CoolingSimulation:
         self.state[self.i]["T_cw"] = old_state["T_cw"]
         self.state[self.i]["T_hw"] = old_state["T_hw"]
         self.state[self.i]["p0_c"] = old_state["p0_c"] - self.dp_dx(old_state) * abs(self.dx)
+
+    def run(self, iter_start = 5, iter_each = 1):
+        """Run the simulation until we reach x >= x_end.
+
+        Args:
+            iter_start (int, optional): Number of iterations to use on the first gridpoint. Defaults to 5.
+            iter_each (int, optional): Number of iterations to use on each intermediate grid point. Defaults to 1.
+        """
+        assert type(iter_start) is int, "'iter_start' must be an integer"
+        assert iter_start >= 1, "'iter_start' must be at least 1"
+
+        assert type(iter_each) is int, "'iter_each' must be an integer"
+        assert iter_each >= 1, "'iter_each' must be at least 1"
+
+        # Initialise our 'state'
+        self.initialise()
+
+        # Perform the required amount of iterations on the first grid point
+        counter = 0
+        while counter < iter_start:
+            self.iterate()
+
+        while self.i < len(self.state) - 1:
+            # Move to next grid point
+            self.step()
+
+            # Perform the required number of iterations
+            counter = 0
+            while counter < iter_each:
+                self.iterate()
