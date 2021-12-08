@@ -272,7 +272,21 @@ class Nozzle:
                       type = type, 
                       **kwargs)
 
+class ChamberWall:
+    def __init__(self):
+        pass
 
+class CoolingJacket:
+    def __init__(self):
+        pass
+
+class Refractory:
+    def __init__(self):
+        pass
+
+class TransportProperties:
+    def __init__(self):
+        pass
 
 class Engine:
     """Class for representing a liquid rocket engine.
@@ -280,14 +294,20 @@ class Engine:
     Args:
         gas (PerfectGas): Gas representing the exhaust gas for the engine.
         chamber_conditions (CombustionChamber): CombustionChamber for the engine.
-        nozzle (Nozzle): Nozzle for the engine.
+        nozzle (Nozzle): Nozzle object to define the nozzle for the engine.
+
+    Keyword Args:
+        chamber_wall (ChamberWall): ChamberWall object that specifies the combustion chamber wall.
+        cooling_jacket (CoolingJacket): CoolingJacket object to specify the cooling jacket on the engine.
+        exhaust_transport (TransportProperties): TransportProperties object that defines the exhaust gas transport properties.
+        refractory (Refractory): Refractory object used to include a refractory (e.g. a graphite insert).
 
     Attributes:
         mdot (float): Mass flow rate of exhaust gas (kg/s)
         c_star (float): C* for the engine (m/s).
         geometry (EngineGeometry): EngineGeometry object (if added).
     """
-    def __init__(self, perfect_gas, chamber_conditions, nozzle):
+    def __init__(self, perfect_gas, chamber_conditions, nozzle, **kwargs):
         self.perfect_gas = perfect_gas
         self.chamber_conditions = chamber_conditions
         self.nozzle = nozzle
@@ -297,6 +317,15 @@ class Engine:
 
         # Extra attributes
         self.c_star = self.chamber_conditions.p0 * self.nozzle.At / self.mdot
-        self.has_exhaust_transport = False
-        self.has_cooling_jacket = False
-        self.has_insulator = False
+
+        if "chamber_wall" in kwargs:
+            self.chamber_wall = kwargs["chamber_wall"]
+
+        if "cooling_jacket" in kwargs:
+            self.cooling_jacket = kwargs["cooling_jacket"]
+        
+        if "exhaust_transport" in kwargs:
+            self.exhaust_transport = kwargs["exhaust_transport"]
+        
+        if "refractory" in kwargs:
+            self.refractory = kwargs["refractory"]

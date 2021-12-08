@@ -2,10 +2,6 @@
 Isentropic compressible flow relations.
 """
 
-import numpy as np
-import scipy.optimize
-
-
 def m_bar(M, gamma):    
     """Non-dimensional mass flow rate, defined as m_bar = mdot * sqrt(cp*T0)/(A*p0). A is the local cross sectional area that the flow is moving through.
 
