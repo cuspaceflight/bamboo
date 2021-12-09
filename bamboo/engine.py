@@ -268,10 +268,14 @@ class Engine:
         walls (Wall or list): Either a single Wall object that specifies the combustion chamber wall, or a list of Wall objects that represent multiple layers with different materials. First item in the list (index 0) touches the hot gas.
         cooling_jacket (CoolingJacket): CoolingJacket object to specify the cooling jacket on the engine.
         exhaust_transport (TransportProperties): TransportProperties object that defines the exhaust gas transport properties.
+        coolant_convection (str): Convective heat transfer model to use for the coolant side. Can be 'sieder-tate', 'dittus-boelter' or 'gnielinski'. Defaults to 'gnielinski'.
+        exhaust_convection (str): Convective heat transfer model to use the for exhaust side. Can be 'bartz' or 'bartz-sigma'. Defaults to 'bartz-sigma'.
 
     Attributes:
         mdot (float): Mass flow rate of exhaust gas (kg/s)
         c_star (float): C* for the engine (m/s).
+        coolant_convection (float): Convective heat transfer model to use for the coolant side.
+        exhaust_convection (float): Convective heat transfer model to use the for exhaust side.
 
     """
     def __init__(self, perfect_gas, chamber_conditions, geometry, **kwargs):
@@ -285,8 +289,20 @@ class Engine:
         # C* value, for convenience later
         self.c_star = self.chamber_conditions.p0 * self.geometry.At / self.mdot
 
-        # Note that you can represent multiple layers of materials by giving a list as 'walls'
+        # Convective heat transfer models to use
+        if "coolant_convection" in kwargs:
+            self.coolant_convection = kwargs["coolant_convection"]
+        else:
+            self.coolant_convection = 'gnielinski'
+
+        if "exhaust_convection" in kwargs:
+            self.exhaust_convection = kwargs["exhaust_convection"]
+        else:
+            self.exhaust_convection = 'bartz-sigma'
+
+        # Additional keyword arguments
         if "walls" in kwargs:
+            # Note that you can represent multiple layers of materials by giving a list as 'walls'
             self.walls = kwargs["walls"]
 
             # If we got a single wall, turn it into a list of length 1.
@@ -461,7 +477,7 @@ class Engine:
 
         return rho_coolant
 
-    # Functions of the 'state' for thermal simulations
+    # Functions that need to be submitted to bamboo.sim.CoolingSimulation
     def T_h(self, state):
         return self.T(state["x"])
 
@@ -472,7 +488,40 @@ class Engine:
         return self.cooling_jacket.coolant_transport.cp(T = state["T_c"], p = p_coolant)
 
     def R_th(self, state):
-        pass
+        # Need a list of thermal circuit resistances [R1, R2 ...], in the order T_cold --> T_hot
+        x = state["x"]
+        T_coolant = state["T_c"]
+        p0_coolant = state["p0_c"]
+
+        # Collect all the coolant transport properties, and find the convective resistance
+        rho_coolant = self.rho_coolant(x = x, T_coolant = T_coolant, p0_coolant = p0_coolant)
+        p_coolant = self.p_coolant(x = x, p0_coolant = p0_coolant, rho_coolant = rho_coolant)
+        V_coolant = self.V_coolant(x = x, rho_coolant = rho_coolant)
+        Dh_coolant = self.Dh_coolant(x = x)
+
+        Pr_coolant = self.cooling_jacket.coolant_transport.Pr(T = T_coolant, p = p_coolant)
+        mu_coolant = self.cooling_jacket.coolant_transport.mu(T = T_coolant, p = p_coolant)
+        k_coolant = self.cooling_jacket.coolant_transport.k(T = T_coolant, p = p_coolant)
+
+        if self.coolant_convection == "sieder-tate":
+            h_coolant = ?
+
+        elif self.coolant_convection == "dittus-boelter":
+            h_coolant = ?
+
+        elif self.coolant_convection == "gnielinski":
+            h_coolant = ?
+        else:
+            raise ValueError(f"Coolant convection model '{self.coolant_convection}' is not recognised. Try 'gnielinski', 'sieder-tate', or 'dittus-boelter'")
+
+        A_coolant = 2 * np.pi * (self.geometry.y(x) + self.total_wall_thickness(x) + self.cooling_jacket.channel_height(x))
+        R_conv_coolant = 1.0 / (h_coolant * A_coolant)
+
+        # Find the thermal resistance of the solid boundaries between the coolant and the gas
+        ?
+        
+        # Get the gas properties, and find the thermal resistance of the convection on the hot gas side
+        ?
 
     def dp_dx(self, state):
         pass

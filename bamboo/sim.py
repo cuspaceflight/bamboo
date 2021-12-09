@@ -17,7 +17,7 @@ class CoolingSimulation:
         self.p0_c_in = p0_c_in      # Constant                  - Coolant inlet stagnation pressure (Pa)
         self.cp_c = cp_c            # Function of 'state''      - Coolant isobaric specific heat capacity (J/kg/K)
         self.mdot_c = mdot_c        # Constant                  - Coolant mass flow rate (kg/s)
-        self.R_th = R_th            # Function of 'state'       - List of thermal resistances
+        self.R_th = R_th            # Function of 'state'       - List of thermal resistances [R1, R2 ... etc], in the order T_cold --> T_hot. Note they need to be 1D resistances, so Qdot is per unit length
         self.dp_dx = dp_dx          # Function of 'state'       - Stagnation pressure drop per unit length (Pa/m)
 
         self.x_start = x_start      # Constant                  - Initial value of x to start at (m)
@@ -45,7 +45,7 @@ class CoolingSimulation:
 
         circuit = ThermalCircuit(T1 = self.T_h(self.state[self.i]), 
                                  T2 = self.state[self.i]["T_c"],
-                                 R = self.R_th(self.state[self.i]) )
+                                 R = self.R_th(self.state[self.i]) )       
 
         self.state[self.i]["circuit"] = circuit
         self.state[self.i]["T_hw"] = circuit.T[1]
@@ -61,7 +61,7 @@ class CoolingSimulation:
 
         self.i += 1
         self.state[self.i]["x"] = old_state["x"] + self.dx
-        self.state[self.i]["T_c"] = old_state["T_c"] + old_state["circuit"].Qdot / (self.mdot_c * self.cp_c(old_state) ) # Temperature rise due to heat transfer in
+        self.state[self.i]["T_c"] = old_state["T_c"] + old_state["circuit"].Qdot * self.dx / (self.mdot_c * self.cp_c(old_state) ) # Temperature rise due to heat transfer in - not the Qdot is per unit length
         self.state[self.i]["T_cw"] = old_state["T_cw"]
         self.state[self.i]["T_hw"] = old_state["T_hw"]
         self.state[self.i]["p0_c"] = old_state["p0_c"] - self.dp_dx(old_state) * abs(self.dx)
