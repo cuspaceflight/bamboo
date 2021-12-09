@@ -10,7 +10,7 @@ Notation:
 from bamboo.circuit import ThermalCircuit
 
 class CoolingSimulation:
-    def __init__(self, T_c_in, T_h, p0_c_in, p_c, cp_c, mdot_c, R_th, dp_dx, x0, dx, x_end):
+    def __init__(self, T_c_in, T_h, p0_c_in, cp_c, mdot_c, R_th, dp_dx, x_start, dx, x_end):
 
         self.T_c_in = T_c_in        # Constant                  - Coolant inlet temperature (K)
         self.T_h = T_h              # Function of 'state'       - Exhaust gas temperature (K)
@@ -20,19 +20,19 @@ class CoolingSimulation:
         self.R_th = R_th            # Function of 'state'       - List of thermal resistances
         self.dp_dx = dp_dx          # Function of 'state'       - Stagnation pressure drop per unit length (Pa/m)
 
-        self.x0 = x0                # Constant                  - Initial value of x to start at (m)
+        self.x_start = x_start      # Constant                  - Initial value of x to start at (m)
         self.dx = dx                # Constant                  - dx to move by for each step, corresponding to the direction that coolant flows in. Usually negative (if exhaust flows in positive x) (m)
         self.x_end = x_end          # Constant                  - Value of x to stop at (m)
 
-        self.initialise()
+        self.reset()
     
-    def initialise(self):
+    def reset(self):
         """
-        Initialise our 'state' list and set self.i to zero.
+        Reset our 'state' list to the initial conditions and set self.i to zero.
         """
         self.i = 0
-        self.state = [{}] * int( abs((self.x_end - self.x0) / self.dx) )       # Empty list of dictionaries
-        self.state[self.i]["x"] = self.x0
+        self.state = [{}] * int( abs((self.x_end - self.x_start) / self.dx) )       # Empty list of dictionaries
+        self.state[self.i]["x"] = self.x_start
         self.state[self.i]["T_c"] = self.T_c_in
         self.state[self.i]["T_cw"] = self.state["T_c"]
         self.state[self.i]["T_hw"] = self.T_h(self.state)

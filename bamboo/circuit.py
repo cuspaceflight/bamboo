@@ -1,5 +1,5 @@
 """
-Environment for simulating the thermal aspects of the engine.
+Class to simplify thermal circuit calculations
 """
 
 import numpy as np
