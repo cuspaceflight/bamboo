@@ -88,7 +88,7 @@ class CoolingSimulation:
             self.iterate()
             counter += 1
 
-        print(f"Simulation initialised, T_hw = {self.state[self.i]['T_hw']} and T_cw = {self.state[self.i]['T_cw']}")
+        print(f"bamboo.sim.py: Simulation initialised, T_hw = {self.state[self.i]['T_hw']} and T_cw = {self.state[self.i]['T_cw']}")
 
         while self.i < len(self.state) - 1:
             # Move to next grid point
@@ -100,5 +100,5 @@ class CoolingSimulation:
                 self.iterate()
                 counter += 1
 
-            print(f"i = {self.i}, Tc = {self.state[self.i]['T_c']}, T_hw = {self.state[self.i]['T_hw']} and T_cw = {self.state[self.i]['T_cw']}")
+            print(f"bamboo.sim.py: i = {self.i}, Tc = {self.state[self.i]['T_c']}, T_hw = {self.state[self.i]['T_hw']} and T_cw = {self.state[self.i]['T_cw']}")
 

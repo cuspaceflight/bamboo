@@ -579,7 +579,7 @@ class Engine:
         return R_list
 
     def dp_dx(self, state):
-        print("Warning: Pressure drop not currently implemented - bamboo.engine.Engine.dp_dx() needs to be modified")
+        print("bamboo.engine.py: Pressure drop not currently implemented - bamboo.engine.Engine.dp_dx() needs to be modified")
         return 0.0
 
     # Functions for thermal simulations
@@ -620,4 +620,4 @@ class Engine:
                                                           x_end = x_end)
 
         cooling_simulation.run()
-        print(f"Cooling simulation complete. Coolant exit temperature = {cooling_simulation.state[-1]['T_c']} K")
+        print(f"bamboo.engine.py: Cooling simulation complete. Coolant exit temperature = {cooling_simulation.state[-1]['T_c']} K")
