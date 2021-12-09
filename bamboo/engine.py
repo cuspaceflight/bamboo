@@ -132,7 +132,7 @@ class Wall:
         self.material = material
         self._thickness = thickness
 
-        assert type(self.thickness) is float or type(self.thickness) is callable, "'thickness' input must be a float or callable"
+        assert type(thickness) is float or type(thickness) is int or type(thickness) is callable, "'thickness' input must be a float, int or callable"
 
     def thickness(self, x):
         """Get the thickness of the wall at a position x.
@@ -209,7 +209,7 @@ class CoolingJacket:
                 self.number_of_fins = 1
 
             elif self.type == "vertical":
-                self.number_of_fins == 0
+                self.number_of_fins = 0
 
     def channel_height(self, x):
         """Get the channel height at a position, x.
@@ -338,7 +338,7 @@ class Engine:
         else:
             # Collect the relevant variables
             A = self.geometry.A(x)
-            mdot = self.chamber_conditions.mdot
+            mdot = self.mdot
             p0 = self.chamber_conditions.p0
             cp = self.perfect_gas.cp
             T0 = self.chamber_conditions.T0
@@ -347,11 +347,11 @@ class Engine:
             # Function to find the root of
             def func_to_solve(Mach):
                 return mdot * (cp * T0)**0.5 / (A  * p0) - bamboo.isen.m_bar(M = Mach, gamma = gamma)
-            
+ 
             if x > self.geometry.xt:
-                Mach = scipy.optimize.root_scalar(func_to_solve, bracket = [1, 500], x_start = 1).root
+                Mach = scipy.optimize.root_scalar(func_to_solve, bracket = [1, 500], x0 = 1).root
             else:
-                Mach = scipy.optimize.root_scalar(func_to_solve, bracket = [0.0,1], x_start = 0.5).root
+                Mach = scipy.optimize.root_scalar(func_to_solve, bracket = [0.0,1], x0 = 0.5).root
             return Mach
 
     def T(self, x):
@@ -361,7 +361,7 @@ class Engine:
         Returns:
             float: Temperature (K)
         """
-        return self.isen.T(self.chamber_conditions.T0, self.M(x), self.perfect_gas.gamma)
+        return bamboo.isen.T(T0 = self.chamber_conditions.T0, M = self.M(x), gamma = self.perfect_gas.gamma)
 
     def p(self, x):
         """Get pressure at a position along the nozzle.
@@ -370,7 +370,7 @@ class Engine:
         Returns:
             float: Pressure (Pa)
         """
-        return self.isen.p(self.chamber_conditions.p0, self.M(x), self.perfect_gas.gamma)
+        return bamboo.isen.p(p0 = self.chamber_conditions.p0, M = self.M(x), gamma = self.perfect_gas.gamma)
 
     def rho(self, x):
         """Get exhaust gas density.
@@ -419,13 +419,15 @@ class Engine:
         Returns:
             float: Hydraulic diameter (m)
         """
-        if self.configuration == 'spiral':
-            perimeter = 2 * self.cooling_jacket.channel_width(x) + 2 * self.cooling_jacket.channel_height(x) + 2 * self.cooling_jacket.channel_height(x) * self.cooling_jacket.number_of_fins
+        channel_height = self.cooling_jacket.channel_height(x)
+
+        if self.cooling_jacket.type == 'spiral':
+            perimeter = 2 * self.cooling_jacket.channel_width(x) + 2 * channel_height + 2 * channel_height * self.cooling_jacket.number_of_fins
             return 4 * self.A_coolant(x) / perimeter
 
-        elif self.configuration == 'vertical':
+        elif self.cooling_jacket.type == 'vertical':
             R_in = self.geometry.y(x) + self.total_wall_thickness(x)
-            perimeter = (2*np.pi*R_in + 2*np.pi*(R_in + self.cooling_jacket.channel_height(x))) * (1 - self.cooling_jacket.blockage_ratio(x)) + 2 * self.number_of_fins * self.channel_height(x)
+            perimeter = (2*np.pi*R_in + 2*np.pi*(R_in + channel_height)) * (1 - self.cooling_jacket.blockage_ratio(x)) + 2 * self.cooling_jacket.number_of_fins * channel_height
             return 4 * self.A_coolant(x) / perimeter
 
     def V_coolant(self, x, rho_coolant):
@@ -484,7 +486,7 @@ class Engine:
         return self.T(state["x"])
 
     def cp_c(self, state):
-        rho_coolant = self.rho_coolant(x = state["x"], T_coolant = state["T_c"], p0_cooant = state["p0_c"])
+        rho_coolant = self.rho_coolant(x = state["x"], T_coolant = state["T_c"], p0_coolant = state["p0_c"])
         p_coolant = self.p_coolant(x = state["x"], p0_coolant = state["p0_c"], rho_coolant = rho_coolant)
 
         return self.cooling_jacket.coolant_transport.cp(T = state["T_c"], p = p_coolant)
@@ -533,14 +535,14 @@ class Engine:
         # Find the thermal resistance of the solid boundaries between the coolant and the gas - note our resistance list goes in the order [Cold --> Hot], but the walls are in the order [Hot --> Cold]
         for i in range(len(self.walls)):   
             # Work in reverse from the cold side to the hot side
-            reversed_walls = reversed(self.walls)
+            reversed_walls = list(reversed(self.walls))
 
             # Calculate the inner radius - need to add up all the wall thickness up to (and excluding) the current wall
             r1 = y
             for j in range(len(self.walls) - i - 1):
-                r1 += self.walls[j].thickness
+                r1 += self.walls[j].thickness(x)
 
-            r2 = r1 + reversed_walls[i].thickness
+            r2 = r1 + reversed_walls[i].thickness(x)
 
             R_list.append(np.log(r2/r1) / (2 * np.pi * reversed_walls[i].material.k))
 
@@ -581,9 +583,17 @@ class Engine:
         return 0.0
 
     # Functions for thermal simulations
-    def steady_cooling_simulation(self, dx, counterflow = True):
+    def steady_cooling_simulation(self, num_grid = 500, counterflow = True):
+        """Run a steady state cooling simulation.
+
+        Args:
+            num_grid (int): Number of grid points to use (1-dimensional)
+            counterflow (bool, optional): Whether or not the cooling is flowing coutnerflow or coflow, relative to the exhaust gas. Defaults to True (which means counterflow).
+        """
+
+        dx = (self.geometry.xs[0] - self.geometry.xs[-1]) / num_grid
+
         # Check that we have all the required inputs.
-        assert dx > 0, "'dx' must be a positive spacing. You can choose whether it is counterflow or coflow using the 'counterflow' argument. "
         assert hasattr(self, "cooling_jacket"), "'cooling_jacket' input must be given to Engine object in order to run a steady cooling simulation"
         assert hasattr(self, "exhaust_transport"), "'exhaust_transport' input must be given to Engine object in order to run a steady cooling simulation"
         assert hasattr(self, "walls"), "'walls' input must be given to Engine object in order to run a cooling simulation"

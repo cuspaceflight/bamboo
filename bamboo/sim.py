@@ -34,8 +34,8 @@ class CoolingSimulation:
         self.state = [{}] * int( abs((self.x_end - self.x_start) / self.dx) )       # Empty list of dictionaries
         self.state[self.i]["x"] = self.x_start
         self.state[self.i]["T_c"] = self.T_c_in
-        self.state[self.i]["T_cw"] = self.state["T_c"]
-        self.state[self.i]["T_hw"] = self.T_h(self.state)
+        self.state[self.i]["T_cw"] = self.state[self.i]["T_c"]
+        self.state[self.i]["T_hw"] = self.T_h(self.state[self.i])
         self.state[self.i]["p0_c"] = self.p0_c_in
 
     def iterate(self):
@@ -43,13 +43,13 @@ class CoolingSimulation:
         Iterate one step at the current 'x' position. 
         """
 
-        circuit = ThermalCircuit(T1 = self.T_h(self.state[self.i]), 
-                                 T2 = self.state[self.i]["T_c"],
+        circuit = ThermalCircuit(T1 = self.state[self.i]["T_c"], 
+                                 T2 = self.T_h(self.state[self.i]),
                                  R = self.R_th(self.state[self.i]) )       
 
         self.state[self.i]["circuit"] = circuit
-        self.state[self.i]["T_hw"] = circuit.T[1]
-        self.state[self.i]["T_cw"] = circuit.T[-2]
+        self.state[self.i]["T_hw"] = circuit.T[-2]
+        self.state[self.i]["T_cw"] = circuit.T[1]
         self.state[self.i]["p0_c"] = self.p0_c_in
 
     def step(self):
@@ -61,7 +61,7 @@ class CoolingSimulation:
 
         self.i += 1
         self.state[self.i]["x"] = old_state["x"] + self.dx
-        self.state[self.i]["T_c"] = old_state["T_c"] + old_state["circuit"].Qdot * self.dx / (self.mdot_c * self.cp_c(old_state) ) # Temperature rise due to heat transfer in - not the Qdot is per unit length
+        self.state[self.i]["T_c"] = old_state["T_c"] - old_state["circuit"].Qdot * abs(self.dx) / (self.mdot_c * self.cp_c(old_state) ) # Temperature rise due to heat transfer in - not the Qdot is per unit length
         self.state[self.i]["T_cw"] = old_state["T_cw"]
         self.state[self.i]["T_hw"] = old_state["T_hw"]
         self.state[self.i]["p0_c"] = old_state["p0_c"] - self.dp_dx(old_state) * abs(self.dx)
@@ -80,12 +80,15 @@ class CoolingSimulation:
         assert iter_each >= 1, "'iter_each' must be at least 1"
 
         # Initialise our 'state'
-        self.initialise()
+        self.reset()
 
         # Perform the required amount of iterations on the first grid point
         counter = 0
         while counter < iter_start:
             self.iterate()
+            counter += 1
+
+        print(f"Simulation initialised, T_hw = {self.state[self.i]['T_hw']} and T_cw = {self.state[self.i]['T_cw']}")
 
         while self.i < len(self.state) - 1:
             # Move to next grid point
@@ -95,3 +98,7 @@ class CoolingSimulation:
             counter = 0
             while counter < iter_each:
                 self.iterate()
+                counter += 1
+
+            print(f"i = {self.i}, Tc = {self.state[self.i]['T_c']}, T_hw = {self.state[self.i]['T_hw']} and T_cw = {self.state[self.i]['T_cw']}")
+

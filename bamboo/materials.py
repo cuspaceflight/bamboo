@@ -136,3 +136,4 @@ Graphite = Material(E = float('NaN'), poisson = float('NaN'), alpha = float('NaN
 # Fluids
 Water = TransportProperties(Pr = 6.159, mu = 0.89307e-3, k = 0.60627, cp = 4181.38, rho =  997.085)         # Water at 298 K and 1 bar [1]
 Ethanol = TransportProperties(Pr = 16.152, mu = 1.0855e-3, k = 0.163526, cp = 2433.31, rho = 785.26)        # Ethanol at 298 K and 1 bar [1]
+CO2 = TransportProperties(mu = 3.74e-5, k =  0.0737, Pr = 0.72)                                             # Representative values for CO2 gas
