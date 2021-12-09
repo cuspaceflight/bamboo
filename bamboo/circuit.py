@@ -1,7 +1,7 @@
 """
 Classes and functions related to thermal circuit calculations
 
-References:
+References (*need to clean up, not all are used here):
     - [1] - The Thrust Optimised Parabolic nozzle, AspireSpace, http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf   \n
     - [2] - Rocket Propulsion Elements, 7th Edition  \n
     - [3] - Design and analysis of contour bell nozzle and comparison with dual bell nozzle https://core.ac.uk/download/pdf/154060575.pdf 
@@ -59,6 +59,25 @@ def h_gas_bartz_sigma(c_star, At, A, pc, Tc, M, Tw, mu0, cp0, gamma, Pr0):
 
     return (0.026)/(Dt**0.2) * (mu0**0.2*cp0/Pr0**0.6) * (pc/c_star)**0.8 * (At/A)**0.9 * sigma
 
+def h_coolant_dittus_boelter(rho, V, D, mu, Pr, k):
+    """Dittus-Boelter equation for convective heat transfer coefficient.
+
+    Args:
+        rho (float): Coolant bulk density (kg/m^3).
+        V (float): Coolant bulk velocity (m/s)
+        D (float): Hydraulic diameter of pipe (m)
+        mu (float): Coolant bulk viscosity (Pa s)
+        Pr (float): Coolant bulk Prandtl number
+        k (float): Coolant thermal conductivity
+
+    Returns:
+        float: Convective heat transfer coefficient
+    """
+    Re = rho*V*D/mu
+    Nu = 0.023*Re**(4/5)*Pr**0.4
+
+    return Nu*k/D
+
 def h_coolant_sieder_tate(rho, V, D, mu_bulk, mu_wall, Pr, k):
     """Sieder-Tate equation for convective heat transfer coefficient.
 
@@ -76,25 +95,6 @@ def h_coolant_sieder_tate(rho, V, D, mu_bulk, mu_wall, Pr, k):
     """
     Re = rho*V*D/mu_bulk
     Nu = 0.027*Re**(4/5)*Pr**(1/3)*(mu_bulk/mu_wall)**0.14
-
-    return Nu*k/D
-
-def h_coolant_dittus_boelter(rho, V, D, mu, Pr, k):
-    """Dittus-Boelter equation for convective heat transfer coefficient.
-
-    Args:
-        rho (float): Coolant bulk density (kg/m^3).
-        V (float): Coolant bulk velocity (m/s)
-        D (float): Hydraulic diameter of pipe (m)
-        mu (float): Coolant bulk viscosity (Pa s)
-        Pr (float): Coolant bulk Prandtl number
-        k (float): Coolant thermal conductivity
-
-    Returns:
-        float: Convective heat transfer coefficient
-    """
-    Re = rho*V*D/mu
-    Nu = 0.023*Re**(4/5)*Pr**0.4
 
     return Nu*k/D
 

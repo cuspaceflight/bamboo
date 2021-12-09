@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import bamboo.rao
 import bamboo.isen
 import bamboo.sim
+import bamboo.circuit
 
 R_BAR = 8.3144621e3         # Universal gas constant (J/K/kmol)
 
@@ -268,14 +269,15 @@ class Engine:
         walls (Wall or list): Either a single Wall object that specifies the combustion chamber wall, or a list of Wall objects that represent multiple layers with different materials. First item in the list (index 0) touches the hot gas.
         cooling_jacket (CoolingJacket): CoolingJacket object to specify the cooling jacket on the engine.
         exhaust_transport (TransportProperties): TransportProperties object that defines the exhaust gas transport properties.
-        coolant_convection (str): Convective heat transfer model to use for the coolant side. Can be 'sieder-tate', 'dittus-boelter' or 'gnielinski'. Defaults to 'gnielinski'.
-        exhaust_convection (str): Convective heat transfer model to use the for exhaust side. Can be 'bartz' or 'bartz-sigma'. Defaults to 'bartz-sigma'.
+        coolant_convection (str): Convective heat transfer model to use for the coolant side. Can be 'dittus-boelter', 'sieder-tate' or 'gnielinski'. Defaults to 'gnielinski'.
+        exhaust_convection (str): Convective heat transfer model to use the for exhaust side. Can be 'dittus-boelter', 'bartz' or 'bartz-sigma'. Defaults to 'bartz-sigma'.
 
     Attributes:
         mdot (float): Mass flow rate of exhaust gas (kg/s)
         c_star (float): C* for the engine (m/s).
         coolant_convection (float): Convective heat transfer model to use for the coolant side.
         exhaust_convection (float): Convective heat transfer model to use the for exhaust side.
+        walls (list): List of Wall objects between the hot gas and coolant.
 
     """
     def __init__(self, perfect_gas, chamber_conditions, geometry, **kwargs):
@@ -488,11 +490,15 @@ class Engine:
         return self.cooling_jacket.coolant_transport.cp(T = state["T_c"], p = p_coolant)
 
     def R_th(self, state):
+        R_list = []
+
         # Need a list of thermal circuit resistances [R1, R2 ...], in the order T_cold --> T_hot
         x = state["x"]
+        y = self.geometry.y(x)
         T_coolant = state["T_c"]
         p0_coolant = state["p0_c"]
 
+        # COOLANT
         # Collect all the coolant transport properties, and find the convective resistance
         rho_coolant = self.rho_coolant(x = x, T_coolant = T_coolant, p0_coolant = p0_coolant)
         p_coolant = self.p_coolant(x = x, p0_coolant = p0_coolant, rho_coolant = rho_coolant)
@@ -503,28 +509,76 @@ class Engine:
         mu_coolant = self.cooling_jacket.coolant_transport.mu(T = T_coolant, p = p_coolant)
         k_coolant = self.cooling_jacket.coolant_transport.k(T = T_coolant, p = p_coolant)
 
-        if self.coolant_convection == "sieder-tate":
-            h_coolant = ?
+        if self.coolant_convection == "dittus-boelter":
+            h_coolant = bamboo.circuit.h_coolant_dittus_boelter(rho = rho_coolant, 
+                                                                V = V_coolant, 
+                                                                D = Dh_coolant, 
+                                                                mu = mu_coolant, 
+                                                                Pr = Pr_coolant, 
+                                                                k = k_coolant)
 
-        elif self.coolant_convection == "dittus-boelter":
-            h_coolant = ?
+        elif self.coolant_convection == "sieder-tate":
+           raise ValueError("sieder-tate is not yet implemented")
 
         elif self.coolant_convection == "gnielinski":
-            h_coolant = ?
+            raise ValueError("gnielinski is not yet implemented")
+
         else:
             raise ValueError(f"Coolant convection model '{self.coolant_convection}' is not recognised. Try 'gnielinski', 'sieder-tate', or 'dittus-boelter'")
 
-        A_coolant = 2 * np.pi * (self.geometry.y(x) + self.total_wall_thickness(x) + self.cooling_jacket.channel_height(x))
-        R_conv_coolant = 1.0 / (h_coolant * A_coolant)
-
-        # Find the thermal resistance of the solid boundaries between the coolant and the gas
-        ?
+        A_coolant = 2 * np.pi * (y + self.total_wall_thickness(x) + self.cooling_jacket.channel_height(x))      # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.sim.CoolingSimulation
+        R_list.append(1.0 / (h_coolant * A_coolant))
         
+        # SOLID WALLS
+        # Find the thermal resistance of the solid boundaries between the coolant and the gas - note our resistance list goes in the order [Cold --> Hot], but the walls are in the order [Hot --> Cold]
+        for i in range(len(self.walls)):   
+            # Work in reverse from the cold side to the hot side
+            reversed_walls = reversed(self.walls)
+
+            # Calculate the inner radius - need to add up all the wall thickness up to (and excluding) the current wall
+            r1 = y
+            for j in range(len(self.walls) - i - 1):
+                r1 += self.walls[j].thickness
+
+            r2 = r1 + reversed_walls[i].thickness
+
+            R_list.append(np.log(r2/r1) / (2 * np.pi * reversed_walls[i].material.k))
+
+        # EXHAUST GAS
         # Get the gas properties, and find the thermal resistance of the convection on the hot gas side
-        ?
+        rho_exhaust = self.rho(x)
+        T_exhaust = self.T(x)
+        p_exhaust = self.p(x)
+        V_exhaust = (self.perfect_gas.gamma * self.perfect_gas.R * T_exhaust)**0.5 * self.M(x)      # V = sqrt(gamma * R * T) * M, from speed of sound for an ideal gas
+        Dh_exhaust = 2 * y
+        mu_exhaust = self.exhaust_transport.mu(T = T_exhaust, p = p_exhaust)
+        Pr_exhaust = self.exhaust_transport.Pr(T = T_exhaust, p = p_exhaust)
+        k_exhaust = self.exhaust_transport.k(T = T_exhaust, p = p_exhaust)
+
+
+        if self.exhaust_convection == "dittus-boelter":
+            h_exhaust = bamboo.circuit.h_coolant_dittus_boelter(rho = rho_exhaust, 
+                                                                V = V_exhaust, 
+                                                                D = Dh_exhaust, 
+                                                                mu = mu_exhaust, 
+                                                                Pr = Pr_exhaust, 
+                                                                k = k_exhaust)
+
+        elif self.exhaust_convection == "bartz":
+           raise ValueError("bartz is not yet implemented")
+
+        elif self.exhaust_convection == "bartz-sigma":
+            raise ValueError("bartz-sigma is not yet implemented")
+
+
+        A_exhaust = 2 * np.pi * y                       # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.sim.CoolingSimulation
+        R_list.append(1.0 / (h_exhaust * A_exhaust))
+        
+        return R_list
 
     def dp_dx(self, state):
-        pass
+        print("Warning: Pressure drop not currently implemented - bamboo.engine.Engine.dp_dx() needs to be modified")
+        return 0.0
 
     # Functions for thermal simulations
     def steady_cooling_simulation(self, dx, counterflow = True):
