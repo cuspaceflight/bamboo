@@ -61,12 +61,18 @@ class Material:
 
         if "E" in kwargs:
             self.E = kwargs["E"]
+        else:
+            self.E = float("NaN")
 
         if "alpha" in kwargs:
             self.alpha = kwargs["alpha"]
+        else:
+            self.alpha = float("NaN")
 
         if "poisson" in kwargs:
             self.poisson = kwargs["poisson"]
+        else:
+            self.poisson = float("NaN")
 
 class TransportProperties:
     def __init__(self, Pr, mu, k, cp = None, rho = None):
@@ -144,6 +150,9 @@ class TransportProperties:
         Returns:
             float: Density (kg/m^3)
         """
+        if self._rho is None:
+            raise ValueError("TransportProperties object does not have its density 'rho' defined. If you tried to use this TransportProperties object for a coolant, you need to specify the 'rho' input.")
+
         if type(self._rho) is callable:
             return self._rho(T, p)
         
@@ -160,6 +169,9 @@ class TransportProperties:
         Returns:
             float: Isobaric specific heat capacity (J/kg/K)
         """
+
+        if self._cp is None:
+            raise ValueError("TransportProperties object does not have its isobaric specific heat capacity 'cp' defined. If you tried to use this TransportProperties object for a coolant, you need to specify the 'cp' input.")
 
         if type(self._cp) is callable:
             return self._cp(T, p)

@@ -67,6 +67,9 @@ class Geometry:
         return np.pi * self.Re**2
 
     def plot(self):
+        """
+        Plot the engine geometry. Must run bamboo.plot.show() or matplotlib.pyplot.show() to see the plot.
+        """
         fig, axs = plt.subplots()
         axs.plot(self.xs, self.ys, color = "blue")
         axs.plot(self.xs, -np.array(self.ys), color = "blue")
@@ -397,6 +400,9 @@ class Engine:
             thickness += wall.thickness(x)
         
         return thickness
+
+    def plot(self):
+        raise ValueError("bamboo.Engine.plot() has not yet been implemented")
 
     # Cooling jacket functions
     def A_coolant(self, x):

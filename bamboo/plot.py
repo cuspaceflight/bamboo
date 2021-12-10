@@ -26,12 +26,18 @@ def plot_temperatures(data_dict, only_indexes = None):
         for i in range(len(T[0])):
             if i == 0:
                 label = "Coolant"
-                
-            elif i == len(T[0]) - 1:
+
+            elif i == 1 or i == 1-len(T[0]):
+                label = f"Wall (Coolant Contact)"    
+            
+            elif i == len(T[0]) - 1 or i == -1:
                 label = "Exhaust"
 
+            elif i == len(T[0]) - 2 or i == -2:
+                label = "Wall (Exhaust Contact)"
+
             else:
-                label = f"Wall {i}"
+                label = f"Wall {i-1}-{i} Boundary"
 
             ax.plot(data_dict["x"], T[:, i], label = label)
 
@@ -39,12 +45,18 @@ def plot_temperatures(data_dict, only_indexes = None):
         for i in only_indexes:
             if i == 0:
                 label = "Coolant"
-                
+
+            elif i == 1 or i == 1-len(T[0]):
+                label = f"Wall (Coolant Contact)"    
+            
             elif i == len(T[0]) - 1 or i == -1:
                 label = "Exhaust"
 
+            elif i == len(T[0]) - 2 or i == -2:
+                label = "Wall (Exhaust Contact)"
+
             else:
-                label = f"Wall {i}"
+                label = f"Wall {i-1}-{i} Boundary"
 
             ax.plot(data_dict["x"], T[:, i], label = label)  
 
@@ -52,6 +64,10 @@ def plot_temperatures(data_dict, only_indexes = None):
     ax.set_xlabel("Position (m)")
     ax.set_ylabel("Temperature (K)")
     ax.legend()
+
+    # Reverse the legend order, so the hot legend comes at the top
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(reversed(handles), reversed(labels))
 
 def plot_jacket_pressure(data_dict, plot_static = True, plot_stagnation = True, **kwargs):
     """Given the output dictionary from a engine cooling analysis, plot the cooling jacket pressure against x position. 
