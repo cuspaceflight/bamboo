@@ -17,44 +17,6 @@ import bamboo.isen
 import bamboo.sim
 import bamboo.circuit
 
-R_BAR = 8.3144621e3         # Universal gas constant (J/K/kmol)
-
-class PerfectGas:
-    """Object to store a perfect gas model (i.e. an ideal gas with constant cp and cv). You only need to input 2 properties to fully define it.
-
-    Keyword Args:
-        gamma (float): Ratio of specific heats cp/cv.
-        cp (float): Specific heat capacity at constant pressure (J/kg/K)
-        molecular_weight (float): Molecular weight of the gas (kg/kmol)
-
-    Attributes:
-        gamma (float): Ratio of specific heats cp/cv.
-        cp (float): Specific heat capacity at constant pressure (J/kg/K)
-        molecular_weight (float): Molecular weight of the gas (kg/kmol)
-        R (float): Specific gas constant (J/kg/K)
-    """
-    def __init__(self, **kwargs):
-        if len(kwargs) > 2:
-            raise ValueError(f"Gas object is overdefined. You mustn't provide more than 2 inputs when creating the Gas object. You provided {len(kwargs)}.")
-
-        elif "gamma" in kwargs and "molecular_weight" in kwargs: 
-            self.gamma = kwargs["gamma"]
-            self.molecular_weight = kwargs["molecular_weight"]
-            self.R = R_BAR/self.molecular_weight  
-            self.cp = (self.gamma*self.R)/(self.gamma-1)    
-
-        elif "gamma" in kwargs and "cp" in kwargs: 
-            self.gamma = kwargs["gamma"]
-            self.cp = kwargs["cp"]
-            self.R = self.cp*(self.gamma-1)/self.gamma
-            self.molecular_weight = R_BAR/self.R
-
-        else:
-            raise ValueError(f"Not enough inputs provided to fully define the PerfectGas, or you used a combination of inputs that isn't currently allowable. You must provide exactly 2 inputs, but you provided {len(kwargs)}.")
-
-    def __repr__(self):
-        return f"<nozzle.perfect_gas object> with: \ngamma = {self.gamma} \ncp = {self.cp} \nmolecular_weight = {self.molecular_weight} \nR = {self.R}"
-
 class ChamberConditions:
     """Object for storing combustion chamber thermodynamic conditions. The mass flow rate does not have to be defined - it is fixed by the nozzle throat area.
 
@@ -103,6 +65,15 @@ class Geometry:
     @property
     def Ae(self):
         return np.pi * self.Re**2
+
+    def plot(self):
+        fig, axs = plt.subplots()
+        axs.plot(self.xs, self.ys, color = "blue")
+        axs.plot(self.xs, -np.array(self.ys), color = "blue")
+        axs.grid()
+        axs.set_xlabel("x (m)")
+        axs.set_ylabel("y (m)")
+        axs.set_aspect('equal')
 
 
     def y(self, x):
@@ -292,6 +263,7 @@ class CoolingJacket:
             b = roughness / (3.71 * Dh)
              
             return ( (2 * scipy.special.lambertw(np.log(10) / two_a * 10**(b/two_a) )) / np.log(10) - b/a )**(-2)
+
 
 class Engine:
     """Class for representing a liquid rocket engine.
@@ -517,7 +489,7 @@ class Engine:
 
         return rho_coolant
 
-    # Functions that need to be submitted to bamboo.sim.CoolingSimulation
+    # Functions that need to be submitted to bamboo.sim.HXSolver
     def T_h(self, state):
         return self.T(state["x"])
 
@@ -564,7 +536,7 @@ class Engine:
         else:
             raise ValueError(f"Coolant convection model '{self.coolant_convection}' is not recognised. Try 'gnielinski', 'sieder-tate', or 'dittus-boelter'")
 
-        A_coolant = 2 * np.pi * (y + self.total_wall_thickness(x) + self.cooling_jacket.channel_height(x))      # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.sim.CoolingSimulation
+        A_coolant = 2 * np.pi * (y + self.total_wall_thickness(x) + self.cooling_jacket.channel_height(x))      # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.sim.HXSolver
         R_list.append(1.0 / (h_coolant * A_coolant))
         
         # SOLID WALLS
@@ -609,7 +581,7 @@ class Engine:
             raise ValueError("bartz-sigma is not yet implemented")
 
 
-        A_exhaust = 2 * np.pi * y                       # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.sim.CoolingSimulation
+        A_exhaust = 2 * np.pi * y                       # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.sim.HXSolver
         R_list.append(1.0 / (h_exhaust * A_exhaust))
         
         return R_list
@@ -633,7 +605,7 @@ class Engine:
         return f_darcy * (rho_coolant / 2) * (V_coolant**2)/Dh
 
     # Functions for thermal simulations
-    def steady_cooling_simulation(self, num_grid = 500, counterflow = True):
+    def steady_cooling_simulation(self, num_grid = 1000, counterflow = True):
         """Run a steady state cooling simulation.
 
         Args:
@@ -658,7 +630,7 @@ class Engine:
             x_start = self.geometry.xs[0]
             x_end = self.geometry.xs[-1]
 
-        cooling_simulation = bamboo.sim.CoolingSimulation(T_c_in = self.cooling_jacket.T_coolant_in, 
+        cooling_simulation = bamboo.sim.HXSolver(T_c_in = self.cooling_jacket.T_coolant_in, 
                                                           T_h = self.T_h, 
                                                           p0_c_in = self.cooling_jacket.p0_coolant_in, 
                                                           cp_c = self.cp_c, 
@@ -670,4 +642,31 @@ class Engine:
                                                           x_end = x_end)
 
         cooling_simulation.run()
-        print(f"bamboo.engine.py: Cooling simulation complete. Coolant exit temperature = {cooling_simulation.state[-1]['T_c']} K")
+
+        # Run through the results, and convert them into a convenient form
+        results = {}
+        results["x"] = [None] * len(cooling_simulation.state)
+        results["T"] = [None] * len(cooling_simulation.state)           # List of temperatures from cold --> hot
+        results["dQ_dx"] = [None] * len(cooling_simulation.state)       # Heat transfer rate per unit axial length
+        results["dQ_dA"] = [None] * len(cooling_simulation.state)       # Heat transfer rate per unit chamber area
+        results["p0_coolant"] = [None] * len(cooling_simulation.state)
+        results["rho_coolant"] = [None] * len(cooling_simulation.state)
+        results["p_coolant"] = [None] * len(cooling_simulation.state)
+        results["V_coolant"] = [None] * len(cooling_simulation.state)
+
+        for i in range(len(cooling_simulation.state)):
+            results["x"][i] = cooling_simulation.state[i]["x"]
+            results["T"][i] = cooling_simulation.state[i]["circuit"].T
+            results["dQ_dx"][i] = cooling_simulation.state[i]["circuit"].Qdot
+            results["dQ_dA"][i] = results["dQ_dx"][i] / (2 * np.pi * self.geometry.y(x = results["x"][i]))
+            results["p0_coolant"][i] = cooling_simulation.state[i]["p0_c"]
+            results["rho_coolant"][i] = self.rho_coolant(x = results["x"][i], T_coolant = cooling_simulation.state[i]["T_c"], p0_coolant = results["p0_coolant"][i])
+            results["p_coolant"][i] = self.p_coolant(x = results["x"][i], p0_coolant = results["p0_coolant"][i], rho_coolant = results["rho_coolant"][i])
+            results["V_coolant"][i] = self.V_coolant(x = results["x"][i], rho_coolant = results["rho_coolant"][i])
+
+        results["T_exhaust"] = list(np.array(results["T"])[:, -1])
+        results["T_coolant"] = list(np.array(results["T"])[:, 0])
+
+        #print(f"bamboo.engine.py: Cooling simulation complete. Coolant exit temperature = {cooling_simulation.state[-1]['T_c']} K")
+
+        return results

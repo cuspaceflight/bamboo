@@ -35,6 +35,16 @@ engine = bam.Engine(perfect_gas = perfect_gas,
                     exhaust_convection = "dittus-boelter",
                     coolant_convection = "dittus-boelter")
 
-print(f"Engine set up, throat at x = {engine.geometry.xt} m")
+print(f"Engine set up, throat at x = {engine.geometry.xt} m, mdot = {engine.mdot} kg/s")
 
-engine.steady_cooling_simulation()
+results = engine.steady_cooling_simulation(num_grid = 50)
+
+engine.geometry.plot()
+bam.show()
+
+bam.plot.plot_jacket_pressure(results)
+bam.show()
+
+bam.plot.plot_temperatures(results)
+bam.show()
+

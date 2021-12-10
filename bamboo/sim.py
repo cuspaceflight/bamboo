@@ -1,5 +1,5 @@
 """
-Environment for simulating the thermal aspects of the engine.
+General solver for coflow and counterflow heat exchangers, using a 1-D thermal resistance model.
 
 Notation:
  - 'c': Cold side (usually coolant)
@@ -9,7 +9,7 @@ Notation:
 
 from bamboo.circuit import ThermalCircuit
 
-class CoolingSimulation:
+class HXSolver:
     def __init__(self, T_c_in, T_h, p0_c_in, cp_c, mdot_c, R_th, dp_dx, x_start, dx, x_end):
 
         self.T_c_in = T_c_in        # Constant                  - Coolant inlet temperature (K)
@@ -31,7 +31,12 @@ class CoolingSimulation:
         Reset our 'state' list to the initial conditions and set self.i to zero.
         """
         self.i = 0
-        self.state = [{}] * int( abs((self.x_end - self.x_start) / self.dx) )       # Empty list of dictionaries
+        
+        # Set up an empty list of dictionaries
+        self.state = [None] * int( abs((self.x_end - self.x_start) / self.dx) )    
+        for i in range(len(self.state)):
+            self.state[i] = {}
+
         self.state[self.i]["x"] = self.x_start
         self.state[self.i]["T_c"] = self.T_c_in
         self.state[self.i]["T_cw"] = self.state[self.i]["T_c"]
@@ -50,7 +55,6 @@ class CoolingSimulation:
         self.state[self.i]["circuit"] = circuit
         self.state[self.i]["T_hw"] = circuit.T[-2]
         self.state[self.i]["T_cw"] = circuit.T[1]
-        self.state[self.i]["p0_c"] = self.p0_c_in
 
     def step(self):
         """
@@ -88,7 +92,7 @@ class CoolingSimulation:
             self.iterate()
             counter += 1
 
-        print(f"bamboo.sim.py: Simulation initialised, T_hw = {self.state[self.i]['T_hw']} and T_cw = {self.state[self.i]['T_cw']}")
+        #print(f"bamboo.sim.py: Simulation initialised, T_hw = {self.state[self.i]['T_hw']} and T_cw = {self.state[self.i]['T_cw']}")
 
         while self.i < len(self.state) - 1:
             # Move to next grid point
@@ -100,5 +104,5 @@ class CoolingSimulation:
                 self.iterate()
                 counter += 1
 
-            print(f"bamboo.sim.py: i = {self.i}, Tc = {self.state[self.i]['T_c']}, T_hw = {self.state[self.i]['T_hw']} and T_cw = {self.state[self.i]['T_cw']}")
+            #print(f"bamboo.sim.py: i = {self.i}, Tc = {self.state[self.i]['T_c']}, T_hw = {self.state[self.i]['T_hw']}, T_cw = {self.state[self.i]['T_cw']}, p0_c = {self.state[self.i]['p0_c']}")
 

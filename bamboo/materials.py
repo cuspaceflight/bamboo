@@ -1,11 +1,50 @@
 """
-Classes for representing materials and transport properties. Also contains some useful pre-defined materials.
+Classes for representing solid materials, fluids and transport properties. Also contains some useful pre-defined materials.
 
 References
 - [1] - CoolProp, http://coolprop.org/
 """
 
+# Constants
+R_BAR = 8.3144621e3         # Universal gas constant (J/K/kmol)
+
 # Classes
+class PerfectGas:
+    """Object to store a perfect gas model (i.e. an ideal gas with constant cp and cv). You only need to input 2 properties to fully define it.
+
+    Keyword Args:
+        gamma (float): Ratio of specific heats cp/cv.
+        cp (float): Specific heat capacity at constant pressure (J/kg/K)
+        molecular_weight (float): Molecular weight of the gas (kg/kmol)
+
+    Attributes:
+        gamma (float): Ratio of specific heats cp/cv.
+        cp (float): Specific heat capacity at constant pressure (J/kg/K)
+        molecular_weight (float): Molecular weight of the gas (kg/kmol)
+        R (float): Specific gas constant (J/kg/K)
+    """
+    def __init__(self, **kwargs):
+        if len(kwargs) > 2:
+            raise ValueError(f"Gas object is overdefined. You mustn't provide more than 2 inputs when creating the Gas object. You provided {len(kwargs)}.")
+
+        elif "gamma" in kwargs and "molecular_weight" in kwargs: 
+            self.gamma = kwargs["gamma"]
+            self.molecular_weight = kwargs["molecular_weight"]
+            self.R = R_BAR/self.molecular_weight  
+            self.cp = (self.gamma*self.R)/(self.gamma-1)    
+
+        elif "gamma" in kwargs and "cp" in kwargs: 
+            self.gamma = kwargs["gamma"]
+            self.cp = kwargs["cp"]
+            self.R = self.cp*(self.gamma-1)/self.gamma
+            self.molecular_weight = R_BAR/self.R
+
+        else:
+            raise ValueError(f"Not enough inputs provided to fully define the PerfectGas, or you used a combination of inputs that isn't currently allowable. You must provide exactly 2 inputs, but you provided {len(kwargs)}.")
+
+    def __repr__(self):
+        return f"<nozzle.perfect_gas object> with: \ngamma = {self.gamma} \ncp = {self.cp} \nmolecular_weight = {self.molecular_weight} \nR = {self.R}"
+
 class Material:
     """Class used to specify a material and its properties. For calculating temperatures, only 'k' must be defined. For stresses, you also need E, alpha, and poisson.
 

@@ -1,5 +1,5 @@
 """
-Classes and functions related to thermal circuit calculations
+Classes and functions related to thermal circuit calculations.
 
 References (*need to clean up, not all are used here):
     - [1] - The Thrust Optimised Parabolic nozzle, AspireSpace, http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf   \n
@@ -125,7 +125,7 @@ class ThermalCircuit:
         Args:
             T1 (float): Temperature at start
             T2 (float): Temperature at end
-            R (list): List of resistances between T1 and T2
+            R (list): List of resistances between T1 and T2, in the order [R_touching_T1, ... , R_touching_T2]
 
         Attributes:
             Qdot (float): Heat transfer rate (positive in the direction of T1 --> T2)
@@ -138,6 +138,7 @@ class ThermalCircuit:
         self.Qdot = (T1 - T2)/sum(R)
         self.T = np.zeros(len(R) + 1)
         self.T[0] = T1
+        self.T[-1] = T2
 
         for i in range(1, len(R)):
             self.T[i] = self.T[i-1] - self.Qdot*R[i-1]
