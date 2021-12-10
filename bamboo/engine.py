@@ -635,7 +635,7 @@ class Engine:
         x = state["x"]
         T_coolant = state["T_c"]
         p0_coolant = state["p0_c"]
-
+        
         Dh = self.Dh_coolant(x)
         rho_coolant = self.rho_coolant(x = x, T_coolant = T_coolant, p0_coolant = p0_coolant)
         p_coolant = self.p_coolant(x = x, p0_coolant = p0_coolant, rho_coolant = rho_coolant)
@@ -646,8 +646,14 @@ class Engine:
 
         f_darcy = self.cooling_jacket.f_darcy(Dh = Dh, ReDh = ReDh, x = x)
 
-        # Fully developed pipe flow pressure drop [3]
-        return f_darcy * (rho_coolant / 2) * (V_coolant**2)/Dh
+        if self.cooling_jacket.type == "vertical":
+            # Fully developed pipe flow pressure drop [3]
+            return f_darcy * (rho_coolant / 2) * (V_coolant**2)/Dh
+        
+        if self.cooling_jacket.type == "spiral":
+            # Need to add a scale factor for the fact that 'dx' is not the same as the path length that the fluid takes around the spiral
+            print("banboo.engine.Engine.dp_dx(): Warning - have not yet implemented pressure drop for spiral channels")
+            return 0.0
 
     # Functions for thermal simulations
     def steady_cooling_simulation(self, num_grid = 1000, counterflow = True):
