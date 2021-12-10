@@ -98,7 +98,7 @@ def h_coolant_sieder_tate(rho, V, D, mu_bulk, mu_wall, Pr, k):
 
     return Nu*k/D
 
-def h_coolant_gnielinski(rho, V, D, mu, Pr, k, f):
+def h_coolant_gnielinski(rho, V, D, mu, Pr, k, f_darcy):
     """Convective heat transfer coefficient for the coolant side, using Gnielinski's correlation. Page 41 of Reference [4].
 
     Args:
@@ -108,13 +108,13 @@ def h_coolant_gnielinski(rho, V, D, mu, Pr, k, f):
         mu (float): Coolant viscosity (Pa s)
         Pr (float): Prandtl number
         k (float): Coolant thermal conductivity
-        f (float): Coolant friction factor
+        f_darcy (float): Darcy friction factor for the coolant
 
     Returns:
         float: Convective heat transfer coefficient
     """
     ReD = rho*V*D/mu
-    NuD = (f/8) * (ReD - 1000) * Pr / (1 + 12.7*(f/8)**(1/2) *(Pr**(2/3) - 1))
+    NuD = (f_darcy/8) * (ReD - 1000) * Pr / (1 + 12.7*(f_darcy/8)**(1/2) *(Pr**(2/3) - 1))
     h = NuD * k / D
     return h
 

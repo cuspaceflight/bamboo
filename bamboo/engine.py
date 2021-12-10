@@ -1,9 +1,15 @@
 """
 Main Engine class, as well as tools for specifying engine geometry and the perfect gas model used to calculate flow properties.
+
+References:
+ - [1] - https://en.wikipedia.org/wiki/Nusselt_number
+ - [2] - https://en.wikipedia.org/wiki/Darcy_friction_factor_formulae
+ - [3] - https://en.wikipedia.org/wiki/Darcy%E2%80%93Weisbach_equation
 """
 
 import numpy as np
 import scipy.optimize
+import scipy.special
 import matplotlib.pyplot as plt
 
 import bamboo.rao
@@ -150,7 +156,7 @@ class Wall:
             return self._thickness
 
 class CoolingJacket:
-    def __init__(self, T_coolant_in, p0_coolant_in, mdot_coolant, channel_height, coolant_transport, type = "vertical", **kwargs):
+    def __init__(self, T_coolant_in, p0_coolant_in, mdot_coolant, channel_height, coolant_transport, roughness = None, type = "vertical", **kwargs):
         """Class for representing cooling jacket properties. 
 
         Note:
@@ -166,6 +172,7 @@ class CoolingJacket:
             channel_height (float or callable): Radial height of the cooling channels (i.e. the distance between the inner and outer wall that the coolant flows through) (m). Can be a constant float, or function of axial position (x).
             coolant_transport (TransportProperties): Transport properties of the coolant
             type (str, optional): Type of cooling channel. Either 'vertical' for straight, axial, channels. Or 'spiral' for a helix around the engine. Defaults to "vertical".
+            roughness (float or callable, optional): Wall roughness in the channel (m), for pressure drop calculations. Can be a constant float, or function of axial position (x). Defaults to None, in which case a smooth walled approximation is used.
         
         Keyword Args:
             blockage_ratio (float or callable): This is the proportion (by area) of the channel cross section occupied by ribs. Can be a constant float, or a function of axial position (x). Defaults to zero.
@@ -179,6 +186,7 @@ class CoolingJacket:
         self.mdot_coolant = mdot_coolant
         self.coolant_transport = coolant_transport
         self._channel_height = channel_height
+        self._roughness = roughness
 
         self.type = type
 
@@ -255,7 +263,35 @@ class CoolingJacket:
 
         else:
             return self._channel_width
-        
+
+    def roughness(self, x):
+        """Get the channel roughness, at a position, x.
+
+        Args:
+            x (float): Axial position along the engine (m)
+
+        Returns:
+            float: Wall roughness of the channel (m)
+        """
+        if type(self._roughness) is callable:
+            return self._roughness(x)
+
+        else:
+            return self._roughness
+
+    def f_darcy(self, ReDh, Dh, x):
+        roughness = self.roughness(x)
+        if roughness == None:
+            # Putukhov equation [1]
+            return (0.79 * np.log(ReDh) - 1.64)**(-2)   
+
+        else:
+            # Colebrook-White with Lambert W function [2]
+            a = 2.51 / ReDh
+            two_a = 2*a
+            b = roughness / (3.71 * Dh)
+             
+            return ( (2 * scipy.special.lambertw(np.log(10) / two_a * 10**(b/two_a) )) / np.log(10) - b/a )**(-2)
 
 class Engine:
     """Class for representing a liquid rocket engine.
@@ -331,7 +367,7 @@ class Engine:
             float: Mach number of the freestream.
         """
         #If we're at the throat then M = 1 by default:
-        if x - self.geometry.xt <= 1e-12:
+        if abs(x - self.geometry.xt) <= 1e-12:
             return 1.00
 
         #If we're not at the throat:
@@ -579,8 +615,22 @@ class Engine:
         return R_list
 
     def dp_dx(self, state):
-        print("bamboo.engine.py: Pressure drop not currently implemented - bamboo.engine.Engine.dp_dx() needs to be modified")
-        return 0.0
+        x = state["x"]
+        T_coolant = state["T_c"]
+        p0_coolant = state["p0_c"]
+
+        Dh = self.Dh_coolant(x)
+        rho_coolant = self.rho_coolant(x = x, T_coolant = T_coolant, p0_coolant = p0_coolant)
+        p_coolant = self.p_coolant(x = x, p0_coolant = p0_coolant, rho_coolant = rho_coolant)
+        V_coolant = self.V_coolant(x = x, rho_coolant = rho_coolant)
+        mu_coolant = self.cooling_jacket.coolant_transport.mu(T = T_coolant, p = p_coolant)
+        
+        ReDh = rho_coolant * V_coolant * Dh / mu_coolant
+
+        f_darcy = self.cooling_jacket.f_darcy(Dh = Dh, ReDh = ReDh, x = x)
+
+        # Fully developed pipe flow pressure drop [3]
+        return f_darcy * (rho_coolant / 2) * (V_coolant**2)/Dh
 
     # Functions for thermal simulations
     def steady_cooling_simulation(self, num_grid = 500, counterflow = True):

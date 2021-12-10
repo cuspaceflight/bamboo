@@ -5,8 +5,6 @@ Temporary file for testing bamboo 0.2.0
 import bamboo as bam
 import numpy as np
 
-mdot_coolant = 0.2          # Coolant mass flow rate (kg/s)
-
 # Combustion chamber
 perfect_gas = bam.PerfectGas(gamma = 1.31, cp = 830)
 chamber_conditions = bam.ChamberConditions(p0 = 10e5, T0 = 2800)
