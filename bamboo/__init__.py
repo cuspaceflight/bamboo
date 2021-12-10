@@ -1,5 +1,5 @@
 from bamboo.engine import *
-from bamboo.materials import Material, TransportProperties, PerfectGas
+from bamboo.materials import Material, TransportProperties
 from bamboo.plot import show
 
 import bamboo.engine

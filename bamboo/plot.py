@@ -61,7 +61,7 @@ def plot_temperatures(data_dict, only_indexes = None):
             ax.plot(data_dict["x"], T[:, i], label = label)  
 
     ax.grid()
-    ax.set_xlabel("Position (m)")
+    ax.set_xlabel("Axial Position (m)")
     ax.set_ylabel("Temperature (K)")
     ax.legend()
 
@@ -90,7 +90,7 @@ def plot_jacket_pressure(data_dict, plot_static = True, plot_stagnation = True, 
         
     axs.legend()
     axs.grid()
-    axs.set_xlabel("Position (m)")
+    axs.set_xlabel("Axial Position (m)")
     axs.set_ylabel("Coolant pressure (bar)")
 
 
@@ -110,7 +110,7 @@ def plot_qdot(data_dict, **kwargs):
 
     q_axs.legend()
     q_axs.grid()
-    q_axs.set_xlabel("Position (m)")
+    q_axs.set_xlabel("Axial Position (m)")
     q_axs.set_ylabel("Heat transfer rate (W/m)")
 
 def plot_resistances(data_dict, **kwargs):
@@ -139,7 +139,7 @@ def plot_resistances(data_dict, **kwargs):
 
     axs.legend()
     axs.grid()
-    axs.set_xlabel("Position (m)")
+    axs.set_xlabel("Axial Position (m)")
     axs.set_ylabel("Thermal resistance (K/W/m)")
 
 def plot_coolant_velocities(data_dict, **kwargs):
@@ -159,7 +159,7 @@ def plot_coolant_velocities(data_dict, **kwargs):
         
     axs.legend()
     axs.grid()
-    axs.set_xlabel("Position (m)")
+    axs.set_xlabel("Axial Position (m)")
     axs.set_ylabel("Coolant velocity (m/s)")
 
 def plot_thermal_stress(data_dict, **kwargs):
@@ -176,5 +176,5 @@ def plot_thermal_stress(data_dict, **kwargs):
     axs.plot(data_dict["x"], np.array(data_dict["thermal_stress"])/1e6, label = "Thermal stress")
 
     axs.grid()
-    axs.set_xlabel("Position (m)")
+    axs.set_xlabel("Axial Position (m)")
     axs.set_ylabel("Thermal stress (MPa)")

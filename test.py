@@ -20,7 +20,7 @@ cooling_jacket = bam.CoolingJacket(T_coolant_in = 298,
                                    p0_coolant_in = 2e5, 
                                    mdot_coolant = 0.2, 
                                    channel_height = 2e-3, 
-                                   coolant_transport = bam.materials.CO2, 
+                                   coolant_transport = bam.materials.Water, 
                                    type = "vertical")
 
 # Chamber walls
