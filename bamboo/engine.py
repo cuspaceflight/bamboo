@@ -760,9 +760,6 @@ class Engine:
         return R_list
 
     def extra_dQ_dx(self, state):
-        return 0.0
-        print("bamboo.engine.Engine.extra_dQ_dx: Disabled extra heating due to fins, for debugging purposes")
-
         x = state["x"]
         blockage_ratio = self.cooling_jacket.blockage_ratio(x)
 
@@ -770,7 +767,6 @@ class Engine:
             return 0.0      # Effectively no fins
 
         else:
-            # extra_dQ_dx should always be called after R_th was called, so we can reuse the convective heat transfer coefficients calculacted from it.
             P = 2.0                                     # For dQ, the perimeter is 2 * dx. We must divide this by dx to get dQ/dx
             L = self.cooling_jacket.channel_height(x)
             
@@ -789,6 +785,7 @@ class Engine:
             T_b = state["T_cw"]
             T_inf = state["T_c"]
 
+            # extra_dQ_dx should always be called after R_th was called, so we can reuse the convective heat transfer coefficients calculacted from it.
             dQ_dx_single_fin = bamboo.circuit.Q_fin_adiabatic(P = P, 
                                                               Ac = Ac, 
                                                               k = self.walls[-1].material.k, 

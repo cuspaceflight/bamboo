@@ -18,10 +18,10 @@ geometry = bam.Geometry(xs = xs, ys = ys)
 # Cooling jacket
 cooling_jacket = bam.CoolingJacket(T_coolant_in = 298, 
                                    p0_coolant_in = 2e5, 
-                                   mdot_coolant = 0.2, 
-                                   channel_height = 2e-3, 
-                                   blockage_ratio = 0.4,
-                                   number_of_fins = 100,
+                                   mdot_coolant = 1.5, 
+                                   channel_height = 20e-3, 
+                                   blockage_ratio = 0.1,
+                                   number_of_fins = 200,
                                    coolant_transport = bam.materials.Water, 
                                    configuration = "vertical")
 
@@ -45,7 +45,7 @@ results = engine.steady_cooling_simulation(num_grid = 1000, iter_start = 5, iter
 
 print(f"Coolant outlet temperature = {results['T_coolant'][-1]} K, outlet stagation pressure = {results['p0_coolant'][-1]/1e5} bar")
 
-"""
+
 engine.plot()
 bam.show()
 
@@ -54,4 +54,4 @@ bam.show()
 
 bam.plot.plot_temperatures(results)
 bam.show()
-"""
+
