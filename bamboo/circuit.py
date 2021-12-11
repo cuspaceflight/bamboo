@@ -2,20 +2,20 @@
 Classes and functions related to thermal circuit calculations.
 
 References (*need to clean up, not all are used here):
-    - [1] - The Thrust Optimised Parabolic nozzle, AspireSpace, http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf   \n
-    - [2] - Rocket Propulsion Elements, 7th Edition  \n
-    - [3] - Design and analysis of contour bell nozzle and comparison with dual bell nozzle https://core.ac.uk/download/pdf/154060575.pdf 
-    - [4] - Modelling ablative and regenerative cooling systems for an ethylene/ethane/nitrous oxide liquid fuel rocket engine, Elizabeth C. Browne, https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&isAllowed=y  \n
-    - [5] - Thermofluids databook, CUED, http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf    \n
-    - [6] - A Simple Equation for Rapid Estimation of Rocket Nozzle Convective Heat Transfer Coefficients, Dr. R. Bartz, https://arc.aiaa.org/doi/pdf/10.2514/8.12572
-    - [7] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf  \n
+    - [1] - Rocket Propulsion Elements, 7th Edition 
+    - [2] - Modelling ablative and regenerative cooling systems for an ethylene/ethane/nitrous oxide liquid fuel rocket engine, Elizabeth C. Browne, https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&isAllowed=y  \n
+    - [3] - A Simple Equation for Rapid Estimation of Rocket Nozzle Convective Heat Transfer Coefficients, Dr. R. Bartz, https://arc.aiaa.org/doi/pdf/10.2514/8.12572
+    - [4] - https://en.wikipedia.org/wiki/Nucleate_boiling
+    - [5] - https://en.wikipedia.org/wiki/Fin_(extended_surface)
 """
 
 import numpy as np
+import warnings
+
 
 def h_gas_bartz(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0):
     """
-    Bartz equation, using Equation (8-23) from page 312 of RPE 7th edition (Reference [2]). 'am' refers to the gas being at the 'arithmetic mean' of the wall and freestream temperatures.
+    Bartz equation, using Equation (8-23) from page 312 of RPE 7th edition (Reference [1]). 'am' refers to the gas being at the 'arithmetic mean' of the wall and freestream temperatures.
 
     Args:
         D (float): Gas flow diameter (m)
@@ -34,15 +34,15 @@ def h_gas_bartz(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0):
 
     return (0.026/D**0.2) * (cp_inf*mu_inf**0.2)/(Pr_inf**0.6) * (rho_inf * v_inf)**0.8 * (rho_am/rho_inf) * (mu_am/mu0)**0.2
 
-def h_gas_bartz_sigma(c_star, At, A, pc, Tc, M, Tw, mu0, cp0, gamma, Pr0):
-    """Bartz heat transfer equation using the sigma correlation, from Reference [6].
+def h_gas_bartz_sigma(c_star, At, A, p_chamber, T_chamber, M, Tw, mu0, cp0, gamma, Pr0):
+    """Bartz heat transfer equation using the sigma correlation, from Reference [3].
 
     Args:
         c_star (float): C* efficiency ( = pc * At / mdot)
         At (float): Throat area (m^2)
         A (float): Flow area (m^2)
-        pc (float): Chamber pressure (Pa)
-        Tc (float): Chamber temperature (K)
+        p_chamber (float): Chamber pressure (Pa)
+        T_chamber (float): Chamber temperature (K)
         M (float): Freestream Mach number
         Tw (float): Wall temperature (K)
         mu0 (float): Absolute viscosity at stagnation conditions (Pa s)
@@ -55,9 +55,9 @@ def h_gas_bartz_sigma(c_star, At, A, pc, Tc, M, Tw, mu0, cp0, gamma, Pr0):
     """
 
     Dt = (At *4/np.pi)**0.5
-    sigma = (0.5 * (Tw/Tc) * (1 + (gamma-1)/2 * M**2) + 0.5)**(-0.68) * (1 + (gamma-1)/2 * M**2)**(-0.12)
+    sigma = (0.5 * (Tw/T_chamber) * (1 + (gamma-1)/2 * M**2) + 0.5)**(-0.68) * (1 + (gamma-1)/2 * M**2)**(-0.12)
 
-    return (0.026)/(Dt**0.2) * (mu0**0.2*cp0/Pr0**0.6) * (pc/c_star)**0.8 * (At/A)**0.9 * sigma
+    return (0.026)/(Dt**0.2) * (mu0**0.2*cp0/Pr0**0.6) * (p_chamber/c_star)**0.8 * (At/A)**0.9 * sigma
 
 def h_coolant_dittus_boelter(rho, V, D, mu, Pr, k):
     """Dittus-Boelter equation for convective heat transfer coefficient.
@@ -99,7 +99,7 @@ def h_coolant_sieder_tate(rho, V, D, mu_bulk, mu_wall, Pr, k):
     return Nu*k/D
 
 def h_coolant_gnielinski(rho, V, D, mu, Pr, k, f_darcy):
-    """Convective heat transfer coefficient for the coolant side, using Gnielinski's correlation. Page 41 of Reference [4].
+    """Convective heat transfer coefficient for the coolant side, using Gnielinski's correlation. Page 41 of Reference [2].
 
     Args:
         rho (float): Coolant density (kg/m3)
@@ -114,9 +114,37 @@ def h_coolant_gnielinski(rho, V, D, mu, Pr, k, f_darcy):
         float: Convective heat transfer coefficient
     """
     ReD = rho*V*D/mu
+
+    if ReD <= 1000:
+        raise ValueError("Gnielinski correlation will give negative convective heat transfer coefficients for ReD < 1000")
+
     NuD = (f_darcy/8) * (ReD - 1000) * Pr / (1 + 12.7*(f_darcy/8)**(1/2) *(Pr**(2/3) - 1))
     h = NuD * k / D
     return h
+
+def h_coolant_rohsenow():
+    raise ValueError("Rohsenow correlation not yet implemented")
+    # Nucleate boiling correlation from Reference [4]
+
+def Q_fin_adiabatic(P, Ac, k, h, L, T_b, T_inf):
+    """Get the heat transfer rate for a fin with an adiabatic tip (Reference [5])
+
+    Args:
+        P (float): Fin perimeter (m)
+        Ac (float): Fin cross sectional area (m2)
+        k (float): Fin thermal conductivity (W/m/K)
+        h (float): Convective heat transfer coefficient at the fin surface (W/m2/K)
+        L (float): Fin length (m)
+        T_b (float): Fin base temperature (K)
+        T_inf (float): Freestream temperature of the fluid the fin is submersed in (K)
+
+    Returns:
+        float: Heat transfer rate out of fin (W)
+    """
+    m = np.sqrt(h * P / (k * Ac))
+    theta_b = T_b - T_inf
+
+    return np.sqrt(h * P * k * Ac) * theta_b * np.tanh(m * L)
 
 class ThermalCircuit:
     def __init__(self, T1, T2, R):

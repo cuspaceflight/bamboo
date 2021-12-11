@@ -20,11 +20,12 @@ cooling_jacket = bam.CoolingJacket(T_coolant_in = 298,
                                    p0_coolant_in = 2e5, 
                                    mdot_coolant = 0.2, 
                                    channel_height = 2e-3, 
+                                   blockage_ratio = 0.4,
+                                   number_of_fins = 100,
                                    coolant_transport = bam.materials.Water, 
-                                   type = "vertical")
+                                   configuration = "vertical")
 
 # Chamber walls
-
 wall1 = bam.Wall(thickness = 1.5e-3, material = bam.materials.Graphite)
 wall2 = bam.Wall(thickness = 1.5e-3, material = bam.materials.CopperC106)
 wall3 = bam.Wall(thickness = 1.5e-3, material = bam.materials.StainlessSteel304)
@@ -34,12 +35,17 @@ engine = bam.Engine(perfect_gas = perfect_gas,
                     geometry = geometry,
                     exhaust_transport = bam.materials.CO2,
                     cooling_jacket = cooling_jacket,
-                    walls = [wall1, wall2, wall3])
+                    walls = [wall1, wall2, wall3],
+                    coolant_convection = "gnielinski",
+                    exhaust_convection = "dittus-boelter")
 
 print(f"Engine set up, throat at x = {engine.geometry.xt} m, mdot = {engine.mdot} kg/s")
 
-results = engine.steady_cooling_simulation(num_grid = 1000)
+results = engine.steady_cooling_simulation(num_grid = 1000, iter_start = 5, iter_each = 1)
 
+print(f"Coolant outlet temperature = {results['T_coolant'][-1]} K, outlet stagation pressure = {results['p0_coolant'][-1]/1e5} bar")
+
+"""
 engine.plot()
 bam.show()
 
@@ -48,4 +54,4 @@ bam.show()
 
 bam.plot.plot_temperatures(results)
 bam.show()
-
+"""
