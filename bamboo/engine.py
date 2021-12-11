@@ -339,7 +339,7 @@ class Engine:
         # Find the choked mass flow rate
         self.mdot = bamboo.isen.get_choked_mdot(self.perfect_gas, self.chamber_conditions, self.geometry.At)
 
-        # C* value, for convenience later
+        # C* value, for convenience with 'bartz-sigma' convection model
         self.c_star = self.chamber_conditions.p0 * self.geometry.At / self.mdot
 
         # Convective heat transfer models to use
@@ -620,6 +620,7 @@ class Engine:
         x = state["x"]
         y = self.geometry.y(x)
         T_coolant = state["T_c"]
+        T_coolant_wall = state["T_cw"]
         p0_coolant = state["p0_c"]
 
         # COOLANT
@@ -642,11 +643,25 @@ class Engine:
                                                                 k = k_coolant)
 
         elif self.coolant_convection == "sieder-tate":
-           raise ValueError("sieder-tate is not yet implemented")
+            mu_coolant_wall = self.cooling_jacket.coolant_transport.mu(T = T_coolant_wall, p = p_coolant)
+            h_coolant = bamboo.circuit.h_coolant_sieder_tate(rho = rho_coolant, 
+                                                                V = V_coolant, 
+                                                                D = Dh_coolant, 
+                                                                mu_bulk = mu_coolant, 
+                                                                mu_wall = mu_coolant_wall,
+                                                                Pr = Pr_coolant, 
+                                                                k = k_coolant)
 
         elif self.coolant_convection == "gnielinski":
-            raise ValueError("gnielinski is not yet implemented")
-
+            ReDh = rho_coolant * V_coolant * Dh_coolant / mu_coolant
+            f_darcy = self.cooling_jacket.f_darcy(Dh = Dh_coolant, ReDh = ReDh, x = x)
+            h_coolant = bamboo.circuit.h_coolant_gnielinski(rho = rho_coolant, 
+                                                                V = V_coolant, 
+                                                                D = Dh_coolant, 
+                                                                mu = mu_coolant, 
+                                                                Pr = Pr_coolant, 
+                                                                k = k_coolant,
+                                                                f_darcy = f_darcy)
         else:
             raise ValueError(f"Coolant convection model '{self.coolant_convection}' is not recognised. Try 'gnielinski', 'sieder-tate', or 'dittus-boelter'")
 
@@ -672,8 +687,10 @@ class Engine:
         # Get the gas properties, and find the thermal resistance of the convection on the hot gas side
         rho_exhaust = self.rho(x)
         T_exhaust = self.T(x)
+        T_exhaust_wall = state["T_hw"]
         p_exhaust = self.p(x)
-        V_exhaust = (self.perfect_gas.gamma * self.perfect_gas.R * T_exhaust)**0.5 * self.M(x)      # V = sqrt(gamma * R * T) * M, from speed of sound for an ideal gas
+        M_exhaust = self.M(x)
+        V_exhaust = (self.perfect_gas.gamma * self.perfect_gas.R * T_exhaust)**0.5 * M_exhaust      # V = sqrt(gamma * R * T) * M, from speed of sound for an ideal gas
         Dh_exhaust = 2 * y
         mu_exhaust = self.exhaust_transport.mu(T = T_exhaust, p = p_exhaust)
         Pr_exhaust = self.exhaust_transport.Pr(T = T_exhaust, p = p_exhaust)
@@ -689,11 +706,36 @@ class Engine:
                                                                 k = k_exhaust)
 
         elif self.exhaust_convection == "bartz":
-           raise ValueError("bartz is not yet implemented")
+            T_exhaust_am = (T_exhaust + T_exhaust_wall) / 2                                                             # Arithmetic mean of wall and freestream
+            mu_exhaust_am = self.exhaust_transport.mu(T = T_exhaust_am, p = p_exhaust)
+            rho_exhaust_am = p_exhaust/(self.perfect_gas.R * T_exhaust_am)
+            mu_exhaust_0 = self.exhaust_transport.mu(T = self.chamber_conditions.T0, p = self.chamber_conditions.p0)    # At stagnation conditions
+
+            h_exhaust = bamboo.circuit.h_gas_bartz(D = Dh_exhaust, 
+                                                   cp_inf = self.perfect_gas.cp, 
+                                                   mu_inf = mu_exhaust, 
+                                                   Pr_inf = Pr_exhaust, 
+                                                   rho_inf = rho_exhaust, 
+                                                   v_inf = V_exhaust, 
+                                                   rho_am = rho_exhaust_am, 
+                                                   mu_am = mu_exhaust_am,
+                                                   mu0 = mu_exhaust_0)
 
         elif self.exhaust_convection == "bartz-sigma":
-            raise ValueError("bartz-sigma is not yet implemented")
+            mu_exhaust_0 = self.exhaust_transport.mu(T = self.chamber_conditions.T0, p = self.chamber_conditions.p0)    # At stagnation conditions
+            Pr_exhaust_0 = self.exhaust_transport.Pr(T = self.chamber_conditions.T0, p = self.chamber_conditions.p0)   
 
+            h_exhaust = bamboo.circuit.h_gas_bartz_sigma(c_star = self.c_star, 
+                                                         At = self.geometry.At, 
+                                                         A = np.pi * Dh_exhaust**2 / 4, 
+                                                         pc = self.chamber_conditions.p0, 
+                                                         Tc = self.chamber_conditions.T0, 
+                                                         M = M_exhaust, 
+                                                         Tw = T_exhaust_wall, 
+                                                         mu0 = mu_exhaust_0, 
+                                                         cp0 = self.perfect_gas.cp, 
+                                                         gamma = self.perfect_gas.gamma, 
+                                                         Pr0 = Pr_exhaust_0)
 
         A_exhaust = 2 * np.pi * y                       # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.sim.HXSolver
         R_list.append(1.0 / (h_exhaust * A_exhaust))
