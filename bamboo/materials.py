@@ -38,7 +38,7 @@ class Material:
 class TransportProperties:
     def __init__(self, Pr, mu, k, cp = None, rho = None):
         """
-        Container for specifying your transport properties. Each input can either be a function of temperature and pressure (in that order), e.g. mu(T, p). Otherwise they can be constant floats.
+        Container for specifying your transport properties. Each input can either be a function of temperature (K) and pressure (Pa) in that order, e.g. mu(T, p). Otherwise they can be constant floats.
 
         Args:
             Pr (float or callable): Prandtl number.
@@ -140,6 +140,21 @@ class TransportProperties:
         else:
             return self._cp
 
+class NucleateBoiling:
+    def __init__(self, vapour_transport, liquid_transport, sigma, h_fg, C_sf):
+        """Class for representing the information needed to model nucleate boiling.
+
+        Args:
+            vapour_transport (TransportProperties): The transport properties of the vapour phase.
+            liquid_transport (TransportProperties): The transport properties of the liquid phase.
+            sigma (callable): Surface tension of the liquid-vapour interface (N/m), as a function of temperature (K) and pressure (Pa) in the form sigma(T,p).
+            h_fg (callable): Enthalpy between vapour and liquid phases, as a function of pressure (Pa). h_fg = h_g - h_f. (J/kg/K)
+            C_sf (float): Surface-fluid coefficient. Will be different for different material + fluid combinations. Some examples are available in References [4] and [6] given in bamboo.circuit.py.
+        """
+
+        raise ValueError("NucleateBoiling class is not yet implemented")
+    
+
 # Solids
 CopperC106 = Material(E = 117e9, poisson = 0.34, alpha = 16.9e-6, k = 391.2)
 StainlessSteel304 = Material(E = 193e9, poisson = 0.29, alpha = 16e-6, k = 14.0)
@@ -149,3 +164,5 @@ Graphite = Material(E = float('NaN'), poisson = float('NaN'), alpha = float('NaN
 Water = TransportProperties(Pr = 6.159, mu = 0.89307e-3, k = 0.60627, cp = 4181.38, rho =  997.085)         # Water at 298 K and 1 bar [1]
 Ethanol = TransportProperties(Pr = 16.152, mu = 1.0855e-3, k = 0.163526, cp = 2433.31, rho = 785.26)        # Ethanol at 298 K and 1 bar [1]
 CO2 = TransportProperties(mu = 3.74e-5, k =  0.0737, Pr = 0.72)                                             # Representative values for CO2 gas
+
+

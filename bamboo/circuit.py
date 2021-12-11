@@ -1,18 +1,21 @@
 """
 Classes and functions related to thermal circuit calculations.
 
-References (*need to clean up, not all are used here):
+References:
     - [1] - Rocket Propulsion Elements, 7th Edition 
     - [2] - Modelling ablative and regenerative cooling systems for an ethylene/ethane/nitrous oxide liquid fuel rocket engine, Elizabeth C. Browne, https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&isAllowed=y  \n
     - [3] - A Simple Equation for Rapid Estimation of Rocket Nozzle Convective Heat Transfer Coefficients, Dr. R. Bartz, https://arc.aiaa.org/doi/pdf/10.2514/8.12572
     - [4] - https://en.wikipedia.org/wiki/Nucleate_boiling
     - [5] - https://en.wikipedia.org/wiki/Fin_(extended_surface)
+    - [6] - Welty, Fundamentals of Momentum, Heat and Mass Transfer, Fifth Edition
 """
 
 import numpy as np
 import warnings
 
+GRAVITY = 9.80665
 
+# Free convection
 def h_gas_bartz(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0):
     """
     Bartz equation, using Equation (8-23) from page 312 of RPE 7th edition (Reference [1]). 'am' refers to the gas being at the 'arithmetic mean' of the wall and freestream temperatures.
@@ -29,7 +32,7 @@ def h_gas_bartz(D, cp_inf, mu_inf, Pr_inf, rho_inf, v_inf, rho_am, mu_am, mu0):
         mu0 (float): Absolute viscosity of the gas under stagnation conditions.
         
     Returns:
-        float: Convective heat transfer coefficient, h, for the exhaust gas side (where q = h(T - T_inf)).
+        float: Convective heat transfer coefficient (W/m2/K), h, for the exhaust gas side (where q = h(T - T_inf)).
     """
 
     return (0.026/D**0.2) * (cp_inf*mu_inf**0.2)/(Pr_inf**0.6) * (rho_inf * v_inf)**0.8 * (rho_am/rho_inf) * (mu_am/mu0)**0.2
@@ -51,7 +54,7 @@ def h_gas_bartz_sigma(c_star, At, A, p_chamber, T_chamber, M, Tw, mu0, cp0, gamm
         Pr0 (float): Prandtl number at stagnation conditions
 
     Returns:
-        float: Convective heat transfer coefficient, h, for the exhaust gas side (where q = h(T - T_inf)).
+        float: Convective heat transfer coefficient (W/m2/K), h, for the exhaust gas side (where q = h(T - T_inf)).
     """
 
     Dt = (At *4/np.pi)**0.5
@@ -71,7 +74,7 @@ def h_coolant_dittus_boelter(rho, V, D, mu, Pr, k):
         k (float): Coolant thermal conductivity
 
     Returns:
-        float: Convective heat transfer coefficient
+        float: Convective heat transfer coefficient (W/m2/K)
     """
     Re = rho*V*D/mu
     Nu = 0.023*Re**(4/5)*Pr**0.4
@@ -91,7 +94,7 @@ def h_coolant_sieder_tate(rho, V, D, mu_bulk, mu_wall, Pr, k):
         k (float): Bulk thermal conductivity of the coolant.
     
     Returns:
-        float: Convective heat transfer coefficient
+        float: Convective heat transfer coefficient (W/m2/K)
     """
     Re = rho*V*D/mu_bulk
     Nu = 0.027*Re**(4/5)*Pr**(1/3)*(mu_bulk/mu_wall)**0.14
@@ -111,7 +114,7 @@ def h_coolant_gnielinski(rho, V, D, mu, Pr, k, f_darcy):
         f_darcy (float): Darcy friction factor for the coolant
 
     Returns:
-        float: Convective heat transfer coefficient
+        float: Convective heat transfer coefficient (W/m2/K)
     """
     ReD = rho*V*D/mu
 
@@ -122,10 +125,8 @@ def h_coolant_gnielinski(rho, V, D, mu, Pr, k, f_darcy):
     h = NuD * k / D
     return h
 
-def h_coolant_rohsenow():
-    raise ValueError("Rohsenow correlation not yet implemented")
-    # Nucleate boiling correlation from Reference [4]
 
+# Fins
 def Q_fin_adiabatic(P, Ac, k, h, L, T_b, T_inf):
     """Get the heat transfer rate for a fin with an adiabatic tip (Reference [5])
 
@@ -146,6 +147,65 @@ def Q_fin_adiabatic(P, Ac, k, h, L, T_b, T_inf):
 
     return np.sqrt(h * P * k * Ac) * theta_b * np.tanh(m * L)
 
+
+# Nucleate boiling
+def dQ_dA_nucleate(mu_L, h_fg, rho_L, rho_v, sigma, cp_L, T_w, T_sat, C_sf, Pr_L):
+    """Get the heat flux due to nucleate boiling. From Rohsenow's equation [4][6].
+
+    Args:
+        mu_L (float): Viscosity of the liquid phase (Pa s)
+        h_fg (float): Enthalpy between vapour and liquid phases. h_fg = h_g - h_f. (J/kg/K)
+        rho_L (float): Density of the liquid phase (kg/m3)
+        rho_v (float): Density of the vapour phase (kg/m3)
+        sigma (float): Surface tension of the liquid-vapour interface (N/m)
+        cp_L (float): Isobaric specific heat capacity of the liquid (J/kg/K)
+        T_w (float): Wall temperature (K)
+        T_sat (float): Saturation temperature of the fluid (K)
+        C_sf (float): Surface-fluid coefficient. Will be different for different material + fluid combinations. Some examples are available in [4] and [6].
+        Pr_L (float): Prandtl number of the liquid phase
+
+    Returns:
+        float: Heat flux (W/m2)
+    """
+    return mu_L * h_fg * (GRAVITY * (rho_L - rho_v) / sigma)**0.5 * (cp_L * (T_w - T_sat) / (C_sf * h_fg * Pr_L**1.7))**3
+
+def dQ_dA_nucleate_critical(h_fg, rho_v, sigma, rho_L):
+    """Get the critical heat flux due to nucleate boiling, i.e. the maximum heat transfer rate that is possible. From Rohsenow's equation [4][6].
+
+    Args:
+        h_fg (float): Enthalpy between vapour and liquid phases. h_fg = h_g - h_f. (J/kg/K)
+        rho_v (float): Density of the vapour phase (kg/m3)
+        sigma (float): Surface tension of the liquid-vapour interface (N/m)
+        rho_L (float): Density of the liquid phase (kg/m3)
+
+    Returns:
+        float: Heat flux (W/m2)
+    """
+    return 0.18 * h_fg * rho_v * ( (sigma * GRAVITY * (rho_L - rho_v)) / (rho_v**2) )**0.25
+
+def h_coolant_stable_film(k_vf, rho_vf, rho_v, rho_L, h_fg, cp_L, dT, mu_vf, T_w, T_sat, sigma):
+    """Convective heat transfer coefficient for the stable-film phase of boiling heat transfer [6]. The film temperature is defined as the mean of the wall and freestream temperature, i.e. 0.5 * (T_w + T_bulk)
+       
+    Args:
+        k_vf (float): Thermal conductivity of the vapour, evaluated at the film temperature (W/m/K)
+        rho_vf (float): Density of the vapour, evaluated at the film temperature (kg/m3)
+        rho_v (float): Density of the vapour, evaluated at the bulk temperature? (kg/m3)
+        rho_L (float): Density of the liquid, evaluated at the bulk temperature? (kg/m3)
+        h_fg (float): Enthalpy between vapour and liquid phases. h_fg = h_g - h_f. (J/kg/K)
+        cp_L (float): Isobaric specific heat capacity of the liquid (J/kg/K)
+        dT (float): Temperature difference between the wall and bulk (T_w - T_freestream) (K)
+        mu_vf (float): Viscosity of the vapour, evaluated at the film temperature
+        T_w (float): Wall temperature (K)
+        T_sat (float): Saturated vapour temperature (K)
+        sigma (float): Surface tension of the liquid-vapour interface (N/m)
+
+    Returns:
+        float: Convective heat transfer coefficient (W/m2/K)
+    """
+    return 0.425 * ( k_vf**3 * rho_vf * (rho_L - rho_v) * GRAVITY * (h_fg + 0.4 * cp_L * dT) / (mu_vf * (T_w - T_sat) * (sigma / (GRAVITY * (rho_L - rho_v)) )**0.5 ) )**0.25
+
+
+# Classes
 class ThermalCircuit:
     def __init__(self, T1, T2, R):
         """Class for solving thermal circuits. Will solve them upon initialising.

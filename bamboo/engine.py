@@ -5,6 +5,11 @@ References:
  - [1] - https://en.wikipedia.org/wiki/Nusselt_number
  - [2] - https://en.wikipedia.org/wiki/Darcy_friction_factor_formulae
  - [3] - https://en.wikipedia.org/wiki/Darcy%E2%80%93Weisbach_equation
+
+Notes:
+ - With some exceptions, fluid properties are currently evaluated at the bulk temperature, instead of the film temperature. This is because the high wall temperature can sometimes 
+   be above the fluid boiling point, which can cause errors. Ideally you would use nucleate boiling correlations in this case, but this is not always possible, and so use the bulk 
+   properties is available as a compromise.
 """
 
 import numpy as np
@@ -879,7 +884,7 @@ class Engine:
 
         cooling_simulation.run(iter_start = iter_start, iter_each = iter_each)
 
-        # Run through the results, and convert them into a convenient form
+        # Run through the results, and convert them into a convenient form, as well as calculating anything useful-to-know values
         results = {}
         results["x"] = [None] * len(cooling_simulation.state)
         results["T"] = [None] * len(cooling_simulation.state)           # List of temperatures from cold --> hot
@@ -891,6 +896,7 @@ class Engine:
         results["V_coolant"] = [None] * len(cooling_simulation.state)
 
         for i in range(len(cooling_simulation.state)):
+            # Collect all the data into a dictionary
             results["x"][i] = cooling_simulation.state[i]["x"]
             results["T"][i] = cooling_simulation.state[i]["circuit"].T
             results["dQ_dx"][i] = cooling_simulation.state[i]["circuit"].Qdot
@@ -900,9 +906,11 @@ class Engine:
             results["p_coolant"][i] = self.p_coolant(x = results["x"][i], p0_coolant = results["p0_coolant"][i], rho_coolant = results["rho_coolant"][i])
             results["V_coolant"][i] = self.V_coolant(x = results["x"][i], rho_coolant = results["rho_coolant"][i])
 
+            # Need to calculate relevant stresses here!
+            # e.g. thermal stress = ...
+            # hoop stress = ...
+
         results["T_exhaust"] = list(np.array(results["T"])[:, -1])
         results["T_coolant"] = list(np.array(results["T"])[:, 0])
-
-        #print(f"bamboo.engine.py: Cooling simulation complete. Coolant exit temperature = {cooling_simulation.state[-1]['T_c']} K")
 
         return results
