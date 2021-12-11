@@ -452,32 +452,33 @@ class Engine:
         for i in range(len(self.walls)):
             # First wall as the chamber as the inner y value
             if i == 0:
-                y_bottom = np.array(self.geomtry.ys)
+                y_bottom = np.array(self.geometry.ys)
                 y_top = np.zeros(len(y_bottom))
 
                 for j in range(len(y_bottom)):
-                    y_top[i] = y_bottom + self.walls[i].thickness(xs[j])
+                    y_top[j] = y_bottom[j] + self.walls[i].thickness(xs[j])
 
             else:
                 for j in range(len(y_bottom)):
-                    y_top[i] = y_bottom + self.walls[i].thickness(xs[j])
+                    y_top[j] = y_bottom[j] + self.walls[i].thickness(xs[j])
 
-            last_plot = axs.fill_between(xs, y_bottom, y_top, label = f'Wall {i+1}')
-            axs.fill_between(xs, y_bottom, y_top, color = last_plot.get_color())
+            last_plot = axs.fill_between(xs, y_bottom, y_top, label = f'Wall {i+1} (k = {self.walls[i].material.k:#.3g})')
+            axs.fill_between(xs, -y_bottom, -y_top, color = last_plot.get_facecolor())
 
             y_bottom = y_top.copy()
             
         # Plot vertical cooling channels
         if self.cooling_jacket.type == "vertical":
-            for i in range(len(y_bottom)):
-                y_top[i] = y_bottom + self.cooling_jacket.channel_height(xs[j])
+            for j in range(len(y_bottom)):
+                y_top[j] = y_bottom[j] + self.cooling_jacket.channel_height(xs[j])
 
-            axs.fill_between(xs, y_bottom, y_top, label = f'Cooling channel')
+            axs.fill_between(xs, y_bottom, y_top, label = f'Cooling channel', color = "blue")
+            axs.fill_between(xs, -y_bottom, -y_top, color = "blue")
 
         # Plot spiralling cooling channels - modified from Bamboo 0.1.1
         elif self.cooling_jacket.type == "spiral":
             #Just for the legends
-            axs.plot(0, 0, color = 'green', label = 'Cooling channels')  
+            axs.plot(0, 0, color = 'blue', label = 'Cooling channels')  
 
             if self.cooling_jacket.number_of_fins != 1:
 
@@ -485,7 +486,7 @@ class Engine:
                 fin_color = 'red'
 
             else:
-                fin_color = 'green'
+                fin_color = 'blue'
 
             #Plot the spiral channels as rectangles
             current_x = self.geometry.xs[0]
@@ -507,10 +508,20 @@ class Engine:
                     axs.add_patch(matplotlib.patches.Rectangle([current_x + j*distance_to_next_rib, -y_jacket_inner-H], fin_width, H, color = fin_color, fill = True))
 
                 # Plot 'outer' cooling channel (i.e. the amount moved per spiral)
-                axs.add_patch(matplotlib.patches.Rectangle([current_x, y_jacket_inner], W, H, color = 'green', fill = False))
-                axs.add_patch(matplotlib.patches.Rectangle([current_x, -y_jacket_inner-H], W, H, color = 'green', fill = False))
+                axs.add_patch(matplotlib.patches.Rectangle([current_x, y_jacket_inner], W, H, color = 'blue', fill = False))
+                axs.add_patch(matplotlib.patches.Rectangle([current_x, -y_jacket_inner-H], W, H, color = 'blue', fill = False))
 
                 current_x = current_x + W
+        
+        axs.grid()
+        axs.legend()
+        axs.set_aspect('equal')
+        axs.set_xlabel("x (m)")
+        axs.set_ylabel("y (m)")
+
+        # Reverse the legend order, so they're arranged in the same order as the lines usually are
+        handles, labels = axs.get_legend_handles_labels()
+        axs.legend(reversed(handles), reversed(labels))
 
     # Cooling jacket functions
     def A_coolant(self, x):

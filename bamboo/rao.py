@@ -64,3 +64,11 @@ def rao_theta_e(area_ratio, length_fraction = 0.8):
     else:
         #Linearly interpolate and return the result, after converting it to radians
         return np.interp(area_ratio, data["area_ratio"], data["theta_e"]) * np.pi/180
+
+def get_rao_geometry(Rc, Rt, Re, L_c):
+    area_ratio = Re**2 / Rt**2
+
+    theta_n = rao_theta_n(area_ratio = area_ratio)
+    theta_e = rao_theta_e(area_ratio = area_ratio)
+
+    # Need to copy out the equations from Reference [1]

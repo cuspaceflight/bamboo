@@ -34,15 +34,13 @@ engine = bam.Engine(perfect_gas = perfect_gas,
                     geometry = geometry,
                     exhaust_transport = bam.materials.CO2,
                     cooling_jacket = cooling_jacket,
-                    walls = [wall1, wall2, wall3],
-                    exhaust_convection = "dittus-boelter",
-                    coolant_convection = "dittus-boelter")
+                    walls = [wall1, wall2, wall3])
 
 print(f"Engine set up, throat at x = {engine.geometry.xt} m, mdot = {engine.mdot} kg/s")
 
 results = engine.steady_cooling_simulation(num_grid = 1000)
 
-engine.geometry.plot()
+engine.plot()
 bam.show()
 
 bam.plot.plot_jacket_pressure(results)

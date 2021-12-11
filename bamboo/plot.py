@@ -65,7 +65,7 @@ def plot_temperatures(data_dict, only_indexes = None):
     ax.set_ylabel("Temperature (K)")
     ax.legend()
 
-    # Reverse the legend order, so the hot legend comes at the top
+    # Reverse the legend order, so they're arranged in the same order as the lines usually are
     handles, labels = ax.get_legend_handles_labels()
     ax.legend(reversed(handles), reversed(labels))
 
