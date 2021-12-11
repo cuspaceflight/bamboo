@@ -11,6 +11,7 @@ import numpy as np
 import scipy.optimize
 import scipy.special
 import matplotlib.pyplot as plt
+import matplotlib.patches
 
 import bamboo.rao
 import bamboo.isen
@@ -441,7 +442,75 @@ class Engine:
         return thickness
 
     def plot(self):
-        raise ValueError("bamboo.Engine.plot() has not yet been implemented")
+        """Plot the engine geometry, including the cooling channels, all to scale. You will need to run matplotlib.pyplot.show() or bamboo.plot.show() to see the plot.
+        """
+        fig, axs = plt.subplots()
+
+        xs = self.geometry.xs
+
+        # Plot the walls
+        for i in range(len(self.walls)):
+            # First wall as the chamber as the inner y value
+            if i == 0:
+                y_bottom = np.array(self.geomtry.ys)
+                y_top = np.zeros(len(y_bottom))
+
+                for j in range(len(y_bottom)):
+                    y_top[i] = y_bottom + self.walls[i].thickness(xs[j])
+
+            else:
+                for j in range(len(y_bottom)):
+                    y_top[i] = y_bottom + self.walls[i].thickness(xs[j])
+
+            last_plot = axs.fill_between(xs, y_bottom, y_top, label = f'Wall {i+1}')
+            axs.fill_between(xs, y_bottom, y_top, color = last_plot.get_color())
+
+            y_bottom = y_top.copy()
+            
+        # Plot vertical cooling channels
+        if self.cooling_jacket.type == "vertical":
+            for i in range(len(y_bottom)):
+                y_top[i] = y_bottom + self.cooling_jacket.channel_height(xs[j])
+
+            axs.fill_between(xs, y_bottom, y_top, label = f'Cooling channel')
+
+        # Plot spiralling cooling channels - modified from Bamboo 0.1.1
+        elif self.cooling_jacket.type == "spiral":
+            #Just for the legends
+            axs.plot(0, 0, color = 'green', label = 'Cooling channels')  
+
+            if self.cooling_jacket.number_of_fins != 1:
+
+                axs.plot(0, 0, color = 'red', label = 'Channel fins')  
+                fin_color = 'red'
+
+            else:
+                fin_color = 'green'
+
+            #Plot the spiral channels as rectangles
+            current_x = self.geometry.xs[0]
+
+            while current_x < self.geometry.x_max:
+                y_jacket_inner = np.interp(current_x, xs, y_bottom)
+                H = self.cooling_jacket.channel_height(current_x)           # Current channel height
+                W = self.cooling_jacket.channel_width(current_x)            # Current channel width
+
+                #Show the ribs as filled in rectangles
+                area_per_fin = W * H * self.cooling_jacket.blockage_ratio/self.cooling_jacket.number_of_fins
+                fin_width = area_per_fin / H
+
+                for j in range(self.cooling_jacket.number_of_fins):
+                    distance_to_next_rib = W/self.cooling_jacket.number_of_fins
+
+                    # Make all ribs red
+                    axs.add_patch(matplotlib.patches.Rectangle([current_x + j*distance_to_next_rib, y_jacket_inner], fin_width, H, color = fin_color, fill = True))
+                    axs.add_patch(matplotlib.patches.Rectangle([current_x + j*distance_to_next_rib, -y_jacket_inner-H], fin_width, H, color = fin_color, fill = True))
+
+                # Plot 'outer' cooling channel (i.e. the amount moved per spiral)
+                axs.add_patch(matplotlib.patches.Rectangle([current_x, y_jacket_inner], W, H, color = 'green', fill = False))
+                axs.add_patch(matplotlib.patches.Rectangle([current_x, -y_jacket_inner-H], W, H, color = 'green', fill = False))
+
+                current_x = current_x + W
 
     # Cooling jacket functions
     def A_coolant(self, x):
@@ -646,14 +715,26 @@ class Engine:
 
         f_darcy = self.cooling_jacket.f_darcy(Dh = Dh, ReDh = ReDh, x = x)
 
+        # Fully developed pipe flow pressure drop [3] - this is dp/dL (pressure drop per unit length travelled by the fluid)
+        dp_dL = f_darcy * (rho_coolant / 2) * (V_coolant**2)/Dh
+
+        # For vertical channels, dp/dL = dp/dx
         if self.cooling_jacket.type == "vertical":
-            # Fully developed pipe flow pressure drop [3]
-            return f_darcy * (rho_coolant / 2) * (V_coolant**2)/Dh
+            return dp_dL
         
+        # Need to add a scale factor for the fact that 'dx' is not the same as the path length that the fluid takes around the spiral
         if self.cooling_jacket.type == "spiral":
-            # Need to add a scale factor for the fact that 'dx' is not the same as the path length that the fluid takes around the spiral
-            print("banboo.engine.Engine.dp_dx(): Warning - have not yet implemented pressure drop for spiral channels")
-            return 0.0
+            pitch = self.cooling_jacket.channel_width(x)
+            
+            R = self.geometry.y(x)
+            for i in range(len(self.walls)):
+                R += self.walls[i].thickness(x)
+
+            circumference = 2 * np.pi * R
+            helix_angle = np.arctan(circumference / pitch)
+            dL_dx = 1 / np.cos(helix_angle)                 # Length travelled along the spiral for each 'dx' you move axially
+
+            return dp_dL * dL_dx
 
     # Functions for thermal simulations
     def steady_cooling_simulation(self, num_grid = 1000, counterflow = True):
