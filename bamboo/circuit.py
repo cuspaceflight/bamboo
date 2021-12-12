@@ -149,50 +149,50 @@ def Q_fin_adiabatic(P, Ac, k, h, L, T_b, T_inf):
 
 
 # Nucleate boiling
-def dQ_dA_nucleate(mu_L, h_fg, rho_L, rho_v, sigma, cp_L, T_w, T_sat, C_sf, Pr_L):
+def dQ_dA_nucleate(mu_l, h_fg, rho_l, rho_v, sigma, cp_l, T_w, T_sat, C_sf, Pr_l):
     """Get the heat flux due to nucleate boiling. From Rohsenow's equation [4][6].
 
     Args:
-        mu_L (float): Viscosity of the liquid phase (Pa s)
+        mu_l (float): Viscosity of the liquid phase (Pa s)
         h_fg (float): Enthalpy between vapour and liquid phases. h_fg = h_g - h_f. (J/kg/K)
-        rho_L (float): Density of the liquid phase (kg/m3)
+        rho_l (float): Density of the liquid phase (kg/m3)
         rho_v (float): Density of the vapour phase (kg/m3)
         sigma (float): Surface tension of the liquid-vapour interface (N/m)
-        cp_L (float): Isobaric specific heat capacity of the liquid (J/kg/K)
+        cp_l (float): Isobaric specific heat capacity of the liquid (J/kg/K)
         T_w (float): Wall temperature (K)
         T_sat (float): Saturation temperature of the fluid (K)
         C_sf (float): Surface-fluid coefficient. Will be different for different material + fluid combinations. Some examples are available in [4] and [6].
-        Pr_L (float): Prandtl number of the liquid phase
+        Pr_l (float): Prandtl number of the liquid phase
 
     Returns:
         float: Heat flux (W/m2)
     """
-    return mu_L * h_fg * (GRAVITY * (rho_L - rho_v) / sigma)**0.5 * (cp_L * (T_w - T_sat) / (C_sf * h_fg * Pr_L**1.7))**3
+    return mu_l * h_fg * (GRAVITY * (rho_l - rho_v) / sigma)**0.5 * (cp_l * (T_w - T_sat) / (C_sf * h_fg * Pr_l**1.7))**3
 
-def dQ_dA_nucleate_critical(h_fg, rho_v, sigma, rho_L):
+def dQ_dA_nucleate_critical(h_fg, rho_v, sigma, rho_l):
     """Get the critical heat flux due to nucleate boiling, i.e. the maximum heat transfer rate that is possible. From Rohsenow's equation [4][6].
 
     Args:
         h_fg (float): Enthalpy between vapour and liquid phases. h_fg = h_g - h_f. (J/kg/K)
         rho_v (float): Density of the vapour phase (kg/m3)
         sigma (float): Surface tension of the liquid-vapour interface (N/m)
-        rho_L (float): Density of the liquid phase (kg/m3)
+        rho_l (float): Density of the liquid phase (kg/m3)
 
     Returns:
         float: Heat flux (W/m2)
     """
-    return 0.18 * h_fg * rho_v * ( (sigma * GRAVITY * (rho_L - rho_v)) / (rho_v**2) )**0.25
+    return 0.18 * h_fg * rho_v * ( (sigma * GRAVITY * (rho_l - rho_v)) / (rho_v**2) )**0.25
 
-def h_coolant_stable_film(k_vf, rho_vf, rho_v, rho_L, h_fg, cp_L, dT, mu_vf, T_w, T_sat, sigma):
+def h_coolant_stable_film(k_vf, rho_vf, rho_v, rho_l, h_fg, cp_l, dT, mu_vf, T_w, T_sat, sigma):
     """Convective heat transfer coefficient for the stable-film phase of boiling heat transfer [6]. The film temperature is defined as the mean of the wall and freestream temperature, i.e. 0.5 * (T_w + T_bulk)
        
     Args:
         k_vf (float): Thermal conductivity of the vapour, evaluated at the film temperature (W/m/K)
         rho_vf (float): Density of the vapour, evaluated at the film temperature (kg/m3)
         rho_v (float): Density of the vapour, evaluated at the bulk temperature? (kg/m3)
-        rho_L (float): Density of the liquid, evaluated at the bulk temperature? (kg/m3)
+        rho_l (float): Density of the liquid, evaluated at the bulk temperature? (kg/m3)
         h_fg (float): Enthalpy between vapour and liquid phases. h_fg = h_g - h_f. (J/kg/K)
-        cp_L (float): Isobaric specific heat capacity of the liquid (J/kg/K)
+        cp_l (float): Isobaric specific heat capacity of the liquid (J/kg/K)
         dT (float): Temperature difference between the wall and bulk (T_w - T_freestream) (K)
         mu_vf (float): Viscosity of the vapour, evaluated at the film temperature
         T_w (float): Wall temperature (K)
@@ -202,7 +202,7 @@ def h_coolant_stable_film(k_vf, rho_vf, rho_v, rho_L, h_fg, cp_L, dT, mu_vf, T_w
     Returns:
         float: Convective heat transfer coefficient (W/m2/K)
     """
-    return 0.425 * ( k_vf**3 * rho_vf * (rho_L - rho_v) * GRAVITY * (h_fg + 0.4 * cp_L * dT) / (mu_vf * (T_w - T_sat) * (sigma / (GRAVITY * (rho_L - rho_v)) )**0.5 ) )**0.25
+    return 0.425 * ( k_vf**3 * rho_vf * (rho_l - rho_v) * GRAVITY * (h_fg + 0.4 * cp_l * dT) / (mu_vf * (T_w - T_sat) * (sigma / (GRAVITY * (rho_l - rho_v)) )**0.5 ) )**0.25
 
 
 # Classes
