@@ -107,7 +107,7 @@ def get_rao_contour(Rc, Rt, area_ratio, Lc, theta_conv = 45):
         xs.append(0.382 * Rt * np.cos(theta))                       # Equations 5 from Reference [1]
         ys.append(0.382 * Rt * np.sin(theta) + 0.382 * Rt + Rt)
 
-    # 15 degree cone diverging section
+    # 15 degree cone diverging section (if area ratio is outside of the Rao data)
     if use_cone:
         ys.append(Re)
         dy = ys[-1] - ys[-2]
