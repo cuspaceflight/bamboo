@@ -1,7 +1,7 @@
 """
 Classes for representing solid materials, fluids and transport properties. Also contains some useful pre-defined materials.
 
-References
+References *need to get solid materials references
 - [1] - CoolProp, http://coolprop.org/
 """
 
