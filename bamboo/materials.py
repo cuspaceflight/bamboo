@@ -65,7 +65,7 @@ class TransportProperties:
         Returns:
             float: Prandtl number
         """
-        if type(self._Pr) is callable:
+        if callable(self._Pr):
             return self._Pr(T, p)
         
         else:
@@ -81,7 +81,7 @@ class TransportProperties:
         Returns:
             float: Absolute viscosity (Pa s)
         """
-        if type(self._mu) is callable:
+        if callable(self._mu):
             return self._mu(T, p)
         
         else:
@@ -97,7 +97,7 @@ class TransportProperties:
         Returns:
             float: Thermal conductivity (W/m/K)
         """
-        if type(self._k) is callable:
+        if callable(self._k):
             return self._k(T, p)
         
         else:
@@ -114,7 +114,7 @@ class TransportProperties:
         if self._rho is None:
             raise ValueError("TransportProperties object does not have its density 'rho' defined. If you tried to use this TransportProperties object for a coolant, you need to specify the 'rho' input.")
 
-        if type(self._rho) is callable:
+        if callable(self._rho):
             return self._rho(T, p)
         
         else:
@@ -134,7 +134,7 @@ class TransportProperties:
         if self._cp is None:
             raise ValueError("TransportProperties object does not have its isobaric specific heat capacity 'cp' defined. If you tried to use this TransportProperties object for a coolant, you need to specify the 'cp' input.")
 
-        if type(self._cp) is callable:
+        if callable(self._cp):
             return self._cp(T, p)
         
         else:

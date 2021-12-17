@@ -159,7 +159,7 @@ class Wall:
         self.material = material
         self._thickness = thickness
 
-        assert type(thickness) is float or type(thickness) is int or type(thickness) is callable, "'thickness' input must be a float, int or callable"
+        assert type(thickness) is float or type(thickness) is int or callable(thickness), "'thickness' input must be a float, int or callable"
 
     def thickness(self, x):
         """Get the thickness of the wall at a position x.
@@ -170,7 +170,7 @@ class Wall:
         Returns:
             float: Wall thickness (m)
         """
-        if type(self._thickness) is callable:
+        if callable(self._thickness):
             return self._thickness(x)
 
         else:
@@ -199,6 +199,7 @@ class CoolingJacket:
             blockage_ratio (float or callable): This is the proportion (by area) of the channel cross section occupied by fins. Can be a constant float, or a function of axial position (x). Defaults to zero.
             number_of_fins (int): Only relevant if 'blockage_ratio' !=0. This is the number of fins present in the cooling channel. For spiral channels this is the number of fins 'per pitch' - it is numerically equal to the number of channels that are spiralling around in parallel.
             channel_width (float or callable): Only relevant if configuration = 'spiral'. This is the total width (i.e. pitch) of the cooling channels (m). Can be a constant float, or a function of axial position (x).
+            xs (list): Minimum and maximum x value which the cooling jacket is present over, e.g. (x_min, x_max). Can be in either order. (m)
             """
         assert configuration == "vertical" or configuration == "spiral", "'configuration' input must be either 'vertical' or 'spiral'"
         
@@ -210,6 +211,9 @@ class CoolingJacket:
         self._roughness = roughness
 
         self.configuration = configuration
+
+        if "xs" in kwargs:
+            self.xs = kwargs["xs"]
 
         if self.configuration == "spiral":
             assert "channel_width" in kwargs, "Must input 'channel_width' in order to use configuration = 'spiral'"
@@ -249,7 +253,7 @@ class CoolingJacket:
         Returns:
             float: Channel height (m)
         """
-        if type(self._channel_height) is callable:
+        if callable(self._channel_height):
             return self._channel_height(x)
 
         else:
@@ -264,7 +268,7 @@ class CoolingJacket:
         Returns:
             float: Blockage ratio
         """
-        if type(self._blockage_ratio) is callable:
+        if callable(self._blockage_ratio):
             return self._blockage_ratio(x)
 
         else:
@@ -279,7 +283,7 @@ class CoolingJacket:
         Returns:
             float: Channel width (m)
         """
-        if type(self._channel_width) is callable:
+        if callable(self._channel_width):
             return self._channel_width(x)
 
         else:
@@ -294,7 +298,7 @@ class CoolingJacket:
         Returns:
             float: Wall roughness of the channel (m)
         """
-        if type(self._roughness) is callable:
+        if callable(self._roughness):
             return self._roughness(x)
 
         else:
@@ -324,8 +328,8 @@ class Engine:
     """Class for representing a liquid rocket engine.
 
     Args:
-        gas (PerfectGas): PerfectGas representing the exhaust gas for the engine.
-        chamber_conditions (CombustionChamber): CombustionChamber for the engine.
+        perfect_gas (PerfectGas): PerfectGas representing the exhaust gas for the engine.
+        chamber_conditions (ChamberConditions): ChamberConditions for the engine.
         geometry (Geometry): Geomtry object to define the engine's contour.
         coolant_convection (str): Convective heat transfer model to use for the coolant side. Can be 'dittus-boelter', 'sieder-tate' or 'gnielinski'. Defaults to 'gnielinski'.
         exhaust_convection (str): Convective heat transfer model to use the for exhaust side. Can be 'dittus-boelter', 'bartz' or 'bartz-sigma'. Defaults to 'bartz-sigma'.
@@ -447,84 +451,117 @@ class Engine:
     def plot(self):
         """Plot the engine geometry, including the cooling channels, all to scale. You will need to run matplotlib.pyplot.show() or bamboo.plot.show() to see the plot.
         """
-        fig, axs = plt.subplots()
+        num_grid = 1000                         # Resolution to plot to (i.e. number of points to plot)
 
-        xs = self.geometry.xs
+        if hasattr(self, "walls"):
+            fig, axs = plt.subplots()
 
-        # Plot the walls
-        for i in range(len(self.walls)):
-            # First wall as the chamber as the inner y value
-            if i == 0:
-                y_bottom = np.array(self.geometry.ys)
-                y_top = np.zeros(len(y_bottom))
+            xs = np.linspace(self.geometry.xs[0], self.geometry.xs[-1], num_grid)
 
-                for j in range(len(y_bottom)):
-                    y_top[j] = y_bottom[j] + self.walls[i].thickness(xs[j])
+            # Plot the walls
+            for i in range(len(self.walls)):
+                # First wall as the chamber as the inner y value
+                if i == 0:
+                    y_bottom = np.zeros(len(xs))
+                    y_top = np.zeros(len(xs))
 
+                    for j in range(len(y_bottom)):
+                        y_bottom[j] = self.geometry.y(xs[j])
+                        y_top[j] = y_bottom[j] + self.walls[i].thickness(xs[j])
+
+                else:
+                    for j in range(len(y_bottom)):
+                        y_top[j] = y_bottom[j] + self.walls[i].thickness(xs[j])
+
+                last_plot = axs.fill_between(xs, y_bottom, y_top, label = f'Wall {i+1} (k = {self.walls[i].material.k:#.3g})')
+                axs.fill_between(xs, -y_bottom, -y_top, color = last_plot.get_facecolor())
+
+                y_bottom = y_top.copy()
+                
+            # Plot the cooling channels
+            if hasattr(self.cooling_jacket, "xs"):
+                min_x_jacket = min(self.cooling_jacket.xs)
+                max_x_jacket = max(self.cooling_jacket.xs)
             else:
+                min_x_jacket = self.geometry.xs[0]
+                max_x_jacket = self.geometry.xs[-1]
+
+            # Vertical cooling channels
+            if self.cooling_jacket.configuration == "vertical":
                 for j in range(len(y_bottom)):
-                    y_top[j] = y_bottom[j] + self.walls[i].thickness(xs[j])
+                    y_top[j] = y_bottom[j] + self.cooling_jacket.channel_height(xs[j])
 
-            last_plot = axs.fill_between(xs, y_bottom, y_top, label = f'Wall {i+1} (k = {self.walls[i].material.k:#.3g})')
-            axs.fill_between(xs, -y_bottom, -y_top, color = last_plot.get_facecolor())
+                # Cooling channel may only be applied over a specific range
+                x_channel = []
+                y_bottom_channel = []
+                y_top_channel = []
 
-            y_bottom = y_top.copy()
+                for k in range(len(xs)):
+                    if xs[k] >= min_x_jacket and xs[k] <= max_x_jacket:
+                        x_channel.append(xs[k])
+                        y_bottom_channel.append(y_bottom[k])
+                        y_top_channel.append(y_top[k])
+
+                axs.fill_between(x_channel, y_bottom_channel, y_top_channel, label = f'Cooling channel', color = "blue")
+                axs.fill_between(x_channel, -np.array(y_bottom_channel), -np.array(y_top_channel), color = "blue")
+
+            # Spiralling cooling channels - modified from Bamboo 0.1.1
+            elif self.cooling_jacket.configuration == "spiral":
+                #Just for the legends
+                axs.plot(0, 0, color = 'blue', label = 'Cooling channels')  
+
+                if self.cooling_jacket.number_of_fins != 1:
+
+                    axs.plot(0, 0, color = 'red', label = 'Channel fins')  
+                    fin_color = 'red'
+
+                else:
+                    fin_color = 'blue'
+
+                #Plot the spiral channels as rectangles
+                current_x = min_x_jacket
+
+                while current_x < max_x_jacket:
+                    y_jacket_inner = np.interp(current_x, xs, y_bottom)
+                    H = self.cooling_jacket.channel_height(current_x)           # Current channel height
+                    W = self.cooling_jacket.channel_width(current_x)            # Current channel width
+
+                    #Show the ribs as filled in rectangles
+                    area_per_fin = W * H * self.cooling_jacket.blockage_ratio(current_x)/self.cooling_jacket.number_of_fins
+                    fin_width = area_per_fin / H
+
+                    for j in range(self.cooling_jacket.number_of_fins):
+                        distance_to_next_rib = W/self.cooling_jacket.number_of_fins
+
+                        # Make all ribs red
+                        axs.add_patch(matplotlib.patches.Rectangle([current_x + j*distance_to_next_rib, y_jacket_inner], fin_width, H, color = fin_color, fill = True))
+                        axs.add_patch(matplotlib.patches.Rectangle([current_x + j*distance_to_next_rib, -y_jacket_inner-H], fin_width, H, color = fin_color, fill = True))
+
+                    # Plot 'outer' cooling channel (i.e. the amount moved per spiral)
+                    axs.add_patch(matplotlib.patches.Rectangle([current_x, y_jacket_inner], W, H, color = 'blue', fill = False))
+                    axs.add_patch(matplotlib.patches.Rectangle([current_x, -y_jacket_inner-H], W, H, color = 'blue', fill = False))
+
+                    current_x = current_x + W
             
-        # Plot vertical cooling channels
-        if self.cooling_jacket.configuration == "vertical":
-            for j in range(len(y_bottom)):
-                y_top[j] = y_bottom[j] + self.cooling_jacket.channel_height(xs[j])
+            axs.grid()
+            axs.legend()
+            axs.set_aspect('equal')
+            axs.set_xlabel("x (m)")
+            axs.set_ylabel("y (m)")
 
-            axs.fill_between(xs, y_bottom, y_top, label = f'Cooling channel', color = "blue")
-            axs.fill_between(xs, -y_bottom, -y_top, color = "blue")
-
-        # Plot spiralling cooling channels - modified from Bamboo 0.1.1
-        elif self.cooling_jacket.configuration == "spiral":
-            #Just for the legends
-            axs.plot(0, 0, color = 'blue', label = 'Cooling channels')  
-
-            if self.cooling_jacket.number_of_fins != 1:
-
-                axs.plot(0, 0, color = 'red', label = 'Channel fins')  
-                fin_color = 'red'
-
-            else:
-                fin_color = 'blue'
-
-            #Plot the spiral channels as rectangles
-            current_x = self.geometry.xs[0]
-
-            while current_x < self.geometry.x_max:
-                y_jacket_inner = np.interp(current_x, xs, y_bottom)
-                H = self.cooling_jacket.channel_height(current_x)           # Current channel height
-                W = self.cooling_jacket.channel_width(current_x)            # Current channel width
-
-                #Show the ribs as filled in rectangles
-                area_per_fin = W * H * self.cooling_jacket.blockage_ratio/self.cooling_jacket.number_of_fins
-                fin_width = area_per_fin / H
-
-                for j in range(self.cooling_jacket.number_of_fins):
-                    distance_to_next_rib = W/self.cooling_jacket.number_of_fins
-
-                    # Make all ribs red
-                    axs.add_patch(matplotlib.patches.Rectangle([current_x + j*distance_to_next_rib, y_jacket_inner], fin_width, H, color = fin_color, fill = True))
-                    axs.add_patch(matplotlib.patches.Rectangle([current_x + j*distance_to_next_rib, -y_jacket_inner-H], fin_width, H, color = fin_color, fill = True))
-
-                # Plot 'outer' cooling channel (i.e. the amount moved per spiral)
-                axs.add_patch(matplotlib.patches.Rectangle([current_x, y_jacket_inner], W, H, color = 'blue', fill = False))
-                axs.add_patch(matplotlib.patches.Rectangle([current_x, -y_jacket_inner-H], W, H, color = 'blue', fill = False))
-
-                current_x = current_x + W
+            # Reverse the legend order, so they're arranged in the same order as the lines usually are
+            handles, labels = axs.get_legend_handles_labels()
+            axs.legend(reversed(handles), reversed(labels))
         
-        axs.grid()
-        axs.legend()
-        axs.set_aspect('equal')
-        axs.set_xlabel("x (m)")
-        axs.set_ylabel("y (m)")
+        else:
+            fig, axs = plt.subplots()
 
-        # Reverse the legend order, so they're arranged in the same order as the lines usually are
-        handles, labels = axs.get_legend_handles_labels()
-        axs.legend(reversed(handles), reversed(labels))
+            line = axs.plot(self.geometry.xs, self.geometry.ys)
+            axs.plot(self.geometry.xs, -np.array(self.geometry.ys), color = line[0].get_color())
+            axs.grid()
+            axs.set_aspect('equal')
+            axs.set_xlabel("x (m)")
+            axs.set_ylabel("y (m)")
 
     # Cooling jacket functions
     def A_coolant(self, x):
@@ -617,6 +654,34 @@ class Engine:
 
         return rho_coolant
 
+    # Thrust functions
+    def thrust(self, p_amb = 1e5):
+        """Get the thrust of the engine for a given ambient pressure
+
+        Args:
+            p_amb (float, optional): Ambient pressure (Pa). Defaults to 1e5.
+
+        Returns:
+            float: Thrust (N)
+        """
+
+        Me = self.M(x = self.geometry.xs[-1])
+        Te = self.T(x = self.geometry.xs[-1])
+        pe = self.p(x = self.geometry.xs[-1])
+
+        return self.mdot * Me * (self.perfect_gas.gamma * self.perfect_gas.R * Te)**0.5 + (pe - p_amb) * self.geometry.Ae    #Generic equation for rocket thrust
+    
+    def isp(self, p_amb = 1e5):
+        """Get the specific impulse of the engine for a given ambient pressure.
+
+        Args:
+            p_amb (float, optional): Ambient pressure (Pa). Defaults to 1e5.
+
+        Returns:
+            float: Specific impulse (m/s)
+        """
+        return self.thrust(p_amb = p_amb) / self.mdot
+
     # Functions that need to be submitted to bamboo.sim.HXSolver
     def T_h(self, state):
         return self.T(state["x"])
@@ -652,7 +717,7 @@ class Engine:
 
         if ReDh_coolant < REDH_LAMINAR:
             # Laminar flow
-            warnings.warn(f"ReDh < {REDH_LAMINAR} in cooling channels: Laminar flow relations will be used. Constant wall temperature is assumed for Nusselt number.", stacklevel=2)
+            warnings.warn(f"ReDh < {REDH_LAMINAR} in cooling channels: Laminar flow relations will be used (may cause a step in temperature graphs). Constant wall temperature is assumed for Nusselt number.", stacklevel=2)
             NuDh_coolant = 3.66       # Nusselt number for constant wall temperature approximation, Reference [1]
             self.h_coolant = NuDh_coolant * k_coolant / Dh_coolant
 
@@ -843,7 +908,7 @@ class Engine:
             return dp_dL * dL_dx
 
     # Functions for thermal simulations
-    def steady_cooling_simulation(self, num_grid = 1000, counterflow = True, iter_start = 5, iter_each = 1):
+    def steady_heating_analysis(self, num_grid = 1000, counterflow = True, iter_start = 5, iter_each = 1):
         """Run a steady state cooling simulation.
 
         Args:
@@ -860,15 +925,28 @@ class Engine:
         assert hasattr(self, "exhaust_transport"), "'exhaust_transport' input must be given to Engine object in order to run a steady cooling simulation"
         assert hasattr(self, "walls"), "'walls' input must be given to Engine object in order to run a cooling simulation"
 
+        if hasattr(self.cooling_jacket, "xs"):
+            x_min = min(self.cooling_jacket.xs)
+
+            assert x_min >= self.geometry.xs[0], f"The 'xs' input to your CoolingJacket implies that the cooling jacket starts before the beginning of the engine (i.e. upstream of the injector end, x = {self.geometry.xs[0]})."
+
+            x_max = max(self.cooling_jacket.xs)
+
+            assert x_max <= self.geometry.xs[-1], f"The 'xs' input to your CoolingJacket implies that the cooling jacket goes beyond the end of the engine (i.e. beyond the nozzle end, x = {self.geometry.xs[-1]})"
+        
+        else:
+            x_max = self.geometry.xs[-1]
+            x_min = self.geometry.xs[0]
+
         if counterflow:
             dx = -abs(dx)
-            x_start = self.geometry.xs[-1]
-            x_end = self.geometry.xs[0]
+            x_start = x_max
+            x_end = x_min
 
         else:
             dx = abs(dx)
-            x_start = self.geometry.xs[0]
-            x_end = self.geometry.xs[-1]
+            x_start = x_min
+            x_end = x_max
 
         cooling_simulation = bamboo.sim.HXSolver(T_c_in = self.cooling_jacket.T_coolant_in, 
                                                           T_h = self.T_h, 
@@ -899,7 +977,7 @@ class Engine:
             # Collect all the data into a dictionary
             results["x"][i] = cooling_simulation.state[i]["x"]
             results["T"][i] = cooling_simulation.state[i]["circuit"].T
-            results["dQ_dx"][i] = cooling_simulation.state[i]["circuit"].Qdot
+            results["dQ_dx"][i] = -cooling_simulation.state[i]["circuit"].Qdot
             results["dQ_dA"][i] = results["dQ_dx"][i] / (2 * np.pi * self.geometry.y(x = results["x"][i]))
             results["p0_coolant"][i] = cooling_simulation.state[i]["p0_c"]
             results["rho_coolant"][i] = self.rho_coolant(x = results["x"][i], T_coolant = cooling_simulation.state[i]["T_c"], p0_coolant = results["p0_coolant"][i])

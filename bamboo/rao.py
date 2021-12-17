@@ -98,12 +98,12 @@ def get_rao_contour(Rc, Rt, area_ratio, Lc, theta_conv = 45):
     ys = []
 
     # Entrant section
-    for theta in np.linspace(theta_conv, -np.pi/2, 100):
+    for theta in np.linspace(theta_conv, -np.pi/2, 500):
         xs.append(1.5 * Rt * np.cos(theta))
         ys.append(1.5 * Rt * np.sin(theta) + 1.5 * Rt + Rt)          # Equations 4 from Reference [1]
 
     # Initial diverging section
-    for theta in np.linspace(-np.pi/2, theta_n - np.pi/2, 100):
+    for theta in np.linspace(-np.pi/2, theta_n - np.pi/2, 500):
         xs.append(0.382 * Rt * np.cos(theta))                       # Equations 5 from Reference [1]
         ys.append(0.382 * Rt * np.sin(theta) + 0.382 * Rt + Rt)
 
@@ -130,7 +130,7 @@ def get_rao_contour(Rc, Rt, area_ratio, Lc, theta_conv = 45):
         Qx = (C2 - C1) / (m1 - m2)
         Qy = (m1*C2 - m2*C1) / (m1 - m2)
 
-        for t in np.linspace(0, 1, 100):
+        for t in np.linspace(0, 1, 500):
             xs.append( (1 - t)**2 * Nx + 2 * (1 - t) * t * Qx + t**2 * Ex)
             ys.append( (1 - t)**2 * Ny + 2 * (1 - t) * t * Qy + t**2 * Ey)
 

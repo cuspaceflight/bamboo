@@ -28,16 +28,16 @@ def plot_temperatures(data_dict, only_indexes = None):
                 label = "Coolant"
 
             elif i == 1 or i == 1-len(T[0]):
-                label = f"Wall (Coolant Contact)"    
+                label = f"Wall (coolant contact)"    
             
             elif i == len(T[0]) - 1 or i == -1:
                 label = "Exhaust"
 
             elif i == len(T[0]) - 2 or i == -2:
-                label = "Wall (Exhaust Contact)"
+                label = "Wall (exhaust contact)"
 
             else:
-                label = f"Wall {i-1}-{i} Boundary"
+                label = f"Wall {i-1}-{i} boundary"
 
             ax.plot(data_dict["x"], T[:, i], label = label)
 
@@ -47,21 +47,21 @@ def plot_temperatures(data_dict, only_indexes = None):
                 label = "Coolant"
 
             elif i == 1 or i == 1-len(T[0]):
-                label = f"Wall (Coolant Contact)"    
+                label = f"Wall (coolant contact)"    
             
             elif i == len(T[0]) - 1 or i == -1:
                 label = "Exhaust"
 
             elif i == len(T[0]) - 2 or i == -2:
-                label = "Wall (Exhaust Contact)"
+                label = "Wall (exhaust contact)"
 
             else:
-                label = f"Wall {i-1}-{i} Boundary"
+                label = f"Wall {i-1}-{i} boundary"
 
             ax.plot(data_dict["x"], T[:, i], label = label)  
 
     ax.grid()
-    ax.set_xlabel("Axial Position (m)")
+    ax.set_xlabel("Axial position (m)")
     ax.set_ylabel("Temperature (K)")
     ax.legend()
 
@@ -83,35 +83,33 @@ def plot_jacket_pressure(data_dict, plot_static = True, plot_stagnation = True, 
     fig, axs = plt.subplots()
 
     if plot_stagnation == True:
-        axs.plot(data_dict["x"], np.array(data_dict["p0_coolant"])/1e5, label = "Coolant stagnation pressure (bar)")
+        axs.plot(data_dict["x"], np.array(data_dict["p0_coolant"])/1e5, label = "Stagnation pressure")
 
     if plot_static == True:
-        axs.plot(data_dict["x"], np.array(data_dict["p_coolant"])/1e5, label = "Coolant static pressure (bar)")
+        axs.plot(data_dict["x"], np.array(data_dict["p_coolant"])/1e5, label = "Static pressure")
         
     axs.legend()
     axs.grid()
-    axs.set_xlabel("Axial Position (m)")
+    axs.set_xlabel("Axial position (m)")
     axs.set_ylabel("Coolant pressure (bar)")
 
-
-def plot_qdot(data_dict, **kwargs):
-    raise ValueError("bamboo.plot.plot_qdot is not yet implemented")
-
-    """Given the output dictionary from a engine cooling analysis, plot the heat transfer rate against position. 
-    Note you will have to run matplotlib.pyplot.show() to see the plot.
+def plot_q_per_area(data_dict):
+    """Given the output dictionary from a engine cooling analysis, plot the heat flux against position. 
+    Note you will have to run matplotlib.pyplot.show() or bamboo.show() to see the plot.
 
     Args:
         data_dict (dict): Dictionary contaning the cooling analysis results.
 
     """
 
-    q_figs, q_axs = plt.subplots()
-    q_axs.plot(data_dict["x"], data_dict["q_dot"], label = "Heat transfer rate (W/m)", color = 'red')
+    fig, axs = plt.subplots()
+    axs.plot(data_dict["x"], data_dict["dQ_dA"], label = "Heat flux", color = 'red')
 
-    q_axs.legend()
-    q_axs.grid()
-    q_axs.set_xlabel("Axial Position (m)")
-    q_axs.set_ylabel("Heat transfer rate (W/m)")
+    axs.legend()
+    axs.grid()
+    axs.set_xlabel("Axial position (m)")
+    axs.set_ylabel(r"Radial heat flux (W m$^{-2}$)")
+
 
 def plot_resistances(data_dict, **kwargs):
     raise ValueError("bamboo.plot.plot_resistances is not yet implemented")
@@ -139,7 +137,7 @@ def plot_resistances(data_dict, **kwargs):
 
     axs.legend()
     axs.grid()
-    axs.set_xlabel("Axial Position (m)")
+    axs.set_xlabel("Axial position (m)")
     axs.set_ylabel("Thermal resistance (K/W/m)")
 
 def plot_coolant_velocities(data_dict, **kwargs):
@@ -159,7 +157,7 @@ def plot_coolant_velocities(data_dict, **kwargs):
         
     axs.legend()
     axs.grid()
-    axs.set_xlabel("Axial Position (m)")
+    axs.set_xlabel("Axial position (m)")
     axs.set_ylabel("Coolant velocity (m/s)")
 
 def plot_thermal_stress(data_dict, **kwargs):
@@ -176,5 +174,5 @@ def plot_thermal_stress(data_dict, **kwargs):
     axs.plot(data_dict["x"], np.array(data_dict["thermal_stress"])/1e6, label = "Thermal stress")
 
     axs.grid()
-    axs.set_xlabel("Axial Position (m)")
+    axs.set_xlabel("Axial position (m)")
     axs.set_ylabel("Thermal stress (MPa)")
