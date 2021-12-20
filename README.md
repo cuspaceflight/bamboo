@@ -6,28 +6,21 @@
 
 Bamboo is a Python tool that provides functions and classes for modelling the cooling systems of liquid rocket engines. Alongside this, it contains a range of other miscellaneous tools to aid with general engine design.
 
-An introduction to the package can be found in the 'Introduction to Bamboo.ipynb' Jupyter Notebook.
+An introduction to the package can be found in the ['Introduction to Bamboo.ipynb'](https://github.com/cuspaceflight/bamboo/blob/master/Introduction%20to%20Bamboo.ipynb) Jupyter Notebook.
 
 ## Installation
+Bamboo can be installed via pip, with the following command:
+
 `pip install git+https://github.com/cuspaceflight/bamboo.git`
 
-## General engine tools available
-- Nozzle shape calculator for Rao bell nozzles.
-- Get thrust and specific impulse.
-- Get gas properties (temperature and pressure) as a function of position in the nozzle.
-- Estimate apogee using a simple 1D trajectory simulator.
-- Optimise nozzle area ratio based on the simple trajectory simulator.
-
-## Tools for cooling system modelling
-- Add a regenerative cooling jacket to the engine.
-- Add a refractory (e.g. a graphite insert) into the engine.
-- Specify your own coolant and exhaust gas transport properties.
-- Steady state heating simulations for cooling jackets on their own, or cooling jackets with refractories.
-- Transient and steady state stress analysis tools.
-
-## Incomplete
-- Ablative cooling system modelling.
-- Time dependent cooling analysis.
+## Release 0.2.0
+- Refactored all code to be much more user friendly and intuitive. 
+- A generic heat exchanger solver has been implemented, which is now used for all simulations. This solver is more flexible than before, and allows for new features such as choice between co-flow or counter-flow cooling.
+- By default, iteration is now used to find the initial inlet conditions. This removes the 'steps' in data that used to exist at the beginning of simulations.
+- Any number of walls can now be added, with different materials.
+- The Rao bell nozzle geometry code has been separated from the main simulation code, but is still simple to use. By default the user now inputs custom geometry.
+- The mass flow rate through the engine is  automatically calculated from the geometry now (based on the throat area). It is no longer required as an input.
+- The extra heat transfer due to 'fins' in the cooling channels is now modelled.
 
 ## Documentation
 (may be outdated)
@@ -35,17 +28,15 @@ An introduction to the package can be found in the 'Introduction to Bamboo.ipynb
 Made using Sphinx, available at: 
 https://cuspaceflight.github.io/bamboo/
 
-## pypropep
-[pypropep](https://github.com/jonnydyer/pypropep) is a very useful Python module that can be used to calculate combustion chamber and exhaust gas properties. It is not required by bamboo, but is used in the Vulcain example. It has been kept in requirements.txt, but excluded from setup.py, so it is not automatically installed with bamboo when using pip (e.g. when using the line shown in the 'Installation' section).
+## Useful Packages
+These packages are not installed with Bamboo by default, but can be very useful for creating accurate simulations.
 
-## Example plots
-An example engine setup, using copper walls (blue) with a graphite nozzle insert (grey), and a spiralling regenerative cooling channel (green). The coolant travels into and out of the page.
-<p align="center">
-	<img width="500px" src="img/geometry_example2.png">
-</p>
+### CoolProp
+[CoolProp](https://github.com/CoolProp/CoolProp) can be used to get the thermophysical properties of huge range of fluids. It is useful for setting up the transport properties of coolants in Bamboo.
 
-Some corresponding data from a steady state heating analysis (ablation is ignored, the graphite acts as a refractory), showing the copper wall temperatures and coolant temperatures against x position:
-<p align="center">
-	<img width="1000px" src="img/heating_example2.png">
-</p>
+### Cantera
+[Cantera](https://cantera.org/) can be used to perform equilibrium calculations and to get the thermophysical properties of ideal gases. It is useful for setting up the transport properties of the exhaust gases in Bamboo. It can also be used to calculate combustion chamber temperatures, although with the default data sets it can only do this for a limited range of fuel/oxidiser combinations.
+
+### pypropep
+[pypropep](https://github.com/jonnydyer/pypropep) can be used to calculate combustion chamber temperature and exhaust gas properties (however it cannot calculate calculate some transport properties, such as viscosity and thermal conductivity). Note that when using pypropep, the best results have been observed when you use the gas properties at the throat as your inputs into Bamboo's perfect gas model.
 
