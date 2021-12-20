@@ -13,6 +13,12 @@ Bamboo can be installed via pip, with the following command:
 
 `pip install git+https://github.com/cuspaceflight/bamboo.git`
 
+## Documentation
+(may be outdated)
+
+Made using Sphinx, available at: 
+https://cuspaceflight.github.io/bamboo/
+
 ## Release 0.2.0
 - Refactored all code to be much more user friendly and intuitive. 
 - A generic heat exchanger solver has been implemented, which is now used for all simulations. This solver is more flexible than before, and allows for new features such as choice between co-flow or counter-flow cooling.
@@ -21,12 +27,6 @@ Bamboo can be installed via pip, with the following command:
 - The Rao bell nozzle geometry code has been separated from the main simulation code, but is still simple to use. By default the user now inputs custom geometry.
 - The mass flow rate through the engine is  automatically calculated from the geometry now (based on the throat area). It is no longer required as an input.
 - The extra heat transfer due to 'fins' in the cooling channels is now modelled.
-
-## Documentation
-(may be outdated)
-
-Made using Sphinx, available at: 
-https://cuspaceflight.github.io/bamboo/
 
 ## Useful Packages
 These packages are not installed with Bamboo by default, but can be very useful for creating accurate simulations.
