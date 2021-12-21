@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bamboo.materials &mdash; Bamboo 0.1 documentation</title>
+  <title>bamboo.materials &mdash; Bamboo 0.2 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -18,6 +18,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="bamboo.rao" href="bamboo.rao.html" />
     <link rel="prev" title="bamboo.plot" href="bamboo.plot.html" /> 
 </head>
 
@@ -37,10 +38,13 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="bamboo.main.html">bamboo.main</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bamboo.cooling.html">bamboo.cooling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bamboo.engine.html">bamboo.engine</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bamboo.plot.html">bamboo.plot</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">bamboo.materials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bamboo.rao.html">bamboo.rao</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bamboo.isen.html">bamboo.isen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bamboo.hx.html">bamboo.hx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bamboo.circuit.html">bamboo.circuit</a></li>
 </ul>
 
         </div>
@@ -69,12 +73,27 @@
              
   <section id="module-bamboo.materials">
 <span id="bamboo-materials"></span><h1>bamboo.materials<a class="headerlink" href="#module-bamboo.materials" title="Permalink to this headline"></a></h1>
-<p>Pre-defined materials using the bamboo.cooling.Materials class</p>
-<p class="rubric">References</p>
-<ul class="simple">
-<li><p>[1] - Physical and Mechanical Properties of Copper and Copper Alloys, M. Li and S. J. Zinkle, <a class="reference external" href="https://core.ac.uk/download/pdf/208176021.pdf">https://core.ac.uk/download/pdf/208176021.pdf</a></p></li>
-<li><p>[2] - AK Steel 304 / 304L Stainless Steel Product Data Bulletin, <a class="reference external" href="https://www.aksteel.com/sites/default/files/2018-01/304304L201706_1.pdf">https://www.aksteel.com/sites/default/files/2018-01/304304L201706_1.pdf</a></p></li>
-</ul>
+<p>Classes for representing solid materials, fluids and transport properties. Also contains some useful pre-defined materials.</p>
+<p>References <a href="#id1"><span class="problematic" id="id2">*</span></a>need to get solid materials references
+- [1] - CoolProp, <a class="reference external" href="http://coolprop.org/">http://coolprop.org/</a></p>
+<p class="rubric">Classes</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.materials.Material" title="bamboo.materials.Material"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Material</span></code></a>(k, **kwargs)</p></td>
+<td><p>Class used to specify a material and its properties.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.materials.NucleateBoiling" title="bamboo.materials.NucleateBoiling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NucleateBoiling</span></code></a>(vapour_transport, …)</p></td>
+<td><p>Class for representing the information needed to model nucleate boiling.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.materials.TransportProperties" title="bamboo.materials.TransportProperties"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransportProperties</span></code></a>(Pr, mu, k[, cp, rho])</p></td>
+<td><p>Container for specifying your transport properties.</p></td>
+</tr>
+</tbody>
+</table>
 </section>
 
 
@@ -82,6 +101,7 @@
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="bamboo.plot.html" class="btn btn-neutral float-left" title="bamboo.plot" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="bamboo.rao.html" class="btn btn-neutral float-right" title="bamboo.rao" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

@@ -142,7 +142,7 @@ class TransportProperties:
 
 class NucleateBoiling:
     def __init__(self, vapour_transport, liquid_transport, sigma, h_fg, C_sf):
-        """Class for representing the information needed to model nucleate boiling.
+        """Class for representing the information needed to model nucleate boiling. Not currently used.
 
         Args:
             vapour_transport (TransportProperties): The transport properties of the vapour phase.

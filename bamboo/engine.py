@@ -183,10 +183,10 @@ class CoolingJacket:
         """Class for representing cooling jacket properties. 
 
         Note:
-            Spiralling channels are assumed to cover the entire surface area of the outer chamber wall (i.e. the width of the channels is equal to the pitch). A blockage ratio can still be used to 'block up' part of the channels with fins.
+            Spiralling channels are assumed to cover the entire surface area of the outer chamber wall (i.e. the width of the channels is equal to the pitch, if the blockage ratio = 0). A blockage ratio can still be used to 'block up' part of the channels with fins.
 
         Note:
-            Spiralling channels are assumed to have a rectangular cross section.
+            All channels are assumed to have a rectangular cross section.
 
         Args:
             T_coolant_in (float): Inlet temperature of the coolant (K)
@@ -201,7 +201,7 @@ class CoolingJacket:
             blockage_ratio (float or callable): This is the proportion (by area) of the channel cross section occupied by fins. Can be a constant float, or a function of axial position (x). Defaults to zero.
             number_of_fins (int): Only relevant if 'blockage_ratio' !=0. This is the number of fins present in the cooling channel. For spiral channels this is the number of fins 'per pitch' - it is numerically equal to the number of channels that are spiralling around in parallel.
             pitch (float or callable): Only relevant if configuration = 'spiral'. This is the total width (i.e. pitch) of the cooling channels (m). Can be a constant float, or a function of axial position (x).
-            xs (list): Minimum and maximum x value which the cooling jacket is present over, e.g. (x_min, x_max). Can be in either order. (m)
+            xs (list): Minimum and maximum x value which the cooling jacket is present over (m), e.g. (x_min, x_max). Can be in either order. 
             restrain_fins (bool): Whether or not the fins in cooling channels are physically restrained by (i.e. attached to) the outer cooling jacket. This affects the pressure stress. Automatically ignored if blockage_ratio = 0. Defaults to True.
             """
 

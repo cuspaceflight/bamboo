@@ -13,29 +13,24 @@ Use the 'home' buttons (with the small image of a house) to navigate back to thi
    :toctree: _autosummary
    :recursive:
     
-    bamboo.main
-    bamboo.cooling
+    bamboo.engine
     bamboo.plot
     bamboo.materials
+    bamboo.rao
+    bamboo.isen
+    bamboo.hx
+    bamboo.circuit
 
-bamboo.main module
+bamboo.engine module
 ------------------
-.. automodule:: bamboo.main
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :member-order: bysource
-
-bamboo.cooling module
----------------------
-.. automodule:: bamboo.cooling
+.. automodule:: bamboo.engine
     :members:
     :undoc-members:
     :show-inheritance:
     :member-order: bysource
 
 bamboo.plot module
-------------------
+---------------------
 .. automodule:: bamboo.plot
     :members:
     :undoc-members:
@@ -45,6 +40,39 @@ bamboo.plot module
 bamboo.materials module
 ------------------
 .. automodule:: bamboo.materials
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :member-order: bysource
+
+bamboo.rao module
+------------------
+.. automodule:: bamboo.rao
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :member-order: bysource
+
+bamboo.isen module
+------------------
+.. automodule:: bamboo.isen
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :member-order: bysource
+
+bamboo.hx module
+------------------
+.. automodule:: bamboo.hx
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :member-order: bysource
+
+
+bamboo.circuit module
+------------------
+.. automodule:: bamboo.circuit
     :members:
     :undoc-members:
     :show-inheritance:

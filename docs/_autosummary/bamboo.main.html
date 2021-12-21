@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bamboo.main &mdash; Bamboo 0.1 documentation</title>
+  <title>bamboo.main &mdash; Bamboo 0.2 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -17,9 +17,7 @@
         <script src="../_static/doctools.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="bamboo.cooling" href="bamboo.cooling.html" />
-    <link rel="prev" title="Welcome to Bamboo’s documentation!" href="../index.html" /> 
+    <link rel="search" title="Search" href="../search.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -37,11 +35,14 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">bamboo.main</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bamboo.cooling.html">bamboo.cooling</a></li>
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="bamboo.engine.html">bamboo.engine</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bamboo.plot.html">bamboo.plot</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bamboo.materials.html">bamboo.materials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bamboo.rao.html">bamboo.rao</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bamboo.isen.html">bamboo.isen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bamboo.hx.html">bamboo.hx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bamboo.circuit.html">bamboo.circuit</a></li>
 </ul>
 
         </div>
@@ -68,122 +69,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-bamboo.main">
-<span id="bamboo-main"></span><h1>bamboo.main<a class="headerlink" href="#module-bamboo.main" title="Permalink to this headline"></a></h1>
-<p>Module for calculating nozzle geometry from the chamber conditions. All units SI unless otherwise stated. All angles in radians unless otherwise stated.</p>
-<dl class="simple">
-<dt>Assumptions:</dt><dd><ul class="simple">
-<li><p>1D flow.</p></li>
-<li><p>Isentropic flow.</p></li>
-<li><p>Perfect gases.</p></li>
-<li><p>No axial heat transfer (only radial) - this becomes inaccurate when there are large axial temperature gradients (e.g. sometimes along walls near the throat)</p></li>
-</ul>
-</dd>
-<dt>Conventions:</dt><dd><ul class="simple">
-<li><p>Position (x) along the nozzle is defined by: x = 0 at the throat, x &lt; 0 in the combustion chamber, x &gt; 0 in the diverging section of the nozzle.</p></li>
-</ul>
-</dd>
-<dt>Room for improvement:</dt><dd><ul class="simple">
-<li><p>Should check if the Engine.channel_geometry() function is working as intended.</p></li>
-<li><p>Unsure if the first step (i = 0) in Engine.steady_heating_analysis() is dealt with correctly when using h_gas_model == ‘3’.</p></li>
-<li><p>Rao bell nozzle data is currently obtained rather crudely (by using an image-of-graph-to-data converter). Would be nicer to have more exact data values.</p></li>
-<li><p>Cone nozzles are not currently implemented.</p></li>
-</ul>
-</dd>
-<dt>Subscripts:</dt><dd><ul class="simple">
-<li><p>0 - Stagnation condition</p></li>
-<li><p>c - Chamber condition (should be the same as stagnation conditions)</p></li>
-<li><p>t - At the throat</p></li>
-<li><p>e - At the nozzle exit plane</p></li>
-<li><p>amb - Atmopsheric/ambient condition</p></li>
-</ul>
-</dd>
-</dl>
-<p class="rubric">References</p>
-<ul class="simple">
-<li><p>[1] - The Thrust Optimised Parabolic nozzle, AspireSpace, <a class="reference external" href="http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf">http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf</a></p></li>
-<li><p>[2] - Rocket Propulsion Elements, 7th Edition</p></li>
-<li><p>[3] - Design and analysis of contour bell nozzle and comparison with dual bell nozzle <a class="reference external" href="https://core.ac.uk/download/pdf/154060575.pdf">https://core.ac.uk/download/pdf/154060575.pdf</a></p></li>
-<li><p>[4] - Modelling ablative and regenerative cooling systems for an ethylene/ethane/nitrous oxide liquid fuel rocket engine, Elizabeth C. Browne, <a class="reference external" href="https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&amp;isAllowed=y">https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&amp;isAllowed=y</a></p></li>
-<li><p>[5] - Thermofluids databook, CUED, <a class="reference external" href="http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf">http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf</a></p></li>
-<li><p>[6] - A Simple Equation for Rapid Estimation of Rocket Nozzle Convective Heat Transfer Coefficients, Dr. R. Bartz, <a class="reference external" href="https://arc.aiaa.org/doi/pdf/10.2514/8.12572">https://arc.aiaa.org/doi/pdf/10.2514/8.12572</a></p></li>
-<li><p>[7] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, <a class="reference external" href="https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf">https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf</a></p></li>
-</ul>
-<p class="rubric">Functions</p>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.main.M_from_p" title="bamboo.main.M_from_p"><code class="xref py py-obj docutils literal notranslate"><span class="pre">M_from_p</span></code></a>(p, p0, gamma)</p></td>
-<td><p>Mach number from static pressure and stagnation pressure.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.main.T" title="bamboo.main.T"><code class="xref py py-obj docutils literal notranslate"><span class="pre">T</span></code></a>(T0, M, gamma)</p></td>
-<td><p>Get local temperature from the Mach number and stagnation temperature.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.main.T0" title="bamboo.main.T0"><code class="xref py py-obj docutils literal notranslate"><span class="pre">T0</span></code></a>(T, M, gamma)</p></td>
-<td><p>Get the stangation temperature from the static temperature and Mach number</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.main.estimate_apogee" title="bamboo.main.estimate_apogee"><code class="xref py py-obj docutils literal notranslate"><span class="pre">estimate_apogee</span></code></a>(dry_mass, propellant_mass, …)</p></td>
-<td><p>Gets an estimate of the apogee reached by a rocket using an Engine object for propulsion.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.main.get_exit_area" title="bamboo.main.get_exit_area"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_exit_area</span></code></a>(perfect_gas, …)</p></td>
-<td><p>Get the nozzle exit area, given the gas properties and combustion chamber conditions.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.main.get_throat_area" title="bamboo.main.get_throat_area"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_throat_area</span></code></a>(perfect_gas, chamber_conditions)</p></td>
-<td><p>Get the nozzle throat area, given the gas properties and combustion chamber conditions.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.main.m_bar" title="bamboo.main.m_bar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">m_bar</span></code></a>(M, gamma)</p></td>
-<td><p>Non-dimensional mass flow rate, defined as mdot * sqrt(cp*T0)/(A*p0).</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.main.p" title="bamboo.main.p"><code class="xref py py-obj docutils literal notranslate"><span class="pre">p</span></code></a>(p0, M, gamma)</p></td>
-<td><p>Get local pressure from the Mach number and stagnation pressure.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.main.p0" title="bamboo.main.p0"><code class="xref py py-obj docutils literal notranslate"><span class="pre">p0</span></code></a>(p, M, gamma)</p></td>
-<td><p>Get stagnation pressure from static pressure and Mach number</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.main.rao_theta_e" title="bamboo.main.rao_theta_e"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rao_theta_e</span></code></a>(area_ratio[, length_fraction])</p></td>
-<td><p>Returns the contour angle at the exit of the bell nozzle, by interpolating data.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.main.rao_theta_n" title="bamboo.main.rao_theta_n"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rao_theta_n</span></code></a>(area_ratio[, length_fraction])</p></td>
-<td><p>Returns the contour angle at the inflection point of the bell nozzle, by interpolating data.</p></td>
-</tr>
-</tbody>
-</table>
-<p class="rubric">Classes</p>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.main.ChamberConditions" title="bamboo.main.ChamberConditions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ChamberConditions</span></code></a>(p0, T0, mdot)</p></td>
-<td><p>Object for storing combustion chamber thermodynamic conditions.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.main.Engine" title="bamboo.main.Engine"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Engine</span></code></a>(perfect_gas, chamber_conditions, nozzle)</p></td>
-<td><p>Class for representing a liquid rocket engine.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.main.EngineGeometry" title="bamboo.main.EngineGeometry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EngineGeometry</span></code></a>(nozzle, inner_wall_thickness)</p></td>
-<td><p>Container for additional engine geometry parameters (mostly chamber geometry).</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.main.Nozzle" title="bamboo.main.Nozzle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Nozzle</span></code></a>([type])</p></td>
-<td><p>Object for calculating and storing nozzle geometry.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.main.PerfectGas" title="bamboo.main.PerfectGas"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PerfectGas</span></code></a>(**kwargs)</p></td>
-<td><p>Object to store exhaust gas properties.</p></td>
-</tr>
-</tbody>
-</table>
+  <section id="bamboo-main">
+<h1>bamboo.main<a class="headerlink" href="#bamboo-main" title="Permalink to this headline"></a></h1>
 </section>
 
 
            </div>
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="../index.html" class="btn btn-neutral float-left" title="Welcome to Bamboo’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="bamboo.cooling.html" class="btn btn-neutral float-right" title="bamboo.cooling" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
+          <footer>
 
   <hr/>
 
