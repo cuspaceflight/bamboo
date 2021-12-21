@@ -13,16 +13,13 @@
 
    .. autosummary::
    
-      animate_transient_temperatures
-      plot_coolant_properties
       plot_coolant_velocities
-      plot_exhaust_properties
-      plot_h
       plot_jacket_pressure
-      plot_qdot
+      plot_q_per_area
       plot_resistances
+      plot_tangential_stress
       plot_temperatures
-      plot_thermal_stress
+      show
    
    
 

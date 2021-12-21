@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bamboo.cooling &mdash; Bamboo 0.1 documentation</title>
+  <title>bamboo.cooling &mdash; Bamboo 0.2 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -17,9 +17,7 @@
         <script src="../_static/doctools.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="bamboo.plot" href="bamboo.plot.html" />
-    <link rel="prev" title="bamboo.main" href="bamboo.main.html" /> 
+    <link rel="search" title="Search" href="../search.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -37,11 +35,14 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="bamboo.main.html">bamboo.main</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">bamboo.cooling</a></li>
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="bamboo.engine.html">bamboo.engine</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bamboo.plot.html">bamboo.plot</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bamboo.materials.html">bamboo.materials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bamboo.rao.html">bamboo.rao</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bamboo.isen.html">bamboo.isen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bamboo.hx.html">bamboo.hx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bamboo.circuit.html">bamboo.circuit</a></li>
 </ul>
 
         </div>
@@ -68,96 +69,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-bamboo.cooling">
-<span id="bamboo-cooling"></span><h1>bamboo.cooling<a class="headerlink" href="#module-bamboo.cooling" title="Permalink to this headline"></a></h1>
-<p>Extra tools for modelling the cooling system of a liquid rocket engine.</p>
-<dl class="simple">
-<dt>Room for improvement:</dt><dd><ul class="simple">
-<li><p>Run some more thorough tests on the different h_gas() methods to try and validate/compare them.</p></li>
-<li><p>The EngineWithCooling.rho() function calculates rho by doing p/RT, but it might be faster to just use isentropic compressible flow relations.</p></li>
-</ul>
-</dd>
-<dt>Useful:</dt><dd><ul class="simple">
-<li><p>List of CoolProp properties: <a class="reference external" href="http://www.coolprop.org/coolprop/HighLevelAPI.html#table-of-string-inputs-to-propssi-function">http://www.coolprop.org/coolprop/HighLevelAPI.html#table-of-string-inputs-to-propssi-function</a></p></li>
-</ul>
-</dd>
-</dl>
-<p class="rubric">References</p>
-<ul class="simple">
-<li><p>[1] - The Thrust Optimised Parabolic nozzle, AspireSpace, <a class="reference external" href="http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf">http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf</a></p></li>
-<li><p>[2] - Rocket Propulsion Elements, 7th Edition</p></li>
-<li><p>[3] - Design and analysis of contour bell nozzle and comparison with dual bell nozzle <a class="reference external" href="https://core.ac.uk/download/pdf/154060575.pdf">https://core.ac.uk/download/pdf/154060575.pdf</a></p></li>
-<li><p>[4] - Modelling ablative and regenerative cooling systems for an ethylene/ethane/nitrous oxide liquid fuel rocket engine, Elizabeth C. Browne, <a class="reference external" href="https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&amp;isAllowed=y">https://mountainscholar.org/bitstream/handle/10217/212046/Browne_colostate_0053N_16196.pdf?sequence=1&amp;isAllowed=y</a></p></li>
-<li><p>[5] - Thermofluids databook, CUED, <a class="reference external" href="http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf">http://www-mdp.eng.cam.ac.uk/web/library/enginfo/cueddatabooks/thermofluids.pdf</a></p></li>
-<li><p>[6] - A Simple Equation for Rapid Estimation of Rocket Nozzle Convective Heat Transfer Coefficients, Dr. R. Bartz, <a class="reference external" href="https://arc.aiaa.org/doi/pdf/10.2514/8.12572">https://arc.aiaa.org/doi/pdf/10.2514/8.12572</a></p></li>
-<li><p>[7] - Regenerative cooling of liquid rocket engine thrust chambers, ASI, <a class="reference external" href="https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf">https://www.researchgate.net/profile/Marco-Pizzarelli/publication/321314974_Regenerative_cooling_of_liquid_rocket_engine_thrust_chambers/links/5e5ecd824585152ce804e244/Regenerative-cooling-of-liquid-rocket-engine-thrust-chambers.pdf</a></p></li>
-</ul>
-<p class="rubric">Functions</p>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.black_body" title="bamboo.cooling.black_body"><code class="xref py py-obj docutils literal notranslate"><span class="pre">black_body</span></code></a>(T)</p></td>
-<td><p>Get the black body radiation emitted over a hemisphere, at a given temperature.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_coolant_dittus_boelter" title="bamboo.cooling.h_coolant_dittus_boelter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_coolant_dittus_boelter</span></code></a>(rho, V, D, mu, Pr, k)</p></td>
-<td><p>Dittus-Boelter equation for convective heat transfer coefficient.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_coolant_gnielinski" title="bamboo.cooling.h_coolant_gnielinski"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_coolant_gnielinski</span></code></a>(rho, V, D, mu, Pr, k, f)</p></td>
-<td><p>Convective heat transfer coefficient for the coolant side, using Gnielinski’s correlation.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_coolant_rpe" title="bamboo.cooling.h_coolant_rpe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_coolant_rpe</span></code></a>(A, D, mdot, mu, k, c_bar, rho)</p></td>
-<td><p>Get the convective heat transfer coefficient for the coolant side.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_coolant_sieder_tate" title="bamboo.cooling.h_coolant_sieder_tate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_coolant_sieder_tate</span></code></a>(rho, V, D, mu_bulk, …)</p></td>
-<td><p>Sieder-Tate equation for convective heat transfer coefficient.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_gas_bartz" title="bamboo.cooling.h_gas_bartz"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_gas_bartz</span></code></a>(D, cp_inf, mu_inf, Pr_inf, …)</p></td>
-<td><p>Bartz equation, using Equation (8-23) from page 312 of RPE 7th edition (Reference [2]).</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_gas_bartz_sigma" title="bamboo.cooling.h_gas_bartz_sigma"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_gas_bartz_sigma</span></code></a>(c_star, At, A, pc, Tc, M, …)</p></td>
-<td><p>Bartz heat transfer equation using the sigma correlation, from Reference [6].</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.h_gas_rpe" title="bamboo.cooling.h_gas_rpe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h_gas_rpe</span></code></a>(D, M, T, rho, gamma, R, mu, k, Pr)</p></td>
-<td><p>Get the convective heat transfer coefficient on the gas side.</p></td>
-</tr>
-</tbody>
-</table>
-<p class="rubric">Classes</p>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.Ablative" title="bamboo.cooling.Ablative"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Ablative</span></code></a>(ablative_material, wall_material, xs)</p></td>
-<td><p>Container for refractory or ablative properties.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.CoolingJacket" title="bamboo.cooling.CoolingJacket"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CoolingJacket</span></code></a>(inner_wall_material, inlet_T, …)</p></td>
-<td><p>Container for cooling jacket information - e.g.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.Material" title="bamboo.cooling.Material"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Material</span></code></a>(E, sigma_y, poisson, alpha, k, **kwargs)</p></td>
-<td><p>Class used to specify a material and its properties.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.ThermalCircuit" title="bamboo.cooling.ThermalCircuit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ThermalCircuit</span></code></a>(T1, T2, R)</p></td>
-<td><p>Class for solving thermal circuits.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.cooling.TransportProperties" title="bamboo.cooling.TransportProperties"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransportProperties</span></code></a>(type, Pr, mu, k[, cp, rho])</p></td>
-<td><p>Container for specifying your transport properties.</p></td>
-</tr>
-</tbody>
-</table>
+  <section id="bamboo-cooling">
+<h1>bamboo.cooling<a class="headerlink" href="#bamboo-cooling" title="Permalink to this headline"></a></h1>
 </section>
 
 
            </div>
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="bamboo.main.html" class="btn btn-neutral float-left" title="bamboo.main" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="bamboo.plot.html" class="btn btn-neutral float-right" title="bamboo.plot" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
+          <footer>
 
   <hr/>
 

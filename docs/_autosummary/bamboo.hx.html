@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bamboo.plot &mdash; Bamboo 0.2 documentation</title>
+  <title>bamboo.hx &mdash; Bamboo 0.2 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -18,8 +18,8 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="bamboo.rao" href="bamboo.rao.html" />
-    <link rel="prev" title="bamboo.materials" href="bamboo.materials.html" /> 
+    <link rel="next" title="bamboo.isen" href="bamboo.isen.html" />
+    <link rel="prev" title="bamboo.engine" href="bamboo.engine.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -40,10 +40,10 @@
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="bamboo.circuit.html">bamboo.circuit</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bamboo.engine.html">bamboo.engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bamboo.hx.html">bamboo.hx</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">bamboo.hx</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bamboo.isen.html">bamboo.isen</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bamboo.materials.html">bamboo.materials</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">bamboo.plot</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bamboo.plot.html">bamboo.plot</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bamboo.rao.html">bamboo.rao</a></li>
 </ul>
 
@@ -61,9 +61,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>bamboo.plot</li>
+      <li>bamboo.hx</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="../_sources/_autosummary/bamboo.plot.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/_autosummary/bamboo.hx.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -71,36 +71,26 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-bamboo.plot">
-<span id="bamboo-plot"></span><h1>bamboo.plot<a class="headerlink" href="#module-bamboo.plot" title="Permalink to this headline"></a></h1>
-<p>Module that provides plotting tools, to streamline the creation of plots.</p>
-<p class="rubric">Functions</p>
+  <section id="module-bamboo.hx">
+<span id="bamboo-hx"></span><h1>bamboo.hx<a class="headerlink" href="#module-bamboo.hx" title="Permalink to this headline"></a></h1>
+<p>General solver for coflow and counterflow heat exchangers, using a 1-D thermal resistance model.</p>
+<dl class="simple">
+<dt>Notation:</dt><dd><ul class="simple">
+<li><p>‘c’: Cold side (usually coolant)</p></li>
+<li><p>‘h’: Hot side (usually exhaust gas)</p></li>
+<li><p>‘w’: At the wall (e.g. T_cw is the wall temperature on the cold side)</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Classes</p>
 <table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_coolant_velocities" title="bamboo.plot.plot_coolant_velocities"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_coolant_velocities</span></code></a>(data_dict, **kwargs)</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_jacket_pressure" title="bamboo.plot.plot_jacket_pressure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_jacket_pressure</span></code></a>(data_dict[, …])</p></td>
-<td><p>Given the output dictionary from a engine cooling analysis, plot the cooling jacket pressure against x position.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_q_per_area" title="bamboo.plot.plot_q_per_area"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_q_per_area</span></code></a>(data_dict)</p></td>
-<td><p>Given the output dictionary from a engine cooling analysis, plot the heat flux against position.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_resistances" title="bamboo.plot.plot_resistances"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_resistances</span></code></a>(data_dict, **kwargs)</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_tangential_stress" title="bamboo.plot.plot_tangential_stress"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_tangential_stress</span></code></a>(data_dict[, wall_index])</p></td>
-<td><p>Given the output dictionary from a engine cooling analysis, plot the thermal stress in the inner chamber wall, against position.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_temperatures" title="bamboo.plot.plot_temperatures"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_temperatures</span></code></a>(data_dict[, only_indexes])</p></td>
-<td><p>Given the output dictionary from an engine cooling analysis, plot the temperatures against position.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.plot.show" title="bamboo.plot.show"><code class="xref py py-obj docutils literal notranslate"><span class="pre">show</span></code></a>()</p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.hx.HXSolver" title="bamboo.hx.HXSolver"><code class="xref py py-obj docutils literal notranslate"><span class="pre">HXSolver</span></code></a>(T_c_in, T_h, p0_c_in, cp_c, mdot_c, …)</p></td>
+<td><p>Class for solving heat exchanger problems.</p></td>
 </tr>
 </tbody>
 </table>
@@ -110,8 +100,8 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="bamboo.materials.html" class="btn btn-neutral float-left" title="bamboo.materials" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="bamboo.rao.html" class="btn btn-neutral float-right" title="bamboo.rao" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="bamboo.engine.html" class="btn btn-neutral float-left" title="bamboo.engine" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="bamboo.isen.html" class="btn btn-neutral float-right" title="bamboo.isen" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

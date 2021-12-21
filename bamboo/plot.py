@@ -7,84 +7,71 @@ from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap, BoundaryNorm, LinearSegmentedColormap
 import numpy as np
 
-def plot_temperatures(data_dict, **kwargs):
+def show():
+    plt.show()
+
+def plot_temperatures(data_dict, only_indexes = None):
     """Given the output dictionary from an engine cooling analysis, plot the temperatures against position. 
-    Note you will have to run matplotlib.pyplot.show() to see the plot.
+    Note you will have to run matplotlib.pyplot.show() or bamboo.plot.show() to see the plot.
 
     Args:
         data_dict (dict): Dictionary contaning the cooling analysis results.
-    
-    Keyword Args:
-        show_gas (bool): If True, the exhaust gas freestream temperatures will be shown. Defaults to False.
-        show_ablative (bool): If False, the ablative temperatures will not be shown. Defaults to True.
+        only_indexes (list): List of temperature indexes to plot, e.g. [1, -1] would only show the coolant temperature and exhaust temperature. Defaults to None, which means everything is plotted.
     """
-    fig, ax_T = plt.subplots()
-    ax_T.plot(data_dict["x"], np.array(data_dict["T_wall_inner"]) - 273.15, label = "Wall (inner)")
-    ax_T.plot(data_dict["x"], np.array(data_dict["T_wall_outer"])- 273.15, label = "Wall (outer)")
-    ax_T.plot(data_dict["x"], np.array(data_dict["T_coolant"]) - 273.15, label = "Coolant")
+    fig, ax = plt.subplots()
 
-    if "show_gas" in kwargs:
-        if kwargs["show_gas"] == True:
-            ax_T.plot(data_dict["x"], np.array(data_dict["T_gas"]) - 273.15, label = "Exhaust gas")
+    T = np.array(data_dict["T"])
 
-    if "show_ablative" in kwargs:
-        if kwargs["show_ablative"] == False:
-            pass
-        else:
-            ax_T.plot(data_dict["x"], np.array(data_dict["T_ablative_inner"]) - 273.15, label = "Refractory (inner)")
+    if only_indexes == None:
+        for i in range(len(T[0])):
+            if i == 0:
+                label = "Coolant"
 
+            elif i == 1 or i == 1-len(T[0]):
+                label = f"Wall (coolant contact)"    
+            
+            elif i == len(T[0]) - 1 or i == -1:
+                label = "Exhaust"
 
-    ax_T.grid()
-    ax_T.set_xlabel("Position (m)")
-    ax_T.set_ylabel("Temperature (°C)")
-    ax_T.legend()
+            elif i == len(T[0]) - 2 or i == -2:
+                label = "Wall (exhaust contact)"
 
-def plot_h(data_dict, **kwargs):
-    """Given the output dictionary from a engine cooling analysis, plot the convective heat transfer coefficients against position. 
-    Note you will have to run matplotlib.pyplot.show() to see the plot.
+            else:
+                label = f"Wall {i-1}-{i} boundary"
 
-    Args:
-        data_dict (dict): Dictionary contaning the cooling analysis results.
+            ax.plot(data_dict["x"], T[:, i], label = label)
 
-    Keyword Args:
-        qdot (bool): If True, the heat transfer rate per unit length will also be plotted.
-    """
-    h_figs, h_axs = plt.subplots()
-    h_axs.plot(data_dict["x"], data_dict["h_gas"], label = "Gas")
-    h_axs.plot(data_dict["x"], data_dict["h_coolant"], label = "Coolant")
+    else:
+        for i in only_indexes:
+            if i == 0:
+                label = "Coolant"
 
-    if "qdot" in kwargs:
-        if kwargs["qdot"] == True:
-            q_axs = h_axs.twinx() 
-            q_axs.plot(data_dict["x"], data_dict["q_dot"], label = "Heat transfer rate", color = 'red')
-            q_axs.legend(loc = "lower left")
-            q_axs.set_ylabel("Heat transfer rate (W/m)")
+            elif i == 1 or i == 1-len(T[0]):
+                label = f"Wall (coolant contact)"    
+            
+            elif i == len(T[0]) - 1 or i == -1:
+                label = "Exhaust"
 
-    h_axs.legend()
-    h_axs.grid()
-    h_axs.set_xlabel("Position (m)")
-    h_axs.set_ylabel("Convective Heat Transfer Coefficient (W/m^2/K)")
+            elif i == len(T[0]) - 2 or i == -2:
+                label = "Wall (exhaust contact)"
 
-def plot_qdot(data_dict, **kwargs):
-    """Given the output dictionary from a engine cooling analysis, plot the heat transfer rate against position. 
-    Note you will have to run matplotlib.pyplot.show() to see the plot.
+            else:
+                label = f"Wall {i-1}-{i} boundary"
 
-    Args:
-        data_dict (dict): Dictionary contaning the cooling analysis results.
+            ax.plot(data_dict["x"], T[:, i], label = label)  
 
-    """
+    ax.grid()
+    ax.set_xlabel("Axial position (m)")
+    ax.set_ylabel("Temperature (K)")
+    ax.legend()
 
-    q_figs, q_axs = plt.subplots()
-    q_axs.plot(data_dict["x"], data_dict["q_dot"], label = "Heat transfer rate (W/m)", color = 'red')
-
-    q_axs.legend()
-    q_axs.grid()
-    q_axs.set_xlabel("Position (m)")
-    q_axs.set_ylabel("Heat transfer rate (W/m)")
+    # Reverse the legend order, so they're arranged in the same order as the lines usually are
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(reversed(handles), reversed(labels))
 
 def plot_jacket_pressure(data_dict, plot_static = True, plot_stagnation = True, **kwargs):
     """Given the output dictionary from a engine cooling analysis, plot the cooling jacket pressure against x position. 
-    Note you will have to run matplotlib.pyplot.show() to see the plot.
+    Note you will have to run matplotlib.pyplot.show() or bamboo.plot.show() to see the plot.
 
     Args:
         data_dict (dict): Dictionary contaning the cooling analysis results.
@@ -93,20 +80,63 @@ def plot_jacket_pressure(data_dict, plot_static = True, plot_stagnation = True, 
 
     """
 
-    p_figs, p_axs = plt.subplots()
+    fig, axs = plt.subplots()
 
     if plot_stagnation == True:
-        p_axs.plot(data_dict["x"], np.array(data_dict["p0_coolant"])/1e5, label = "Coolant stagnation pressure (bar)")
+        axs.plot(data_dict["x"], np.array(data_dict["p0_coolant"])/1e5, label = "Stagnation pressure")
 
     if plot_static == True:
-        p_axs.plot(data_dict["x"], np.array(data_dict["p_coolant"])/1e5, label = "Coolant static pressure (bar)")
+        axs.plot(data_dict["x"], np.array(data_dict["p_coolant"])/1e5, label = "Static pressure")
         
-    p_axs.legend()
-    p_axs.grid()
-    p_axs.set_xlabel("Position (m)")
-    p_axs.set_ylabel("Coolant pressure (bar)")
+    axs.legend()
+    axs.grid()
+    axs.set_xlabel("Axial position (m)")
+    axs.set_ylabel("Coolant pressure (bar)")
+
+def plot_q_per_area(data_dict):
+    """Given the output dictionary from a engine cooling analysis, plot the heat flux against position. 
+    Note you will have to run matplotlib.pyplot.show() or bamboo.show() to see the plot.
+
+    Args:
+        data_dict (dict): Dictionary contaning the cooling analysis results.
+
+    """
+
+    fig, axs = plt.subplots()
+    axs.plot(data_dict["x"], data_dict["dQ_dA"], label = "Heat flux", color = 'red')
+
+    axs.legend()
+    axs.grid()
+    axs.set_xlabel("Axial position (m)")
+    axs.set_ylabel(r"Radial heat flux (W m$^{-2}$)")
+
+def plot_tangential_stress(data_dict, wall_index = 0):
+    """Given the output dictionary from a engine cooling analysis, plot the thermal stress in the inner chamber wall, against position. 
+    Note you will have to run matplotlib.pyplot.show() or bam.show() to see the plot.
+
+    Args:
+        data_dict (dict): Dictionary contaning the cooling analysis results.
+        wall_index (int): The index of the wall to plot the stresses for. Defaults to 0 (the exhaust side wall).
+
+    """
+
+    fig, axs = plt.subplots()
+    sigma_t_thermal = np.array(data_dict["sigma_t_thermal"])[:, wall_index]
+    sigma_t_pressure = np.array(data_dict["sigma_t_pressure"])[:, wall_index]
+    sigma_t_max = np.array(data_dict["sigma_t_max"])[:, wall_index]
+
+    axs.plot(data_dict["x"], sigma_t_thermal/1e6, label = "Thermal stress")
+    axs.plot(data_dict["x"], sigma_t_pressure/1e6, label = "Pressure stress")
+    axs.plot(data_dict["x"], sigma_t_max/1e6, label = "Maximum stress", linestyle = "--")
+
+    axs.legend()
+    axs.grid()
+    axs.set_xlabel("Axial position (m)")
+    axs.set_ylabel("Tangential stress (MPa)")
+
 
 def plot_resistances(data_dict, **kwargs):
+    raise ValueError("bamboo.plot.plot_resistances is not yet implemented")
     """Given the output dictionary from a engine cooling analysis, plot the thermal resistances of all the components.
 
     Args:
@@ -131,70 +161,12 @@ def plot_resistances(data_dict, **kwargs):
 
     axs.legend()
     axs.grid()
-    axs.set_xlabel("Position (m)")
+    axs.set_xlabel("Axial position (m)")
     axs.set_ylabel("Thermal resistance (K/W/m)")
- 
-def plot_exhaust_properties(data_dict, **kwargs):
-    """Given the output dictionary from a engine cooling analysis, plot the exhaust gas transport properties
-
-    Args:
-        data_dict (dict): Dictionary contaning the cooling analysis results.
-
-    """
-    fig, axs = plt.subplots(2,2)
-    axs[0,0].plot(data_dict["x"], data_dict["mu_gas"])
-    axs[0,0].set_title('Exhaust Gas Absolute Viscosity')
-    axs[0,0].set_ylabel('Absolute Viscosity (Pa s)')
-
-    axs[0,1].plot(data_dict["x"], data_dict["k_gas"])
-    axs[0,1].set_title('Exhaust Gas Thermal Conductivity')
-    axs[0,1].set_ylabel('Thermal Conductivity (W/m/K)')
-
-    axs[1,0].plot(data_dict["x"], data_dict["Pr_gas"])
-    axs[1,0].set_title('Exhaust Gas Prandtl Number')
-    axs[1,0].set_ylabel('Prandtl Number')
-
-    axs[1,1].set_title('(empty chart)')
-
-    for i in range(len(axs)):
-        for j in range(len(axs[i])):
-            axs[i, j].grid()
-            axs[i, j].set_xlabel("Position (m)")
-
-    fig.tight_layout()
-
-def plot_coolant_properties(data_dict, **kwargs):
-    """Given the output dictionary from a engine cooling analysis, plot the coolant transport properties
-
-    Args:
-        data_dict (dict): Dictionary contaning the cooling analysis results.
-
-    """
-    fig, axs = plt.subplots(2,2)
-    axs[0,0].plot(data_dict["x"], data_dict["mu_coolant"])
-    axs[0,0].set_title('Coolant Viscosity')
-    axs[0,0].set_ylabel('Absolute Viscosity (Pa s)')
-
-    axs[0,1].plot(data_dict["x"], data_dict["k_coolant"])
-    axs[0,1].set_title('Coolant Thermal Conductivity')
-    axs[0,1].set_ylabel('Thermal Conductivity (W/m/K)')
-
-    axs[1,0].plot(data_dict["x"], data_dict["cp_coolant"])
-    axs[1,0].set_title('Coolant Specific Heat Capacity')
-    axs[1,0].set_ylabel('Specific heat capacity (J/kg/K)')
-
-    axs[1,1].plot(data_dict["x"], data_dict["rho_coolant"])
-    axs[1,1].set_title('Coolant Density')
-    axs[1,1].set_ylabel('Density (kg/m^3)')
-
-    for i in range(len(axs)):
-        for j in range(len(axs[i])):
-            axs[i, j].grid()
-            axs[i, j].set_xlabel("Position (m)")
-
-    fig.tight_layout()
 
 def plot_coolant_velocities(data_dict, **kwargs):
+    raise ValueError("bamboo.plot.plot_coolant_velocities is not yet implemented")
+
     """Given the output dictionary from a engine cooling analysis, plot the cooling jacket velocity against x position. 
     Note you will have to run matplotlib.pyplot.show() to see the plot.
 
@@ -209,61 +181,5 @@ def plot_coolant_velocities(data_dict, **kwargs):
         
     axs.legend()
     axs.grid()
-    axs.set_xlabel("Position (m)")
+    axs.set_xlabel("Axial position (m)")
     axs.set_ylabel("Coolant velocity (m/s)")
-
-def plot_thermal_stress(data_dict, **kwargs):
-    """Given the output dictionary from a engine cooling analysis, plot the thermal stress in the inner chamber wall, against position. 
-    Note you will have to run matplotlib.pyplot.show() to see the plot.
-
-    Args:
-        data_dict (dict): Dictionary contaning the cooling analysis results.
-
-    """
-
-    fig, axs = plt.subplots()
-    axs.plot(data_dict["x"], np.array(data_dict["thermal_stress"])/1e6, label = "Thermal stress")
-
-    axs.grid()
-    axs.set_xlabel("Position (m)")
-    axs.set_ylabel("Thermal stress (MPa)")
-
-
-def animate_transient_temperatures(data_dict, speed = 1, **kwargs): 
-    """Animates transient heating analysis data.
-
-    Note:
-        Transient analysis modelling is currently incomplete.
-
-    Args:
-        data_dict ([type]): [description]
-        speed (int, optional): [description]. Defaults to 1.
-
-    Returns:
-        [type]: [description]
-    """
-    xs = data_dict["x"]
-    ts = data_dict["t"]
-
-    fig = plt.figure()
-    ax = plt.axes(xlim=(xs[-1], xs[0]), ylim=(0, 2000))
-    ax.grid()
-    ax.set_xlabel("Position (m)")
-    ax.set_ylabel("Temperature (K)")
-    ax.set_title(f"t = {ts[0]}")
-
-    T_wall_line, = ax.plot([], [], label = "Wall Temperature")
-    ax.legend()
-
-    def init():
-        T_wall_line.set_data(xs, data_dict["T_wall"][0])
-
-        return T_wall_line,
-
-    def animate(i):
-        T_wall_line.set_data(xs, data_dict["T_wall"][i])
-        ax.set_title(f"t = {ts[i]} s")
-        return T_wall_line,
-
-    ani = animation.FuncAnimation(fig, animate, init_func=init, frames=len(ts), interval = (ts[1] - ts[0])*1000/speed)
-    plt.show()
