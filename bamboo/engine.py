@@ -23,7 +23,7 @@ import warnings
 
 import bamboo.rao
 import bamboo.isen
-import bamboo.sim
+import bamboo.hx
 import bamboo.circuit
 
 # Constants
@@ -706,7 +706,7 @@ class Engine:
         """
         return self.thrust(p_amb = p_amb) / self.mdot
 
-    # Functions that need to be submitted to bamboo.sim.HXSolver
+    # Functions that need to be submitted to bamboo.hx.HXSolver
     def T_h(self, state):
         return self.T(state["x"])
 
@@ -776,7 +776,7 @@ class Engine:
         else:
             raise ValueError(f"Coolant convection model '{self.coolant_convection}' is not recognised. Try 'gnielinski', 'sieder-tate', or 'dittus-boelter'")
 
-        A_coolant = 2 * np.pi * (y + self.total_wall_thickness(x) + self.cooling_jacket.channel_height(x))      # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.sim.HXSolver
+        A_coolant = 2 * np.pi * (y + self.total_wall_thickness(x) + self.cooling_jacket.channel_height(x))      # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.hx.HXSolver
         R_list.append(1.0 / (self.h_coolant * A_coolant))
         
         # SOLID WALLS
@@ -848,7 +848,7 @@ class Engine:
                                                          gamma = self.perfect_gas.gamma, 
                                                          Pr0 = Pr_exhaust_0)
 
-        A_exhaust = 2 * np.pi * y                       # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.sim.HXSolver
+        A_exhaust = 2 * np.pi * y                       # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.hx.HXSolver
         R_list.append(1.0 / (h_exhaust * A_exhaust))
         
         return R_list
@@ -973,7 +973,7 @@ class Engine:
             x_end = x_max
 
         # Set up and run simulation
-        cooling_simulation = bamboo.sim.HXSolver(T_c_in = self.cooling_jacket.T_coolant_in, 
+        cooling_simulation = bamboo.hx.HXSolver(T_c_in = self.cooling_jacket.T_coolant_in, 
                                                           T_h = self.T_h, 
                                                           p0_c_in = self.cooling_jacket.p0_coolant_in, 
                                                           cp_c = self.cp_c, 

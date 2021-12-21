@@ -6,6 +6,6 @@ import bamboo.engine
 import bamboo.isen
 import bamboo.materials
 import bamboo.circuit
-import bamboo.sim
+import bamboo.hx
 import bamboo.rao
 import bamboo.plot
