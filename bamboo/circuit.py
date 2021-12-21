@@ -217,7 +217,7 @@ class ThermalCircuit:
 
         Attributes:
             Qdot (float): Heat transfer rate (positive in the direction of T1 --> T2)
-            T (list): List of temperatures in between each resistance, including T1 and T2 at either end. i.e. [T1, ..., T2].
+            T (numpy.ndarray): List of temperatures in between each resistance, including T1 and T2 at either end. i.e. [T1, ..., T2].
         """
         self.R = R
         self.T1 = T1

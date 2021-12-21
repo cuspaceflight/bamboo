@@ -110,6 +110,30 @@ def plot_q_per_area(data_dict):
     axs.set_xlabel("Axial position (m)")
     axs.set_ylabel(r"Radial heat flux (W m$^{-2}$)")
 
+def plot_tangential_stress(data_dict, wall_index = 0):
+    """Given the output dictionary from a engine cooling analysis, plot the thermal stress in the inner chamber wall, against position. 
+    Note you will have to run matplotlib.pyplot.show() or bam.show() to see the plot.
+
+    Args:
+        data_dict (dict): Dictionary contaning the cooling analysis results.
+        wall_index (int): The index of the wall to plot the stresses for. Defaults to 0 (the exhaust side wall).
+
+    """
+
+    fig, axs = plt.subplots()
+    sigma_t_thermal = np.array(data_dict["sigma_t_thermal"])[:, wall_index]
+    sigma_t_pressure = np.array(data_dict["sigma_t_pressure"])[:, wall_index]
+    sigma_t_max = np.array(data_dict["sigma_t_max"])[:, wall_index]
+
+    axs.plot(data_dict["x"], sigma_t_thermal/1e6, label = "Thermal stress")
+    axs.plot(data_dict["x"], sigma_t_pressure/1e6, label = "Pressure stress")
+    axs.plot(data_dict["x"], sigma_t_max/1e6, label = "Maximum stress", linestyle = "--")
+
+    axs.legend()
+    axs.grid()
+    axs.set_xlabel("Axial position (m)")
+    axs.set_ylabel("Tangential stress (MPa)")
+
 
 def plot_resistances(data_dict, **kwargs):
     raise ValueError("bamboo.plot.plot_resistances is not yet implemented")
@@ -159,20 +183,3 @@ def plot_coolant_velocities(data_dict, **kwargs):
     axs.grid()
     axs.set_xlabel("Axial position (m)")
     axs.set_ylabel("Coolant velocity (m/s)")
-
-def plot_thermal_stress(data_dict, **kwargs):
-    raise ValueError("bamboo.plot.plot_thermal_stress is not yet implemented")
-    """Given the output dictionary from a engine cooling analysis, plot the thermal stress in the inner chamber wall, against position. 
-    Note you will have to run matplotlib.pyplot.show() to see the plot.
-
-    Args:
-        data_dict (dict): Dictionary contaning the cooling analysis results.
-
-    """
-
-    fig, axs = plt.subplots()
-    axs.plot(data_dict["x"], np.array(data_dict["thermal_stress"])/1e6, label = "Thermal stress")
-
-    axs.grid()
-    axs.set_xlabel("Axial position (m)")
-    axs.set_ylabel("Thermal stress (MPa)")
