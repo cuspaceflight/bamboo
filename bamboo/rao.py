@@ -38,9 +38,6 @@ def rao_theta_e(area_ratio, length_fraction = 0.8):
     """Returns the contour angle at the exit of the bell nozzle, by interpolating data.  
     Data obtained by using http://www.graphreader.com/ on the graph in Reference [1].
 
-    Note:
-        Not actually used by Bamboo (a quadratic only has three degrees of freedom, so Bamboo fits the nozzle contour quadratic to the inflection position, inflection angle, and exit position).
-
     Args:
         area_ratio (float): Area ratio of the nozzle (A2/At)
         length_fraction (int, optional): Nozzle contraction percentage, as defined in Reference [1]. Defaults to 0.8.
