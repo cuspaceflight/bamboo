@@ -14,10 +14,21 @@ Bamboo can be installed via pip, with the following command:
 `pip install git+https://github.com/cuspaceflight/bamboo.git`
 
 ## Documentation
-(may be outdated)
-
 Made using Sphinx, available at: 
 https://cuspaceflight.github.io/bamboo/
+
+(sometimes outdated)
+
+## Validation
+
+One validation case has been performed so far, on the Ariane 5's Vulcain engine. It is hoped that more validation will be performed in the future.
+
+A key effect that needs to be investigated is nucleate boiling, and how significantly that affects the results. Test cases that use a supercritical coolant will not be susceptible to nucleate boiling, and so are better modelled by Bamboo (which currently ignores two-phase effects).
+
+|         Engine          |  Supercritical Coolant? | Peak Heat Flux Error  | Coolant Exit Temperature Error | 
+|:-----------------------:|:-----------------------:|:---------------------:|:------------------------------:|
+|        [Vulcain](https://github.com/cuspaceflight/bamboo/blob/master/validation/Ariane%205%20Vulcain.ipynb) |      Yes | 19.97% | 3.11% |
+
 
 ## Release 0.2.0
 - Refactored all code to be much more user friendly and intuitive. 
