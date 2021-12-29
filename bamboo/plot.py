@@ -69,7 +69,7 @@ def plot_temperatures(data_dict, only_indexes = None):
     handles, labels = ax.get_legend_handles_labels()
     ax.legend(reversed(handles), reversed(labels))
 
-def plot_jacket_pressure(data_dict, plot_static = True, plot_stagnation = True, **kwargs):
+def plot_jacket_pressure(data_dict, plot_static = True, plot_stagnation = True):
     """Given the output dictionary from a engine cooling analysis, plot the cooling jacket pressure against x position. 
     Note you will have to run matplotlib.pyplot.show() or bamboo.plot.show() to see the plot.
 
@@ -134,6 +134,23 @@ def plot_tangential_stress(data_dict, wall_index = 0):
     axs.set_xlabel("Axial position (m)")
     axs.set_ylabel("Tangential stress (MPa)")
 
+def plot_coolant_velocity(data_dict):
+    """Given the output dictionary from a engine cooling analysis, plot the cooling velocity against axial position. 
+    Note you will have to run matplotlib.pyplot.show() or bamboo.show() to see the plot.
+
+    Args:
+        data_dict (dict): Dictionary contaning the cooling analysis results.
+
+    """
+
+    fig, axs = plt.subplots()
+    axs.plot(data_dict["x"], data_dict["V_coolant"], label = "Coolant velocity")
+
+    axs.legend()
+    axs.grid()
+    axs.set_xlabel("Axial position (m)")
+    axs.set_ylabel(r"Coolant velocity (m s$^{-1}$)")
+
 
 def plot_resistances(data_dict, **kwargs):
     raise ValueError("bamboo.plot.plot_resistances is not yet implemented")
@@ -163,23 +180,3 @@ def plot_resistances(data_dict, **kwargs):
     axs.grid()
     axs.set_xlabel("Axial position (m)")
     axs.set_ylabel("Thermal resistance (K/W/m)")
-
-def plot_coolant_velocities(data_dict, **kwargs):
-    raise ValueError("bamboo.plot.plot_coolant_velocities is not yet implemented")
-
-    """Given the output dictionary from a engine cooling analysis, plot the cooling jacket velocity against x position. 
-    Note you will have to run matplotlib.pyplot.show() to see the plot.
-
-    Args:
-        data_dict (dict): Dictionary contaning the cooling analysis results.
-
-    """
-
-    fig, axs = plt.subplots()
-
-    axs.plot(data_dict["x"], np.array(data_dict["v_coolant"]), label = "Coolant velocity (m/s)")
-        
-    axs.legend()
-    axs.grid()
-    axs.set_xlabel("Axial position (m)")
-    axs.set_ylabel("Coolant velocity (m/s)")
