@@ -202,7 +202,7 @@ class CoolingJacket:
             number_of_fins (int): Only relevant if 'blockage_ratio' !=0. This is the number of fins present in the cooling channel. For spiral channels this is the number of fins 'per pitch' - it is numerically equal to the number of channels that are spiralling around in parallel.
             pitch (float or callable): Only relevant if configuration = 'spiral'. This is the total width (i.e. pitch) of the cooling channels (m). Can be a constant float, or a function of axial position (x).
             xs (list): Minimum and maximum x value which the cooling jacket is present over (m), e.g. (x_min, x_max). Can be in either order. 
-            restrain_fins (bool): Whether or not the fins in cooling channels are physically restrained by (i.e. attached to) the outer cooling jacket. This affects the pressure stress. Automatically ignored if blockage_ratio = 0. Defaults to True.
+            restrain_fins (bool): Whether or not the fins in cooling channels are physically restrained by (i.e. attached to) the outer cooling jacket. This affects the pressure stress. Automatically ignored if blockage_ratio = 0. Defaults to False.
             """
 
         # Check that the user has not mispelt or used additional kwargs
@@ -227,7 +227,7 @@ class CoolingJacket:
             assert type(self.restrain_fins) is bool, f"'restrain_fins' argument must be True or False. It cannot be of type {type(self.restrain_fins)}"
 
         else:
-            self.restrain_fins = True
+            self.restrain_fins = False
 
         if "xs" in kwargs:
             self.xs = kwargs["xs"]
@@ -397,10 +397,25 @@ class Engine:
         
         if "cooling_jacket" in kwargs:
             self.cooling_jacket = kwargs["cooling_jacket"]
-            assert type(self.cooling_jacket) is CoolingJacket
+            assert type(self.cooling_jacket) is CoolingJacket, "cooling_jacket input must be a CoolingJacket object."
         
         if "exhaust_transport" in kwargs:
             self.exhaust_transport = kwargs["exhaust_transport"]  
+
+    def __setattr__(self, name, value):
+        # If the user tries to set 'cooling_jacket' or 'wall' after the creation of the Engine object then we must run checks on the submitted values
+        if name == "cooling_jacket":
+            assert type(value) is CoolingJacket, "cooling_jacket input must be a CoolingJacket object."
+        
+        elif name == "walls":
+            # If we got a single wall, turn it into a list of length 1.
+            if not (type(value) is list):
+                value = [value]
+
+            for item in value:
+                assert type(item) is Wall, "All items in the 'walls' list must be a Wall object. Otherwise a single Wall object must be given."
+
+        super(Engine, self).__setattr__(name, value)
 
     # Exhaust gas functions
     def M(self, x):
@@ -477,14 +492,14 @@ class Engine:
         """
         num_grid = 1000                         # Resolution to plot to (i.e. number of points to plot)
 
+        # Plot the walls to scale
         if hasattr(self, "walls"):
             fig, axs = plt.subplots()
 
             xs = np.linspace(self.geometry.xs[0], self.geometry.xs[-1], num_grid)
 
-            # Plot the walls
             for i in range(len(self.walls)):
-                # First wall as the chamber as the inner y value
+                # First wall has the chamber as the inner y value
                 if i == 0:
                     y_bottom = np.zeros(len(xs))
                     y_top = np.zeros(len(xs))
@@ -501,71 +516,72 @@ class Engine:
                 axs.fill_between(xs, -y_bottom, -y_top, color = last_plot.get_facecolor())
 
                 y_bottom = y_top.copy()
-                
-            # Plot the cooling channels
-            if hasattr(self.cooling_jacket, "xs"):
-                min_x_jacket = min(self.cooling_jacket.xs)
-                max_x_jacket = max(self.cooling_jacket.xs)
-            else:
-                min_x_jacket = self.geometry.xs[0]
-                max_x_jacket = self.geometry.xs[-1]
 
-            # Vertical cooling channels
-            if self.cooling_jacket.configuration == "vertical":
-                for j in range(len(y_bottom)):
-                    y_top[j] = y_bottom[j] + self.cooling_jacket.channel_height(xs[j])
-
-                # Cooling channel may only be applied over a specific range
-                x_channel = []
-                y_bottom_channel = []
-                y_top_channel = []
-
-                for k in range(len(xs)):
-                    if xs[k] >= min_x_jacket and xs[k] <= max_x_jacket:
-                        x_channel.append(xs[k])
-                        y_bottom_channel.append(y_bottom[k])
-                        y_top_channel.append(y_top[k])
-
-                axs.fill_between(x_channel, y_bottom_channel, y_top_channel, label = f'Cooling channel', color = "blue")
-                axs.fill_between(x_channel, -np.array(y_bottom_channel), -np.array(y_top_channel), color = "blue")
-
-            # Spiralling cooling channels - modified from Bamboo 0.1.1
-            elif self.cooling_jacket.configuration == "spiral":
-                #Just for the legends
-                axs.plot(0, 0, color = 'blue', label = 'Cooling channels')  
-
-                if self.cooling_jacket.number_of_fins != 1:
-
-                    axs.plot(0, 0, color = 'red', label = 'Channel fins')  
-                    fin_color = 'red'
-
+            # Plot the cooling channels to scale (but only if we also have the 'walls' input given)
+            if hasattr(self, "cooling_jacket"):
+                if hasattr(self.cooling_jacket, "xs"):
+                    min_x_jacket = min(self.cooling_jacket.xs)
+                    max_x_jacket = max(self.cooling_jacket.xs)
                 else:
-                    fin_color = 'blue'
+                    min_x_jacket = self.geometry.xs[0]
+                    max_x_jacket = self.geometry.xs[-1]
 
-                #Plot the spiral channels as rectangles
-                current_x = min_x_jacket
+                # Vertical cooling channels
+                if self.cooling_jacket.configuration == "vertical":
+                    for j in range(len(y_bottom)):
+                        y_top[j] = y_bottom[j] + self.cooling_jacket.channel_height(xs[j])
 
-                while current_x < max_x_jacket:
-                    y_jacket_inner = np.interp(current_x, xs, y_bottom)
-                    H = self.cooling_jacket.channel_height(current_x)           # Current channel height
-                    W = self.cooling_jacket.pitch(current_x)            # Current channel width
+                    # Cooling channel may only be applied over a specific range
+                    x_channel = []
+                    y_bottom_channel = []
+                    y_top_channel = []
 
-                    #Show the ribs as filled in rectangles
-                    area_per_fin = W * H * self.cooling_jacket.blockage_ratio(current_x)/self.cooling_jacket.number_of_fins
-                    fin_width = area_per_fin / H
+                    for k in range(len(xs)):
+                        if xs[k] >= min_x_jacket and xs[k] <= max_x_jacket:
+                            x_channel.append(xs[k])
+                            y_bottom_channel.append(y_bottom[k])
+                            y_top_channel.append(y_top[k])
 
-                    for j in range(self.cooling_jacket.number_of_fins):
-                        distance_to_next_rib = W/self.cooling_jacket.number_of_fins
+                    axs.fill_between(x_channel, y_bottom_channel, y_top_channel, label = f'Cooling channel', color = "blue")
+                    axs.fill_between(x_channel, -np.array(y_bottom_channel), -np.array(y_top_channel), color = "blue")
 
-                        # Make all ribs red
-                        axs.add_patch(matplotlib.patches.Rectangle([current_x + j*distance_to_next_rib, y_jacket_inner], fin_width, H, color = fin_color, fill = True))
-                        axs.add_patch(matplotlib.patches.Rectangle([current_x + j*distance_to_next_rib, -y_jacket_inner-H], fin_width, H, color = fin_color, fill = True))
+                # Spiralling cooling channels - modified from Bamboo 0.1.1
+                elif self.cooling_jacket.configuration == "spiral":
+                    #Just for the legends
+                    axs.plot(0, 0, color = 'blue', label = 'Cooling channels')  
 
-                    # Plot 'outer' cooling channel (i.e. the amount moved per spiral)
-                    axs.add_patch(matplotlib.patches.Rectangle([current_x, y_jacket_inner], W, H, color = 'blue', fill = False))
-                    axs.add_patch(matplotlib.patches.Rectangle([current_x, -y_jacket_inner-H], W, H, color = 'blue', fill = False))
+                    if self.cooling_jacket.number_of_fins != 1:
 
-                    current_x = current_x + W
+                        axs.plot(0, 0, color = 'red', label = 'Channel fins')  
+                        fin_color = 'red'
+
+                    else:
+                        fin_color = 'blue'
+
+                    #Plot the spiral channels as rectangles
+                    current_x = min_x_jacket
+
+                    while current_x < max_x_jacket:
+                        y_jacket_inner = np.interp(current_x, xs, y_bottom)
+                        H = self.cooling_jacket.channel_height(current_x)           # Current channel height
+                        W = self.cooling_jacket.pitch(current_x)            # Current channel width
+
+                        #Show the ribs as filled in rectangles
+                        area_per_fin = W * H * self.cooling_jacket.blockage_ratio(current_x)/self.cooling_jacket.number_of_fins
+                        fin_width = area_per_fin / H
+
+                        for j in range(self.cooling_jacket.number_of_fins):
+                            distance_to_next_rib = W/self.cooling_jacket.number_of_fins
+
+                            # Make all ribs red
+                            axs.add_patch(matplotlib.patches.Rectangle([current_x + j*distance_to_next_rib, y_jacket_inner], fin_width, H, color = fin_color, fill = True))
+                            axs.add_patch(matplotlib.patches.Rectangle([current_x + j*distance_to_next_rib, -y_jacket_inner-H], fin_width, H, color = fin_color, fill = True))
+
+                        # Plot 'outer' cooling channel (i.e. the amount moved per spiral)
+                        axs.add_patch(matplotlib.patches.Rectangle([current_x, y_jacket_inner], W, H, color = 'blue', fill = False))
+                        axs.add_patch(matplotlib.patches.Rectangle([current_x, -y_jacket_inner-H], W, H, color = 'blue', fill = False))
+
+                        current_x = current_x + W
             
             axs.grid()
             axs.legend()

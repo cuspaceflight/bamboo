@@ -13,7 +13,7 @@
 
    .. autosummary::
    
-      plot_coolant_velocities
+      plot_coolant_velocity
       plot_jacket_pressure
       plot_q_per_area
       plot_resistances

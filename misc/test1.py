@@ -1,57 +1,61 @@
-"""
-Temporary file for testing bamboo 0.2.0
+"""Simple engine example, but in .py format instead of Jupyter notebook
 """
 
+# Import required modules
 import bamboo as bam
-import numpy as np
 
-# Combustion chamber
-perfect_gas = bam.PerfectGas(gamma = 1.31, cp = 830)
-chamber_conditions = bam.ChamberConditions(p0 = 10e5, T0 = 2800)
+# Chamber conditions
+pc = 10e5                   # Chamber pressure (Pa)
+p_amb = 1e5                 # Ambient pressure (Pa) - we'll use sea level atmospheric
+Tc = 2800                   # Combustion chamber temperature (K) - would normally get this from an equilibrium program (e.g. Cantera, NASA CEA, ProPEP).
 
-# Engine contour
-xs = [-0.150, -0.050, 0.0, 0.025]
-ys = [0.045, 0.045, 0.02, 0.025]
+# Geometry properties
+Rc = 0.045                  # Chamber radius (m)
+Rt = 0.02                   # Throat radius (m)
+area_ratio = 4              # Area ratio (A_exit / A_throat)
+Lc = 0.10                   # Length of chamber (up to beginning of nozzle converging section) (m)
+theta_conv = 45             # Angle of converging section (deg)
 
+# Use the in-built Rao geometry generator
+xs, ys = bam.rao.get_rao_contour(Rc = Rc, 
+                                 Rt = Rt, 
+                                 area_ratio = area_ratio, 
+                                 Lc = Lc, 
+                                 theta_conv = theta_conv)
+
+# Set up the objects we need
+perfect_gas = bam.PerfectGas(gamma = 1.31, cp = 830)                   # Approximate values for CO2
+chamber_conditions = bam.ChamberConditions(p0 = pc, T0 = Tc)
 geometry = bam.Geometry(xs = xs, ys = ys)
+exhaust_transport = bam.materials.CO2                                  # Use the built-in CO2 approximation
+wall = bam.Wall(material = bam.materials.CopperC106, thickness = 2e-3) # Use the built in C106 copper data
 
-# Cooling jacket
-cooling_jacket = bam.CoolingJacket(T_coolant_in = 298, 
-                                   p0_coolant_in = 2e5, 
-                                   mdot_coolant = 1.5, 
-                                   channel_height = 20e-3, 
-                                   blockage_ratio = 0.1,
-                                   number_of_fins = 200,
-                                   coolant_transport = bam.materials.Water, 
-                                   configuration = "vertical")
-
-# Chamber walls
-wall1 = bam.Wall(thickness = 1.5e-3, material = bam.materials.Graphite)
-wall2 = bam.Wall(thickness = 1.5e-3, material = bam.materials.CopperC106)
-wall3 = bam.Wall(thickness = 1.5e-3, material = bam.materials.StainlessSteel304)
-
+# Submit them all at inputs to the Engine object
 engine = bam.Engine(perfect_gas = perfect_gas, 
                     chamber_conditions = chamber_conditions, 
                     geometry = geometry,
-                    exhaust_transport = bam.materials.CO2,
-                    cooling_jacket = cooling_jacket,
-                    walls = [wall1, wall2, wall3],
-                    coolant_convection = "gnielinski",
-                    exhaust_convection = "dittus-boelter")
+                    exhaust_transport = exhaust_transport,
+                    walls = wall)
 
-print(f"Engine set up, throat at x = {engine.geometry.xt} m, mdot = {engine.mdot} kg/s")
+# Cooling jacket properties
+inlet_T = 298.15                           # Coolant inlet temperature (K)
+inlet_p0 = 30e5                            # Coolant inlet stagnation pressure (bar)
+OF_ratio = 3.5                             # Oxidiser/fuel mass ratio
+mdot_coolant = 0.2                         # Coolant mass flow rate (kg/s)
 
-results = engine.steady_cooling_simulation(num_grid = 1000, iter_start = 5, iter_each = 1)
+# Add a spiral cooling jacket to the engine
+cooling_jacket = bam.CoolingJacket(T_coolant_in = inlet_T, 
+                                  p0_coolant_in = inlet_p0, 
+                                  mdot_coolant = mdot_coolant, 
+                                  channel_height = 2e-3,
+                                  blockage_ratio = 0.3,
+                                  number_of_fins = 100,
+                                  coolant_transport = bam.materials.Water,   # Use bamboo's built-in water approximation
+                                  configuration = 'vertical')
 
-print(f"Coolant outlet temperature = {results['T_coolant'][-1]} K, outlet stagation pressure = {results['p0_coolant'][-1]/1e5} bar")
+# Attach the cooling jacket
+engine.cooling_jacket = cooling_jacket
 
-
+# Plot the engine to scale
 engine.plot()
 bam.show()
-
-bam.plot.plot_jacket_pressure(results)
-bam.show()
-
-bam.plot.plot_temperatures(results)
-bam.show()
-

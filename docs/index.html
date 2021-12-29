@@ -392,7 +392,7 @@ properties is available as a compromise.</p></li>
 <li><p><strong>number_of_fins</strong> (<em>int</em>) – Only relevant if ‘blockage_ratio’ !=0. This is the number of fins present in the cooling channel. For spiral channels this is the number of fins ‘per pitch’ - it is numerically equal to the number of channels that are spiralling around in parallel.</p></li>
 <li><p><strong>pitch</strong> (<em>float</em><em> or </em><em>callable</em>) – Only relevant if configuration = ‘spiral’. This is the total width (i.e. pitch) of the cooling channels (m). Can be a constant float, or a function of axial position (x).</p></li>
 <li><p><strong>xs</strong> (<em>list</em>) – Minimum and maximum x value which the cooling jacket is present over (m), e.g. (x_min, x_max). Can be in either order.</p></li>
-<li><p><strong>restrain_fins</strong> (<em>bool</em>) – Whether or not the fins in cooling channels are physically restrained by (i.e. attached to) the outer cooling jacket. This affects the pressure stress. Automatically ignored if blockage_ratio = 0. Defaults to True.</p></li>
+<li><p><strong>restrain_fins</strong> (<em>bool</em>) – Whether or not the fins in cooling channels are physically restrained by (i.e. attached to) the outer cooling jacket. This affects the pressure stress. Automatically ignored if blockage_ratio = 0. Defaults to False.</p></li>
 </ul>
 </dd>
 </dl>
@@ -824,7 +824,7 @@ Note you will have to run matplotlib.pyplot.show() or bamboo.plot.show() to see 
 
 <dl class="py function">
 <dt class="sig sig-object py" id="bamboo.plot.plot_jacket_pressure">
-<span class="sig-prename descclassname"><span class="pre">bamboo.plot.</span></span><span class="sig-name descname"><span class="pre">plot_jacket_pressure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_static</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_stagnation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.plot.plot_jacket_pressure" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">bamboo.plot.</span></span><span class="sig-name descname"><span class="pre">plot_jacket_pressure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_static</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_stagnation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.plot.plot_jacket_pressure" title="Permalink to this definition"></a></dt>
 <dd><p>Given the output dictionary from a engine cooling analysis, plot the cooling jacket pressure against x position.
 Note you will have to run matplotlib.pyplot.show() or bamboo.plot.show() to see the plot.</p>
 <dl class="field-list simple">
@@ -866,13 +866,20 @@ Note you will have to run matplotlib.pyplot.show() or bam.show() to see the plot
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="bamboo.plot.plot_resistances">
-<span class="sig-prename descclassname"><span class="pre">bamboo.plot.</span></span><span class="sig-name descname"><span class="pre">plot_resistances</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.plot.plot_resistances" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<dt class="sig sig-object py" id="bamboo.plot.plot_coolant_velocity">
+<span class="sig-prename descclassname"><span class="pre">bamboo.plot.</span></span><span class="sig-name descname"><span class="pre">plot_coolant_velocity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.plot.plot_coolant_velocity" title="Permalink to this definition"></a></dt>
+<dd><p>Given the output dictionary from a engine cooling analysis, plot the cooling velocity against axial position.
+Note you will have to run matplotlib.pyplot.show() or bamboo.show() to see the plot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>data_dict</strong> (<em>dict</em>) – Dictionary contaning the cooling analysis results.</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="bamboo.plot.plot_coolant_velocities">
-<span class="sig-prename descclassname"><span class="pre">bamboo.plot.</span></span><span class="sig-name descname"><span class="pre">plot_coolant_velocities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.plot.plot_coolant_velocities" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="bamboo.plot.plot_resistances">
+<span class="sig-prename descclassname"><span class="pre">bamboo.plot.</span></span><span class="sig-name descname"><span class="pre">plot_resistances</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#bamboo.plot.plot_resistances" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 </section>
