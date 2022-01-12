@@ -1084,7 +1084,7 @@ class Engine:
 
                 # If we don't have fins in the cooling channels
                 if abs(blockage_ratio) < 1e-12 or self.cooling_jacket.restrain_fins == False:
-                    results["sigma_t_pressure"][i][j] = (p_l - p_g) * D / (2 * t_w)
+                    results["sigma_t_pressure"][i][j] = (p_l - p_g) * D / (2 * t_w)           
 
                 # If we have fins in the cooling channels, and the fins restrain the inner wall (by being attached to the outer jacket)
                 else:
@@ -1097,6 +1097,7 @@ class Engine:
                     results["sigma_t_pressure"][i][j] = 0.5 * (p_l - p_g) * (w / t_w)**2
 
                 # Total stress from Huzel and Huang [4]
+                results["sigma_t_pressure"][i][j] = - results["sigma_t_pressure"][i][j]     # Use the convention that tensile stress is positive
                 results["sigma_t_max"][i][j] = abs(results["sigma_t_thermal"][i][j]) + abs(results["sigma_t_pressure"][i][j])
 
                 # Remove t_w / 2, so the next wall calculation uses the right diameter
