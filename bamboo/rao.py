@@ -6,6 +6,7 @@ References:
 """
 
 import numpy as np
+import warnings
 
 def rao_theta_n(area_ratio, length_fraction = 0.8):
     """Returns the contour angle at the inflection point of the bell nozzle, by interpolating data.   
@@ -82,7 +83,7 @@ def get_rao_contour(Rc, Rt, area_ratio, Lc, theta_conv = 45):
 
     except ValueError as e:
         if "The area ratio provided" in str(e):
-            print(f"{str(e)} Will use a 15 degree cone instead.")
+            warnings.warn(f"{str(e)} Will use a 15 degree cone instead.", stacklevel = 2)
             theta_n = np.pi / 12
             theta_e = theta_n
             use_cone = True
