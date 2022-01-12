@@ -29,6 +29,7 @@ import bamboo.circuit
 # Constants
 R_BAR = 8.3144621e3         # Universal gas constant (J/K/kmol)
 REDH_LAMINAR = 2300         # Maximum Reynolds number for laminar flow in a pipe
+REDH_TURBULENT = 3500       # Minimum Reynolds number for turbulent flow in a pipe
 
 class PerfectGas:
     """Object to store a perfect gas model (i.e. an ideal gas with constant cp and cv). You only need to input 2 properties to fully define it.
@@ -321,24 +322,39 @@ class CoolingJacket:
         else:
             return self._roughness
 
+    def f_darcy_laminar(self, ReDh, Dh, x):
+        return 64.0 / ReDh      # Reference [3]
+    
+    def f_darcy_turbulent(self, ReDh, Dh, x):
+        roughness = self.roughness(x)
+        if roughness == None:
+            # Putukhov equation [1]
+            return (0.79 * np.log(ReDh) - 1.64)**(-2)   
+
+        else:
+            # Colebrook-White with Lambert W function [2]
+            a = 2.51 / ReDh
+            two_a = 2*a
+            b = roughness / (3.71 * Dh)
+            
+            return ( (2 * scipy.special.lambertw(np.log(10) / two_a * 10**(b/two_a) )) / np.log(10) - b/a )**(-2)
+
+
     def f_darcy(self, ReDh, Dh, x):
         # Check for laminar flow
         if ReDh < REDH_LAMINAR:
-            return 64.0 / ReDh      # Reference [3]
+            return self.f_darcy_laminar(ReDh = ReDh, Dh = Dh, x = x)     
 
+        elif ReDh < REDH_TURBULENT:
+            f_darcy_laminar = self.f_darcy_laminar(ReDh = ReDh, Dh = Dh, x = x)     
+            f_darcy_turbulent = self.f_darcy_turbulent(ReDh = ReDh, Dh = Dh, x = x)     
+
+            # "Blend" between the laminar and turbulent region
+            return np.interp(ReDh, [REDH_LAMINAR, REDH_TURBULENT], [f_darcy_laminar, f_darcy_turbulent])
+
+        # Turbulen tflow
         else:
-            roughness = self.roughness(x)
-            if roughness == None:
-                # Putukhov equation [1]
-                return (0.79 * np.log(ReDh) - 1.64)**(-2)   
-
-            else:
-                # Colebrook-White with Lambert W function [2]
-                a = 2.51 / ReDh
-                two_a = 2*a
-                b = roughness / (3.71 * Dh)
-                
-                return ( (2 * scipy.special.lambertw(np.log(10) / two_a * 10**(b/two_a) )) / np.log(10) - b/a )**(-2)
+            return self.f_darcy_turbulent(ReDh = ReDh, Dh = Dh, x = x)     
 
 
 class Engine:
@@ -755,42 +771,58 @@ class Engine:
 
         ReDh_coolant = rho_coolant * V_coolant * Dh_coolant / mu_coolant
 
+        # Laminar flow
         if ReDh_coolant < REDH_LAMINAR:
-            # Laminar flow
-            warnings.warn(f"ReDh < {REDH_LAMINAR} in cooling channels: Laminar flow relations will be used (may cause a step in temperature graphs). Constant wall temperature is assumed for Nusselt number.", stacklevel = 2)
+            warnings.warn(f"ReDh < {REDH_LAMINAR} in cooling channels: Laminar flow relations will be used. Constant wall temperature is assumed for Nusselt number.", stacklevel = 2)
             NuDh_coolant = 3.66       # Nusselt number for constant wall temperature approximation, Reference [1]
             self.h_coolant = NuDh_coolant * k_coolant / Dh_coolant
 
-        elif self.coolant_convection == "dittus-boelter":
-            self.h_coolant = bamboo.circuit.h_coolant_dittus_boelter(rho = rho_coolant, 
-                                                                V = V_coolant, 
-                                                                D = Dh_coolant, 
-                                                                mu = mu_coolant, 
-                                                                Pr = Pr_coolant, 
-                                                                k = k_coolant)
-
-        elif self.coolant_convection == "sieder-tate":
-            mu_coolant_wall = self.cooling_jacket.coolant_transport.mu(T = T_coolant_wall, p = p_coolant)
-            self.h_coolant = bamboo.circuit.h_coolant_sieder_tate(rho = rho_coolant, 
-                                                                V = V_coolant, 
-                                                                D = Dh_coolant, 
-                                                                mu_bulk = mu_coolant, 
-                                                                mu_wall = mu_coolant_wall,
-                                                                Pr = Pr_coolant, 
-                                                                k = k_coolant)
-
-        elif self.coolant_convection == "gnielinski":
-            f_darcy = self.cooling_jacket.f_darcy(Dh = Dh_coolant, ReDh = ReDh_coolant, x = x)
-            self.h_coolant = bamboo.circuit.h_coolant_gnielinski(rho = rho_coolant, 
-                                                                 V = V_coolant, 
-                                                                 D = Dh_coolant, 
-                                                                 mu = mu_coolant, 
-                                                                 Pr = Pr_coolant, 
-                                                                 k = k_coolant,
-                                                                 f_darcy = f_darcy)
-
+        # Transitional or turbulent flow
         else:
-            raise ValueError(f"Coolant convection model '{self.coolant_convection}' is not recognised. Try 'gnielinski', 'sieder-tate', or 'dittus-boelter'")
+            # First get turbulent values
+            if self.coolant_convection == "dittus-boelter":
+                h_coolant_turb = bamboo.circuit.h_coolant_dittus_boelter(rho = rho_coolant, 
+                                                                    V = V_coolant, 
+                                                                    D = Dh_coolant, 
+                                                                    mu = mu_coolant, 
+                                                                    Pr = Pr_coolant, 
+                                                                    k = k_coolant)
+
+            if self.coolant_convection == "sieder-tate":
+                mu_coolant_wall = self.cooling_jacket.coolant_transport.mu(T = T_coolant_wall, p = p_coolant)
+                h_coolant_turb = bamboo.circuit.h_coolant_sieder_tate(rho = rho_coolant, 
+                                                                    V = V_coolant, 
+                                                                    D = Dh_coolant, 
+                                                                    mu_bulk = mu_coolant, 
+                                                                    mu_wall = mu_coolant_wall,
+                                                                    Pr = Pr_coolant, 
+                                                                    k = k_coolant)
+
+            elif self.coolant_convection == "gnielinski":
+                f_darcy = self.cooling_jacket.f_darcy(Dh = Dh_coolant, ReDh = ReDh_coolant, x = x)
+                h_coolant_turb = bamboo.circuit.h_coolant_gnielinski(rho = rho_coolant, 
+                                                                    V = V_coolant, 
+                                                                    D = Dh_coolant, 
+                                                                    mu = mu_coolant, 
+                                                                    Pr = Pr_coolant, 
+                                                                    k = k_coolant,
+                                                                    f_darcy = f_darcy)
+
+            else:
+                raise ValueError(f"Coolant convection model '{self.coolant_convection}' is not recognised. Try 'gnielinski', 'sieder-tate', or 'dittus-boelter'")
+
+            # Now check if we have transitional flow
+            if ReDh_coolant < REDH_TURBULENT:
+                # Transitional flow
+                warnings.warn(f"ReDh < {REDH_TURBULENT} in cooling channels: Flow is in between the laminar and turbulent regions - blending will be used. Constant wall temperature is assumed for laminar Nusselt number.", stacklevel = 2)
+                h_coolant_lam = 3.66 * k_coolant / Dh_coolant      # Nusselt number for constant wall temperature approximation, Reference [1]
+
+                # "Blend" between laminar and turbulent
+                self.h_coolant = np.interp(ReDh_coolant, [REDH_LAMINAR, REDH_TURBULENT], [h_coolant_lam, h_coolant_turb])
+
+            else:
+                # Turbulent flow
+                self.h_coolant = h_coolant_turb
 
         A_coolant = 2 * np.pi * (y + self.total_wall_thickness(x) + self.cooling_jacket.channel_height(x))      # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.hx.HXSolver
         R_list.append(1.0 / (self.h_coolant * A_coolant))
