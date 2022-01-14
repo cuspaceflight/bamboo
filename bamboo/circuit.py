@@ -62,6 +62,32 @@ def h_gas_bartz_sigma(c_star, At, A, p_chamber, T_chamber, M, Tw, mu0, cp0, gamm
 
     return (0.026)/(Dt**0.2) * (mu0**0.2*cp0/Pr0**0.6) * (p_chamber/c_star)**0.8 * (At/A)**0.9 * sigma
 
+def h_gas_bartz_sigma_curve(c_star, At, A, p_chamber, T_chamber, M, Tw, mu0, cp0, gamma, Pr0, rc_t):
+    """Bartz heat transfer equation using the sigma correlation, from Reference [3]. Takes into account the radius of curvature at the throat.
+
+    Args:
+        c_star (float): C* efficiency ( = pc * At / mdot)
+        At (float): Throat area (m^2)
+        A (float): Flow area (m^2)
+        p_chamber (float): Chamber pressure (Pa)
+        T_chamber (float): Chamber temperature (K)
+        M (float): Freestream Mach number
+        Tw (float): Wall temperature (K)
+        mu0 (float): Absolute viscosity at stagnation conditions (Pa s)
+        cp0 (float): Gas specific heat capacity at stagnation conditions (J/kg/K)
+        gamma (float): Gas ratio of specific heats (cp/cv)
+        Pr0 (float): Prandtl number at stagnation conditions
+        rc_t (float): Radius of curvature at the throat
+
+    Returns:
+        float: Convective heat transfer coefficient (W/m2/K), h, for the exhaust gas side (where q = h(T - T_inf)).
+    """
+
+    Dt = (At *4/np.pi)**0.5
+    sigma = (0.5 * (Tw/T_chamber) * (1 + (gamma-1)/2 * M**2) + 0.5)**(-0.68) * (1 + (gamma-1)/2 * M**2)**(-0.12)
+
+    return (0.026)/(Dt**0.2) * (mu0**0.2*cp0/Pr0**0.6) * (p_chamber/c_star)**0.8 * (Dt/rc_t)**0.1 * (At/A)**0.9 * sigma
+
 def h_coolant_dittus_boelter(rho, V, D, mu, Pr, k):
     """Dittus-Boelter equation for convective heat transfer coefficient.
 

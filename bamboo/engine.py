@@ -6,6 +6,7 @@ References:
  - [2] - https://en.wikipedia.org/wiki/Darcy_friction_factor_formulae
  - [3] - https://en.wikipedia.org/wiki/Darcy%E2%80%93Weisbach_equation
  - [4] - Huang and Huzel, Modern Engineering for Design of Liquid-Propellant Rocket Engines
+ - [5] - https://en.wikipedia.org/wiki/Radius_of_curvature
 
 Notes:
  - With some exceptions, fluid properties are currently evaluated at the bulk temperature, instead of the film temperature. This is because the high wall temperature can sometimes 
@@ -92,6 +93,7 @@ class Geometry:
             At (float): Throat area (m2)
             Re (float): Exit radius (m)
             Ae (float): Exit area (m2)
+            r_curvature_t (float): Radius of curvature at the throat (m)
         """
         self.xs = xs
         self.ys = ys
@@ -115,6 +117,16 @@ class Geometry:
     @property
     def Ae(self):
         return np.pi * self.Re**2
+
+    @property
+    def r_curvature_t(self):
+        # Calculate the radius of curvature [5]. This is useful in the Bartz equations.
+        dy_dx = np.gradient(self.ys, self.xs)
+        d2y_dx2 = np.gradient(dy_dx, self.xs)
+
+        throat_index = np.argmin(self.ys)
+
+        return abs( (( 1 + dy_dx[throat_index]**2 )**1.5) / (d2y_dx2[throat_index]) )
 
     def plot(self):
         """
@@ -895,6 +907,26 @@ class Engine:
                                                          cp0 = self.perfect_gas.cp, 
                                                          gamma = self.perfect_gas.gamma, 
                                                          Pr0 = Pr_exhaust_0)
+
+        elif self.exhaust_convection == "bartz-sigma-curve":
+            mu_exhaust_0 = self.exhaust_transport.mu(T = self.chamber_conditions.T0, p = self.chamber_conditions.p0)    # At stagnation conditions
+            Pr_exhaust_0 = self.exhaust_transport.Pr(T = self.chamber_conditions.T0, p = self.chamber_conditions.p0)   
+            
+            # Calculate radius of curvature at the throat
+
+
+            h_exhaust = bamboo.circuit.h_gas_bartz_sigma_curve(c_star = self.c_star, 
+                                                               At = self.geometry.At, 
+                                                               A = np.pi * Dh_exhaust**2 / 4, 
+                                                               p_chamber = self.chamber_conditions.p0, 
+                                                               T_chamber = self.chamber_conditions.T0, 
+                                                               M = M_exhaust, 
+                                                               Tw = T_exhaust_wall, 
+                                                               mu0 = mu_exhaust_0, 
+                                                               cp0 = self.perfect_gas.cp, 
+                                                               gamma = self.perfect_gas.gamma, 
+                                                               Pr0 = Pr_exhaust_0,
+                                                               rc_t = self.geometry.r_curvature_t)
 
         A_exhaust = 2 * np.pi * y                       # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.hx.HXSolver
         R_list.append(1.0 / (h_exhaust * A_exhaust))
