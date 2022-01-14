@@ -27,7 +27,7 @@ A key effect that needs to be investigated is nucleate boiling, and how signific
 
 |         Engine          |  Supercritical Coolant? | Peak Heat Flux Error  | Coolant Exit Temperature Error | 
 |:-----------------------:|:-----------------------:|:---------------------:|:------------------------------:|
-|        [Vulcain](https://github.com/cuspaceflight/bamboo/blob/master/validation/Ariane%205%20Vulcain.ipynb) |      Yes | 19.97% | 3.11% |
+|        [Vulcain](https://github.com/cuspaceflight/bamboo/blob/master/validation/Ariane%205%20Vulcain.ipynb) |      Yes | 30.49% | 3.34% |
 
 
 ## Release 0.2.0
