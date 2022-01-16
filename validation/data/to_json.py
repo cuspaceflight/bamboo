@@ -59,10 +59,35 @@ output["Ljungkrona"]["Extension Normalised Convective Coefficient (Sim)"] = {"x"
                                                                              "y" : raw["Ljungkrona_h_Sim"][:, 1]}
 
 # Scale the x-axes and shift them so they match with the Kirner data
+
+# WE CANNOT SIMPLY LINEARLY SCALE! THE NYDEN AND LJUNGKRONA DATA IS ALONG THE TUBE AXIS - WHICH SPIRALS OUTWARDS AS THE NOZZLE INCREASES IN DIAMETER
+# WE MUST FIRST SET UP TWO ARRAYS TO CONVERT BETWEEN THE ENGINE AXIS (dx) AND THE FLOW PATH ALONG THE TUBE (dL)
+
+x_positions = np.linspace(output["Kirner"]["Extension Contour"]["x"][0], output["Kirner"]["Extension Contour"]["x"][-1], 1000)  # Length along the x-axis
+L_positions = np.zeros(len(x_positions))                                                                                        # Distance travelled along a spiralling cooling channel
+
+wall_thickness = 0.4e-3
+pitch = 1.824
+
+for i in range(len(x_positions)):
+    if i == 0:
+        pass
+    else:
+        x = x_positions[i]
+        y = np.interp(x, output["Kirner"]["Extension Contour"]["x"], output["Kirner"]["Extension Contour"]["y"])
+        R_inner = y + wall_thickness
+        spiral_angle = np.arctan(2 * np.pi * R_inner / pitch)
+        dL_dx = 1 / np.cos(spiral_angle)                            # dL/dx, i.e. length travelled along the spiral channel for each 'dx'
+        dx = x_positions[i] - x_positions[i-1]
+
+        L_positions[i] = L_positions[i-1] + dx * dL_dx
+                
+                               
+
 for key in output["Ljungkrona"].keys():
     output["Ljungkrona"][key]["x"] = np.interp(x = output["Ljungkrona"][key]["x"], 
-                                               xp = [output["Ljungkrona"][key]["x"][0], output["Ljungkrona"][key]["x"][-1]],
-                                               fp = [output["Kirner"]["Extension Contour"]["x"][0], output["Kirner"]["Extension Contour"]["x"][-1]])
+                                               xp = L_positions,
+                                               fp = x_positions)
 
 # Collect the Nyden_1991 data
 raw["Nyden_Twc_Exp"] = np.loadtxt("Nyden_1991_Fig2_Twc_Exp.csv", delimiter =',', skiprows = 1)
@@ -75,8 +100,8 @@ output["Nyden"]["Cooling Side Wall Temperature (Sim)"] = {"x" : raw["Nyden_Twc_S
 # Scale the x-axes and shift them so they match with the Kirner data
 for key in output["Nyden"].keys():
     output["Nyden"][key]["x"] = np.interp(x = output["Nyden"][key]["x"], 
-                                               xp = [output["Nyden"][key]["x"][0], output["Nyden"][key]["x"][-1]],
-                                               fp = [output["Kirner"]["Extension Contour"]["x"][0], output["Kirner"]["Extension Contour"]["x"][-1]])
+                                               xp = L_positions,
+                                               fp = x_positions)
 
 
 # Save everything to a .json file
