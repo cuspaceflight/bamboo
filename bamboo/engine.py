@@ -390,12 +390,13 @@ class Engine:
         coolant_convection (str): Convective heat transfer model to use for the coolant side.
         exhaust_convection (str): Convective heat transfer model to use the for exhaust side.
         h_exhaust_sf (float): Scale factor for the exhaust convective heat transfer coeffcient. Defaults to 1.
+        h_coolant_sf (float): Scale factor for the coolant convective heat transfer coeffcient. Defaults to 1.
         walls (list): List of Wall objects between the hot gas and coolant
 
     """
     def __init__(self, perfect_gas, chamber_conditions, geometry, coolant_convection = "gnielinski", exhaust_convection = "bartz-sigma", **kwargs):
         # Check that the user has not mispelt or used additional kwargs
-        allowed_kwargs = {"walls", "cooling_jacket", "exhaust_transport", "h_exhaust_sf"}
+        allowed_kwargs = {"walls", "cooling_jacket", "exhaust_transport", "h_exhaust_sf", "h_coolant_sf"}
         left_over = set(kwargs.keys()) - allowed_kwargs
         assert not left_over, f'Unrecognised keyword arguments for Engine: {left_over}'
         
@@ -433,9 +434,13 @@ class Engine:
 
         if "h_exhaust_sf" in kwargs:
             self.h_exhaust_sf = kwargs["h_exhaust_sf"]
-
         else:
             self.h_exhaust_sf = 1.0
+
+        if "h_coolant_sf" in kwargs:
+            self.h_coolant_sf = kwargs["h_coolant_sf"]
+        else:
+            self.h_coolant_sf = 1.0
 
     def __setattr__(self, name, value):
         # If the user tries to set 'cooling_jacket' or 'wall' after the creation of the Engine object then we must run checks on the submitted values
@@ -843,6 +848,7 @@ class Engine:
                 # Turbulent flow
                 self.h_coolant = h_coolant_turb
 
+        self.h_coolant = self.h_coolant * self.h_coolant_sf                                                     # Multiply h_coolant by the scale factor given by the user.
         A_coolant = 2 * np.pi * (y + self.total_wall_thickness(x) + self.cooling_jacket.channel_height(x))      # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.hx.HXSolver
         R_list.append(1.0 / (self.h_coolant * A_coolant))
         
