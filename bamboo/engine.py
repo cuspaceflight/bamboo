@@ -7,6 +7,7 @@ References:
  - [3] - https://en.wikipedia.org/wiki/Darcy%E2%80%93Weisbach_equation
  - [4] - Huang and Huzel, Modern Engineering for Design of Liquid-Propellant Rocket Engines
  - [5] - https://en.wikipedia.org/wiki/Radius_of_curvature
+ - [6] - https://en.wikipedia.org/wiki/Hydraulic_diameter
 
 Notes:
  - With some exceptions, fluid properties are currently evaluated at the bulk temperature, instead of the film temperature. This is because the high wall temperature can sometimes 
@@ -673,15 +674,27 @@ class Engine:
             float: Hydraulic diameter (m)
         """
         channel_height = self.cooling_jacket.channel_height(x)
+        A_coolant_tot = self.A_coolant(x)
 
         if self.cooling_jacket.configuration == 'spiral':
-            perimeter = 2 * self.cooling_jacket.pitch(x) + 2 * channel_height + 2 * channel_height * self.cooling_jacket.number_of_fins
-            return 4 * self.A_coolant(x) / perimeter
+            A_coolant_per_channel = A_coolant_tot / self.cooling_jacket.number_of_fins
+            P_per_channel = 2 * self.cooling_jacket.pitch(x) / self.cooling_jacket.number_of_fins  + 2 * channel_height
+
+            return 4 * A_coolant_per_channel / P_per_channel
 
         elif self.cooling_jacket.configuration == 'vertical':
+            # Inner and outer radius of the cooling channel (m)
             R_in = self.geometry.y(x) + self.total_wall_thickness(x)
-            perimeter = (2*np.pi*R_in + 2*np.pi*(R_in + channel_height)) * (1 - self.cooling_jacket.blockage_ratio(x)) + 2 * self.cooling_jacket.number_of_fins * channel_height
-            return 4 * self.A_coolant(x) / perimeter
+            R_out = R_in + channel_height
+
+            if self.cooling_jacket.number_of_fins == 0:
+                return 2 * (R_out - R_in)               # Reference [6] - Hydraulic diameter of an annulus
+            
+            else:
+                A_per_channel = A_coolant_tot / self.cooling_jacket.number_of_fins
+                P_per_channel = 2*np.pi*R_in / self.cooling_jacket.number_of_fins + 2*np.pi*R_out / self.cooling_jacket.number_of_fins + 2 * channel_height
+
+                return 4 * A_per_channel / P_per_channel
 
     def V_coolant(self, x, rho_coolant):
         """Get the coolant velocity at an axial position.
@@ -1095,7 +1108,8 @@ class Engine:
         results["p0_coolant"]           = [None] * len(cooling_simulation.state)     
         results["p_coolant"]            = [None] * len(cooling_simulation.state)           
         results["rho_coolant"]          = [None] * len(cooling_simulation.state)        
-        results["V_coolant"]            = [None] * len(cooling_simulation.state)        
+        results["V_coolant"]            = [None] * len(cooling_simulation.state)    
+        results["Dh_coolant"]           = [None] * len(cooling_simulation.state)    
         results["sigma_t_thermal"]      = [None] * len(cooling_simulation.state)        
         results["sigma_t_pressure"]     = [None] * len(cooling_simulation.state)        
         results["sigma_t_max"]          = [None] * len(cooling_simulation.state)        
@@ -1111,6 +1125,7 @@ class Engine:
         results["info"]["rho_coolant"] = "Density of coolant (kg/m3). rho_coolant[i] is the value at x[i]."
         results["info"]["p_coolant"] = "Static pressure of coolant (Pa). p_coolant[i] is the value at x[i]."
         results["info"]["V_coolant"] = "Velocity of coolant (m/s). V_coolant[i] is the value at x[i]."
+        results["info"]["Dh_coolant"] = "Hydraulic diameter of the coolant."
         results["info"]["sigma_t_thermal"] = "Tangential stress due to uneven thermal expansion (Pa). sigma_t_thermal[i][j] corresponds to the stress at x[i], across the j'th wall. j = 0 is the wall in contact with the exhaust gas, j = -1 is the wall in contact with the coolant."
         results["info"]["sigma_t_pressure"] = "Tangential stress due to pressure difference across wall (Pa). sigma_t_pressure[i][j] corresponds to the stress at x[i], across the j'th wall. j = 0 is the wall in contact with the exhaust gas, j = -1 is the wall in contact with the coolant."
         results["info"]["sigma_t_max"] = "Maximum tangential stress (Pa), equal to abs(sigma_t_thermal) + abs(sigma_t_pressure). sigma_t_max[i][j] corresponds to the stress at x[i], across the j'th wall. j = 0 is the wall in contact with the exhaust gas, j = -1 is the wall in contact with the coolant."
@@ -1127,6 +1142,7 @@ class Engine:
             results["rho_coolant"][i] = self.rho_coolant(x = results["x"][i], T_coolant = cooling_simulation.state[i]["T_c"], p0_coolant = results["p0_coolant"][i])
             results["p_coolant"][i] = self.p_coolant(x = results["x"][i], p0_coolant = results["p0_coolant"][i], rho_coolant = results["rho_coolant"][i])
             results["V_coolant"][i] = self.V_coolant(x = results["x"][i], rho_coolant = results["rho_coolant"][i])
+            results["Dh_coolant"][i] = self.Dh_coolant(x = results["x"][i])
 
             # Calculate relevant stresses
             results["sigma_t_thermal"][i] = [None] * len(self.walls)
