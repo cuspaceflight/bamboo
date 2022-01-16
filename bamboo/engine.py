@@ -848,8 +848,8 @@ class Engine:
                 # Turbulent flow
                 self.h_coolant = h_coolant_turb
 
-        self.h_coolant = self.h_coolant * self.h_coolant_sf                                                     # Multiply h_coolant by the scale factor given by the user.
-        A_coolant = 2 * np.pi * (y + self.total_wall_thickness(x) + self.cooling_jacket.channel_height(x))      # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.hx.HXSolver
+        self.h_coolant = self.h_coolant * self.h_coolant_sf             # Multiply h_coolant by the scale factor given by the user.
+        A_coolant = 2 * np.pi * (y + self.total_wall_thickness(x))      # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.hx.HXSolver
         R_list.append(1.0 / (self.h_coolant * A_coolant))
         
         # SOLID WALLS
