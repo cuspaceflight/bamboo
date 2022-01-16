@@ -86,7 +86,12 @@ def h_gas_bartz_sigma_curve(c_star, At, A, p_chamber, T_chamber, M, Tw, mu0, cp0
     Dt = (At *4/np.pi)**0.5
     sigma = (0.5 * (Tw/T_chamber) * (1 + (gamma-1)/2 * M**2) + 0.5)**(-0.68) * (1 + (gamma-1)/2 * M**2)**(-0.12)
 
-    return (0.026)/(Dt**0.2) * (mu0**0.2*cp0/Pr0**0.6) * (p_chamber/c_star)**0.8 * (Dt/rc_t)**0.1 * (At/A)**0.9 * sigma
+    Dt_by_rct = Dt / rc_t
+
+    if Dt_by_rct > 3:
+        warnings.warn("(throat diameter) / (radius of curvature throat) > 3, the bartz-sigma-curve equation will be inaccurate.", stacklevel = 2)
+
+    return (0.026)/(Dt**0.2) * (mu0**0.2*cp0/Pr0**0.6) * (p_chamber/c_star)**0.8 * (Dt_by_rct)**0.1 * (At/A)**0.9 * sigma
 
 def h_coolant_dittus_boelter(rho, V, D, mu, Pr, k):
     """Dittus-Boelter equation for convective heat transfer coefficient.
