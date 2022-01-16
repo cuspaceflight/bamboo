@@ -389,12 +389,13 @@ class Engine:
         c_star (float): C* for the engine (m/s).
         coolant_convection (str): Convective heat transfer model to use for the coolant side.
         exhaust_convection (str): Convective heat transfer model to use the for exhaust side.
+        h_exhaust_sf (float): Scale factor for the exhaust convective heat transfer coeffcient. Defaults to 1.
         walls (list): List of Wall objects between the hot gas and coolant
 
     """
     def __init__(self, perfect_gas, chamber_conditions, geometry, coolant_convection = "gnielinski", exhaust_convection = "bartz-sigma", **kwargs):
         # Check that the user has not mispelt or used additional kwargs
-        allowed_kwargs = {"walls", "cooling_jacket", "exhaust_transport"}
+        allowed_kwargs = {"walls", "cooling_jacket", "exhaust_transport", "h_exhaust_sf"}
         left_over = set(kwargs.keys()) - allowed_kwargs
         assert not left_over, f'Unrecognised keyword arguments for Engine: {left_over}'
         
@@ -429,6 +430,12 @@ class Engine:
         
         if "exhaust_transport" in kwargs:
             self.exhaust_transport = kwargs["exhaust_transport"]  
+
+        if "h_exhaust_sf" in kwargs:
+            self.h_exhaust_sf = kwargs["h_exhaust_sf"]
+
+        else:
+            self.h_exhaust_sf = 1.0
 
     def __setattr__(self, name, value):
         # If the user tries to set 'cooling_jacket' or 'wall' after the creation of the Engine object then we must run checks on the submitted values
@@ -800,7 +807,7 @@ class Engine:
                                                                     Pr = Pr_coolant, 
                                                                     k = k_coolant)
 
-            if self.coolant_convection == "sieder-tate":
+            elif self.coolant_convection == "sieder-tate":
                 mu_coolant_wall = self.cooling_jacket.coolant_transport.mu(T = T_coolant_wall, p = p_coolant)
                 h_coolant_turb = bamboo.circuit.h_coolant_sieder_tate(rho = rho_coolant, 
                                                                     V = V_coolant, 
@@ -928,8 +935,8 @@ class Engine:
                                                                Pr0 = Pr_exhaust_0,
                                                                rc_t = self.geometry.r_curvature_t)
 
-        A_exhaust = 2 * np.pi * y                       # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.hx.HXSolver
-        R_list.append(1.0 / (h_exhaust * A_exhaust))
+        A_exhaust = 2 * np.pi * y                                           # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.hx.HXSolver
+        R_list.append(1.0 / (self.h_exhaust_sf * h_exhaust * A_exhaust))    # Don't forget to multiply by any scale factor (self.h_exhaust_sf) that the user requested.
         
         return R_list
 
