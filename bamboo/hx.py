@@ -113,7 +113,6 @@ class HXSolver:
         while self.i < len(self.state) - 1:
             # Move to next grid point
             self.step()
-            print(f"x = {self.state[self.i]['x']}, p0_c = {self.state[self.i]['p0_c']}")
 
             # Perform the required number of iterations
             counter = 0
