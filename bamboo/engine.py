@@ -1037,6 +1037,22 @@ class Engine:
 
             return dp_dL * dL_dx
 
+    def mdot_c_eff(self, state):
+        if self.cooling_jacket.configuration == "vertical":
+            return self.cooling_jacket.mdot_coolant
+        
+        elif self.cooling_jacket.configuration == "spiral":
+            # The 'actual' mass flow rate that receives the heat transfer must be in the direction 'dx' - mdot_eff = rho * V * A * cos(spiral_angle)
+            # We need to use this mass flow rate for the temperature rise
+            # ??? THIS IS SUPER WEIRD ???
+            # I think you can alternatively think of it as - dQ/dx = mdot cp dT/dx
+            # But the temperature rise of the coolant along the flow path is dQ/dL = dQ/dx dx/dL???
+            x = state["x"]
+            R_in = self.geometry.y(x) + self.total_wall_thickness(x)
+            spiral_angle = np.arctan(2 * np.pi * R_in / self.cooling_jacket.pitch(x))
+            return self.cooling_jacket.mdot_coolant * np.cos(spiral_angle)
+
+
     # Functions for thermal simulations
     def steady_heating_analysis(self, num_grid = 1000, counterflow = True, iter_start = 5, iter_each = 1):
         """Run a steady state cooling simulation.
@@ -1084,6 +1100,7 @@ class Engine:
                                                           p0_c_in = self.cooling_jacket.p0_coolant_in, 
                                                           cp_c = self.cp_c, 
                                                           mdot_c = self.cooling_jacket.mdot_coolant, 
+                                                          mdot_c_eff = self.mdot_c_eff,
                                                           R_th = self.R_th,  
                                                           extra_dQ_dx = self.extra_dQ_dx,
                                                           dp_dx = self.dp_dx, 
@@ -1103,7 +1120,8 @@ class Engine:
         results["T"]                    = [None] * len(cooling_simulation.state)     
         results["T_coolant"]            = None
         results["T_exhaust"]            = None
-        results["dQ_dx"]                = [None] * len(cooling_simulation.state)        
+        results["dQ_dx"]                = [None] * len(cooling_simulation.state)  
+        results["dQ_dL"]                = [None] * len(cooling_simulation.state)       
         results["dQ_dA"]                = [None] * len(cooling_simulation.state)       
         results["p0_coolant"]           = [None] * len(cooling_simulation.state)     
         results["p_coolant"]            = [None] * len(cooling_simulation.state)           
@@ -1120,6 +1138,7 @@ class Engine:
         results["info"]["T_coolant"] = "Coolant temperature at each position (K). T_coolant[i] is the value at x[i]."
         results["info"]["T_exhaust"] = "Exhaust temperature at each position (K). T_exhaust[i] is the value at x[i]. "
         results["info"]["dQ_dx"] = "Heat transfer rate per unit axial length (W/m). dQ_dx[i] is the value at x[i]."
+        results["info"]["dQ_dL"] = "Heat transfer rate per unit length along the cooling channel (W/m) - equal to dQ/dx for 'vertical' channels but not for 'spiral' channels. dQ_dx[i] is the value at x[i]."
         results["info"]["dQ_dA"] = "Heat transfer rate per unit chamber area (W/m2). dQ_dA[i] is the value at x[i]."
         results["info"]["p0_coolant"] = "Stagnation pressure of coolant (Pa). p0_coolant[i] is the value at x[i]."
         results["info"]["rho_coolant"] = "Density of coolant (kg/m3). rho_coolant[i] is the value at x[i]."
@@ -1143,6 +1162,17 @@ class Engine:
             results["p_coolant"][i] = self.p_coolant(x = results["x"][i], p0_coolant = results["p0_coolant"][i], rho_coolant = results["rho_coolant"][i])
             results["V_coolant"][i] = self.V_coolant(x = results["x"][i], rho_coolant = results["rho_coolant"][i])
             results["Dh_coolant"][i] = self.Dh_coolant(x = results["x"][i])
+
+            if self.cooling_jacket.configuration == "vertical":
+                results["dQ_dL"][i] = results["dQ_dx"][i]
+            
+            elif self.cooling_jacket.configuration == "spiral":
+                R_inner = self.geometry.y(x) + self.total_wall_thickness(x)
+                spiral_angle = np.arctan(2 * np.pi * R_inner / self.cooling_jacket.pitch(x))
+                dx_dL = np.cos(spiral_angle)                 # Length travelled along the spiral channel for each 'dx'
+
+                results["dQ_dL"][i] = results["dQ_dx"][i] * dx_dL
+                
 
             # Calculate relevant stresses
             results["sigma_t_thermal"][i] = [None] * len(self.walls)
