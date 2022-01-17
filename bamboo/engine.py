@@ -982,6 +982,12 @@ class Engine:
                 pitch = self.cooling_jacket.pitch(x)
                 Ac = pitch * blockage_ratio / self.cooling_jacket.number_of_fins
 
+                # Need to correct the perimeter to take into account that the length travelled by a fluid along a the spiral channel is longer than 'dx'
+                # IS THIS THE CORRECT WAY OF TAKING THIS INTO ACCOUNT???
+                R_in = self.geometry.y(x) + self.total_wall_thickness(x)
+                helix_angle = np.arctan(2 * np.pi * R_in / self.cooling_jacket.pitch(x))
+                P = P / np.cos(helix_angle)
+
             T_b = state["T_cw"]
             T_inf = state["T_c"]
 
@@ -1042,15 +1048,15 @@ class Engine:
             return self.cooling_jacket.mdot_coolant
         
         elif self.cooling_jacket.configuration == "spiral":
-            # The 'actual' mass flow rate that receives the heat transfer must be in the direction 'dx' - mdot_eff = rho * V * A * cos(spiral_angle)
+            # The 'actual' mass flow rate that receives the heat transfer must be in the direction 'dx' - mdot_eff = rho * V * A * cos(helix_angle)
             # We need to use this mass flow rate for the temperature rise
             # ??? THIS IS SUPER WEIRD ???
             # I think you can alternatively think of it as - dQ/dx = mdot cp dT/dx
             # But the temperature rise of the coolant along the flow path is dQ/dL = dQ/dx dx/dL???
             x = state["x"]
             R_in = self.geometry.y(x) + self.total_wall_thickness(x)
-            spiral_angle = np.arctan(2 * np.pi * R_in / self.cooling_jacket.pitch(x))
-            return self.cooling_jacket.mdot_coolant * np.cos(spiral_angle)
+            helix_angle = np.arctan(2 * np.pi * R_in / self.cooling_jacket.pitch(x))
+            return self.cooling_jacket.mdot_coolant * np.cos(helix_angle)
 
 
     # Functions for thermal simulations
@@ -1168,8 +1174,8 @@ class Engine:
             
             elif self.cooling_jacket.configuration == "spiral":
                 R_inner = self.geometry.y(x) + self.total_wall_thickness(x)
-                spiral_angle = np.arctan(2 * np.pi * R_inner / self.cooling_jacket.pitch(x))
-                dx_dL = np.cos(spiral_angle)                 # Length travelled along the spiral channel for each 'dx'
+                helix_angle = np.arctan(2 * np.pi * R_inner / self.cooling_jacket.pitch(x))
+                dx_dL = np.cos(helix_angle)                 # Length travelled along the spiral channel for each 'dx'
 
                 results["dQ_dL"][i] = results["dQ_dx"][i] * dx_dL
                 
