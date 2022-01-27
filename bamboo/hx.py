@@ -10,7 +10,7 @@ Notation:
 from bamboo.circuit import ThermalCircuit
 
 class HXSolver:
-    def __init__(self, T_c_in, T_h, p0_c_in, cp_c, mdot_c, mdot_c_eff, R_th, extra_dQ_dx, dp_dx, x_start, dx, x_end):
+    def __init__(self, T_c_in, T_h, p0_c_in, cp_c, mdot_c, R_th, extra_dQ_dx, dp_dx, x_start, dx, x_end):
         """Class for solving heat exchanger problems.
 
         Args:
@@ -19,7 +19,6 @@ class HXSolver:
             p0_c_in (float): Coolant inlet stagnation pressure (Pa)
             cp_c (callable): Coolant isobaric specific heat capacity (J/kg/K). Must be a function of 'state'.
             mdot_c (float): Coolant mass flow rate (kg/s)
-            mdot_c_eff (callable): Effective mass flow rate for temperarture rise. Must be a function of 'state'.
             R_th (callable): List of thermal resistances [R1, R2 ... etc], in the order T_cold --> T_hot. Note they need to be 1D resistances, so Qdot is per unit length. Must be a function of 'state'.
             extra_dQ_dx (callable): Extra heat transfer rate (positive into the coolant), to add on (W), to represent things like fins protruding into the coolant flow. Must be a function of 'state'.
             dp_dx (callable): Stagnation pressure drop per unit length (Pa/m)
@@ -32,8 +31,7 @@ class HXSolver:
         self.T_h = T_h             
         self.p0_c_in = p0_c_in      
         self.cp_c = cp_c          
-        self.mdot_c = mdot_c   
-        self.mdot_c_eff = mdot_c_eff    
+        self.mdot_c = mdot_c      
         self.R_th = R_th            
         self.extra_dQ_dx = extra_dQ_dx
         self.dp_dx = dp_dx         
@@ -85,7 +83,7 @@ class HXSolver:
 
         Q_tot = old_state["circuit"].Qdot - self.extra_dQ_dx(old_state) * abs(self.dx)     # extra_Q is positive into the coolant, but circuit.Qdot is positive into the exhaust
 
-        self.state[self.i]["T_c"] = old_state["T_c"] - Q_tot * abs(self.dx) / (self.mdot_c_eff(old_state) * self.cp_c(old_state) ) # Temperature rise due to heat transfer in - note the Qdot is per unit length
+        self.state[self.i]["T_c"] = old_state["T_c"] - Q_tot * abs(self.dx) / (self.mdot_c * self.cp_c(old_state) ) # Temperature rise due to heat transfer in - note the Qdot is per unit length
         self.state[self.i]["T_cw"] = old_state["T_cw"]
         self.state[self.i]["T_hw"] = old_state["T_hw"]
         self.state[self.i]["p0_c"] = old_state["p0_c"] - self.dp_dx(old_state) * abs(self.dx)
