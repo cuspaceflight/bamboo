@@ -69,6 +69,7 @@ L_positions = np.zeros(len(x_positions))                                        
 wall_thickness = 0.4e-3
 pitch = 1.824
 
+# NOTE I FORGOT TO TAKE INTO ACCOUNT THE SLOPE OF THE CONTOUR, dy/dx. I ONLY TOOK INTO ACCOUNT THE HELIX ANGLE
 for i in range(len(x_positions)):
     if i == 0:
         pass
@@ -102,7 +103,6 @@ for key in output["Nyden"].keys():
     output["Nyden"][key]["x"] = np.interp(x = output["Nyden"][key]["x"], 
                                                xp = L_positions,
                                                fp = x_positions)
-
 
 # Save everything to a .json file
 
