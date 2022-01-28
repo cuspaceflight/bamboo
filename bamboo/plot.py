@@ -151,6 +151,23 @@ def plot_coolant_velocity(data_dict):
     axs.set_xlabel("Axial position (m)")
     axs.set_ylabel(r"Coolant velocity (m s$^{-1}$)")
 
+def plot_coolant_density(data_dict):
+    """Plot the cooling density against axial position. 
+    Note you will have to run matplotlib.pyplot.show() or bamboo.show() to see the plot.
+
+    Args:
+        data_dict (dict): Dictionary contaning the cooling analysis results.
+
+    """
+
+    fig, axs = plt.subplots()
+    axs.plot(data_dict["x"], data_dict["rho_coolant"], label = "Coolant density")
+
+    axs.legend()
+    axs.grid()
+    axs.set_xlabel("Axial position (m)")
+    axs.set_ylabel(r"Coolant density (kg m$^{-3}$)")
+
 
 def plot_resistances(data_dict, **kwargs):
     raise ValueError("bamboo.plot.plot_resistances is not yet implemented")

@@ -381,7 +381,7 @@ class CoolingJacket:
             # "Blend" between the laminar and turbulent region
             return np.interp(ReDh, [REDH_LAMINAR, REDH_TURBULENT], [f_darcy_laminar, f_darcy_turbulent])
 
-        # Turbulen tflow
+        # Turbulent flow
         else:
             return self.f_darcy_turbulent(ReDh = ReDh, Dh = Dh, x = x)     
 
@@ -1003,8 +1003,6 @@ class Engine:
             Pr_exhaust_0 = self.exhaust_transport.Pr(T = self.chamber_conditions.T0, p = self.chamber_conditions.p0)   
             
             # Calculate radius of curvature at the throat
-
-
             h_exhaust = bamboo.circuit.h_gas_bartz_sigma_curve(c_star = self.c_star, 
                                                                At = self.geometry.At, 
                                                                A = np.pi * Dh_exhaust**2 / 4, 
@@ -1087,12 +1085,13 @@ class Engine:
         # Fully developed pipe flow pressure drop [3] - this is dp/dL (pressure drop per unit length travelled by the fluid)
         dp_dLc = f_darcy * (rho_coolant / 2) * (V_coolant**2)/Dh
 
+        """
+        # I have commented this out, as it's not actually significant
         # We need to account for the area change pressure loss as well - especially if the cooling channels are expanding (diffusion causing large pressure losses)
         next_x = x + self.dx
 
         if (self.counterflow and (next_x < self.x_end)) or ((not self.counterflow) and (next_x > self.x_end)):
             pass
-            print("skipped")
 
         else:
             # Using Ref [8] - assume we can use Dh in replacement of their diameters
@@ -1139,10 +1138,9 @@ class Engine:
             
             # Add on to the pressure drop from friction
             dp = 0.5 * rho_coolant * V_coolant**2 * K
-            
-            print(f"dp/dLc = {dp_dLc} from friction and {dp/dLc} from momentum")
 
             dp_dLc = dp_dLc + dp/dLc
+            """
 
         return dp_dLc * self.dLc_dx(x)
 
