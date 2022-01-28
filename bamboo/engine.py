@@ -90,7 +90,7 @@ class Geometry:
 
         Args:
             xs (list): Array of x-positions, that the 'y' list corresponds to (m). Must be increasing values of x.
-            ys (list): Array, containing the distances from the engine centreline to the inner wall (m).
+            ys (list): Array, containing local engine radius (m).
 
         Attributes:
             xt (float): x-position of the throat (m)
@@ -123,16 +123,6 @@ class Geometry:
     def Ae(self):
         return np.pi * self.Re**2
 
-    @property
-    def r_curvature_t(self):
-        # Calculate the radius of curvature [5]. This is useful in the Bartz equations.
-        raise ValueError("r_curvature_t is incomplete - can't use np.gradient because it assumes constant spacing in xs.")
-        dy_dx = np.gradient(self.ys, self.xs)
-        d2y_dx2 = np.gradient(dy_dx, self.xs)
-
-        throat_index = np.argmin(self.ys)
-
-        return abs( (( 1 + dy_dx[throat_index]**2 )**1.5) / (d2y_dx2[throat_index]) )
 
     def plot(self):
         """
@@ -145,7 +135,6 @@ class Geometry:
         axs.set_xlabel("x (m)")
         axs.set_ylabel("y (m)")
         axs.set_aspect('equal')
-
 
     def y(self, x):
         """Get the distance from the centreline to the inner wall of the engine.
@@ -168,6 +157,7 @@ class Geometry:
             float: Flow area (m2)
         """
         return np.pi * self.y(x)**2
+
 
 class Wall:
     def __init__(self, material, thickness):
@@ -202,7 +192,7 @@ class CoolingJacket:
         """Class for representing cooling jacket properties. 
 
         Note:
-            Spiralling channels are assumed to cover the entire surface area of the outer chamber wall (i.e. the width of the channels is equal to the pitch, if the blockage ratio = 0). A blockage ratio can still be used to 'block up' part of the channels with fins.
+            Spiralling channels are assumed to cover the entire surface area of the outer chamber wall. A blockage ratio can still be used to 'block up' part of the channels with fins.
 
         Note:
             All channels are assumed to have a rectangular cross section.
@@ -229,17 +219,19 @@ class CoolingJacket:
         left_over = set(kwargs.keys()) - allowed_kwargs
         assert not left_over, f'Unrecognised keyword arguments for CoolingJacket: {left_over}'
 
-        # Main code
+        # Assign variables
         assert configuration == "vertical" or configuration == "spiral", "'configuration' input must be either 'vertical' or 'spiral'"
 
         self.T_coolant_in = T_coolant_in
         self.p0_coolant_in = p0_coolant_in
         self.mdot_coolant = mdot_coolant
         self.coolant_transport = coolant_transport
+        self.configuration = configuration
         self._channel_height = channel_height
         self._roughness = roughness
 
-        self.configuration = configuration
+        if "xs" in kwargs:
+            self.xs = kwargs["xs"]
 
         if "restrain_fins" in kwargs:
             self.restrain_fins = kwargs["restrain_fins"]
@@ -248,12 +240,11 @@ class CoolingJacket:
         else:
             self.restrain_fins = False
 
-        if "xs" in kwargs:
-            self.xs = kwargs["xs"]
 
         if self.configuration == "spiral":
             assert "channel_width" in kwargs, "Must input 'channel_width' in order to use configuration = 'spiral'"
             self._channel_width = kwargs["channel_width"]
+
 
         if "blockage_ratio" in kwargs:
             self._blockage_ratio = kwargs["blockage_ratio"]
@@ -742,7 +733,7 @@ class Engine:
 
         if self.cooling_jacket.configuration == 'spiral':
             A_coolant_per_channel = A_coolant_tot / self.cooling_jacket.number_of_channels
-            P_per_channel = 2 * self.cooling_jacket.bundle_width(x) / self.cooling_jacket.number_of_channels  + 2 * channel_height
+            P_per_channel = 2 * self.cooling_jacket.channel_width(x)  + 2 * channel_height
 
             return 4 * A_coolant_per_channel / P_per_channel
 
@@ -756,7 +747,7 @@ class Engine:
             
             else:
                 A_per_channel = A_coolant_tot / self.cooling_jacket.number_of_channels
-                P_per_channel = 2*np.pi*R_in / self.cooling_jacket.number_of_channels + 2*np.pi*R_out / self.cooling_jacket.number_of_channels + 2 * channel_height
+                P_per_channel = 2*np.pi*R_in / self.cooling_jacket.number_of_channels + 2*np.pi*R_out / self.cooling_jacket.number_of_channels + 2*channel_height
 
                 return 4 * A_per_channel / P_per_channel
 
@@ -1233,7 +1224,7 @@ class Engine:
         results["info"]["T_coolant"] = "Coolant temperature at each position (K). T_coolant[i] is the value at x[i]."
         results["info"]["T_exhaust"] = "Exhaust temperature at each position (K). T_exhaust[i] is the value at x[i]. "
         results["info"]["dQ_dx"] = "Heat transfer rate per unit axial length (W/m). dQ_dx[i] is the value at x[i]."
-        results["info"]["dQ_dL"] = "Heat transfer rate per unit length along the cooling channel (W/m) - equal to dQ/dx for 'vertical' channels but not for 'spiral' channels. dQ_dx[i] is the value at x[i]."
+        results["info"]["dQ_dLc"] = "Heat transfer rate per unit length along the cooling channel (W/m) - equal to dQ/dx for 'vertical' channels but not for 'spiral' channels. dQ_dx[i] is the value at x[i]."
         results["info"]["dQ_dA"] = "Heat transfer rate per unit chamber area (W/m2). dQ_dA[i] is the value at x[i]."
         results["info"]["p0_coolant"] = "Stagnation pressure of coolant (Pa). p0_coolant[i] is the value at x[i]."
         results["info"]["rho_coolant"] = "Density of coolant (kg/m3). rho_coolant[i] is the value at x[i]."
@@ -1264,9 +1255,9 @@ class Engine:
             elif self.cooling_jacket.configuration == "spiral":
                 R_inner = self.geometry.y(x) + self.total_wall_thickness(x)
                 helix_angle = np.arctan(2 * np.pi * R_inner / self.cooling_jacket.bundle_width(x))
-                dx_dL = np.cos(helix_angle)                 # Length travelled along the spiral channel for each 'dx'
+                dx_dL = np.cos(helix_angle)                         # Length travelled along the spiral channel for each 'dx'
 
-                results["dQ_dL"][i] = results["dQ_dx"][i] * dx_dL
+                results["dQ_dLc"][i] = results["dQ_dx"][i] * dx_dL
                 
 
             # Calculate relevant stresses

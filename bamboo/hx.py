@@ -82,7 +82,7 @@ class HXSolver:
         self.state[self.i]["x"] = old_state["x"] + self.dx
 
         Q_tot = old_state["circuit"].Qdot - self.extra_dQ_dx(old_state) * abs(self.dx)     # extra_Q is positive into the coolant, but circuit.Qdot is positive into the exhaust
-
+        
         self.state[self.i]["T_c"] = old_state["T_c"] - Q_tot * abs(self.dx) / (self.mdot_c * self.cp_c(old_state) ) # Temperature rise due to heat transfer in - note the Qdot is per unit length
         self.state[self.i]["T_cw"] = old_state["T_cw"]
         self.state[self.i]["T_hw"] = old_state["T_hw"]
