@@ -2,6 +2,8 @@
 Isentropic compressible flow relations.
 """
 
+import scipy.optimize
+
 def m_bar(M, gamma):    
     """Non-dimensional mass flow rate, defined as m_bar = mdot * sqrt(cp*T0)/(A*p0). A is the local cross sectional area that the flow is moving through.
 
@@ -52,6 +54,20 @@ def M_from_p(p, p0, gamma):
         float: Mach number
     """
     return ( (2/(gamma-1)) * ( (p/p0)**((gamma-1)/(-gamma)) - 1 ) )**0.5
+
+def M_from_A_subsonic(A, mdot, T0, p0, cp, gamma):
+
+    def func_to_solve(Mach):
+        return mdot * (cp * T0)**0.5 / (A  * p0) - m_bar(M = Mach, gamma = gamma)
+        
+    return scipy.optimize.root_scalar(func_to_solve, bracket = [0.0,1], x0 = 0.5).root
+
+def M_from_A_supersonic(A, mdot, T0, p0, cp, gamma):
+
+    def func_to_solve(Mach):
+        return mdot * (cp * T0)**0.5 / (A  * p0) - m_bar(M = Mach, gamma = gamma)
+
+    return scipy.optimize.root_scalar(func_to_solve, bracket = [1, 500], x0 = 1).root
 
 def T(T0, M, gamma):
     """Get local temperature from the Mach number and stagnation temperature.

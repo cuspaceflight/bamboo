@@ -36,7 +36,7 @@ class Material:
             self.poisson = float("NaN")
 
 class TransportProperties:
-    def __init__(self, Pr, mu, k, cp = None, rho = None):
+    def __init__(self, Pr, mu, k, cp = None, rho = None, gamma_coolant = None):
         """
         Container for specifying your transport properties. Each input can either be a function of temperature (K) and pressure (Pa) in that order, e.g. mu(T, p). Otherwise they can be constant floats.
 
@@ -46,6 +46,10 @@ class TransportProperties:
             k (float or callable): Thermal conductivity (W/m/K).
             cp (float or callable, optional): Isobaric specific heat capacity (J/kg/K) - only required for coolants.
             rho (float or callable, optional): Density (kg/m^3) - only required for coolants.
+            gamma_coolant (float or callable, optional): Ratio of specific heats (cp/cv) for a compressible coolant. If this is submitted, it is assumed that this object represents a compressible coolant.
+        
+        Attributes:
+            compressible_coolant (bool): Whether or not this TransportProperties object represents a compressible coolant.
         """
 
         self.type = type
@@ -54,6 +58,12 @@ class TransportProperties:
         self._k = k
         self._rho = rho
         self._cp = cp
+        self._gamma_coolant = gamma_coolant
+
+        if gamma_coolant is None:
+            self.compressible_coolant == False
+        else:
+            self.compressible_coolant == True
 
     def Pr(self, T, p):
         """Prandtl number.
@@ -139,6 +149,26 @@ class TransportProperties:
         
         else:
             return self._cp
+
+    def gamma_coolant(self, T, p):
+        """Ratio of specific heat capacities for a compressible coolant.
+
+        Args:
+            T (float): Temperature (K)
+            p (float): Pressure (Pa)
+
+        Returns:
+            float: Ratio of specific heat capacities (cp/cv).
+        """
+
+        if self._gamma_coolant is None:
+            raise ValueError("TransportProperties object does not have its compressibgle coolant gamma 'gamma_coolant' defined.")
+
+        if callable(self._gamma_coolant):
+            return self._gamma_coolant(T, p)
+        
+        else:
+            return self._gamma_coolant
 
 class NucleateBoiling:
     def __init__(self, vapour_transport, liquid_transport, sigma, h_fg, C_sf):

@@ -10,12 +10,12 @@ Notation:
 from bamboo.circuit import ThermalCircuit
 
 class HXSolver:
-    def __init__(self, T_c_in, T_h, p0_c_in, cp_c, mdot_c, R_th, extra_dQ_dx, dp_dx, x_start, dx, x_end):
+    def __init__(self, T0_c_in, T_h, p0_c_in, cp_c, mdot_c, R_th, extra_dQ_dx, dp_dx, x_start, dx, x_end):
         """Class for solving heat exchanger problems.
 
         Args:
-            T_c_in (float): Coolant inlet temperature (K)
-            T_h (callable): Exhaust gas temperature (K). Must be a function of 'state'.
+            T0_c_in (float): Coolant inlet stagnation temperature (K)
+            T_h (callable): Exhaust gas static temperature (K). Must be a function of 'state'.
             p0_c_in (float): Coolant inlet stagnation pressure (Pa)
             cp_c (callable): Coolant isobaric specific heat capacity (J/kg/K). Must be a function of 'state'.
             mdot_c (float): Coolant mass flow rate (kg/s)
@@ -27,7 +27,7 @@ class HXSolver:
             x_end (float): Value of x to stop at (m)
         """
 
-        self.T_c_in = T_c_in       
+        self.T0_c_in = T0_c_in       
         self.T_h = T_h             
         self.p0_c_in = p0_c_in      
         self.cp_c = cp_c          
@@ -53,8 +53,8 @@ class HXSolver:
             self.state[i] = {}
 
         self.state[self.i]["x"] = self.x_start
-        self.state[self.i]["T_c"] = self.T_c_in
-        self.state[self.i]["T_cw"] = self.state[self.i]["T_c"]
+        self.state[self.i]["T0_c"] = self.T0_c_in
+        self.state[self.i]["T_cw"] = self.state[self.i]["T0_c"]
         self.state[self.i]["T_hw"] = self.T_h(self.state[self.i])
         self.state[self.i]["p0_c"] = self.p0_c_in
 
@@ -63,7 +63,7 @@ class HXSolver:
         Iterate one step at the current 'x' position. 
         """
 
-        circuit = ThermalCircuit(T1 = self.state[self.i]["T_c"], 
+        circuit = ThermalCircuit(T1 = self.state[self.i]["T0_c"], 
                                  T2 = self.T_h(self.state[self.i]),
                                  R = self.R_th(self.state[self.i]) )       
 
@@ -83,7 +83,7 @@ class HXSolver:
 
         Q_tot = old_state["circuit"].Qdot - self.extra_dQ_dx(old_state) * abs(self.dx)     # extra_Q is positive into the coolant, but circuit.Qdot is positive into the exhaust
         
-        self.state[self.i]["T_c"] = old_state["T_c"] - Q_tot * abs(self.dx) / (self.mdot_c * self.cp_c(old_state) ) # Temperature rise due to heat transfer in - note the Qdot is per unit length
+        self.state[self.i]["T0_c"] = old_state["T0_c"] - Q_tot * abs(self.dx) / (self.mdot_c * self.cp_c(old_state) ) # Temperature rise due to heat transfer in - note the Qdot is per unit length
         self.state[self.i]["T_cw"] = old_state["T_cw"]
         self.state[self.i]["T_hw"] = old_state["T_hw"]
         self.state[self.i]["p0_c"] = old_state["p0_c"] - self.dp_dx(old_state) * abs(self.dx)

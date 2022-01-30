@@ -17,6 +17,7 @@ Notes:
    properties is available as a compromise.
 """
 
+from math import gamma
 from multiprocessing.sharedctypes import Value
 import numpy as np
 import scipy.optimize
@@ -750,6 +751,67 @@ class Engine:
                 P_per_channel = 2*np.pi*R_in / self.cooling_jacket.number_of_channels + 2*np.pi*R_out / self.cooling_jacket.number_of_channels + 2*channel_height
 
                 return 4 * A_per_channel / P_per_channel
+
+    def coolant_state(self, x, T0_coolant, p0_coolant):
+        A_coolant = self.A_coolant(x)
+
+        if self.cooling_jacket.coolant_transport.compressible_coolant:
+            # Compressible coolant
+            # Assume subsonic always, and approximate with perfect gas equations
+            T_coolant = T0_coolant
+            p_coolant = p0_coolant
+            cp_coolant = self.cooling_jacket.coolant_transport.cp(T = T_coolant, p = p_coolant)
+            gamma_coolant = self.cooling_jacket.coolant_transport.gamma_coolant(T = T_coolant, p = p_coolant)
+
+            M_coolant = bamboo.isen.M_from_A_subsonic(A = A_coolant, 
+                                                      mdot = self.cooling_jacket.mdot_coolant, 
+                                                      T0 = T0_coolant, 
+                                                      p0 = p0_coolant, 
+                                                      cp = cp_coolant, 
+                                                      gamma = gamma_coolant)
+
+            # Iterate
+            change = np.inf
+            while abs(change) > abs(M_coolant * 1e-12):
+                M_coolant_old = M_coolant
+
+                T_coolant = bamboo.isen.T(T0 = T0_coolant, M = M_coolant, gamma = gamma_coolant)
+                p_coolant = bamboo.isen.p(p0 = p0_coolant, M = M_coolant, gamma = gamma_coolant)
+                cp_coolant = self.cooling_jacket.coolant_transport.cp(T = T_coolant, p = p_coolant)
+                gamma_coolant = self.cooling_jacket.coolant_transport.gamma_coolant(T = T_coolant, p = p_coolant)
+
+                M_coolant = bamboo.isen.M_from_A_subsonic(A = A_coolant, 
+                                                        mdot = self.cooling_jacket.mdot_coolant, 
+                                                        T0 = T0_coolant, 
+                                                        p0 = p0_coolant, 
+                                                        cp = cp_coolant, 
+                                                        gamma = gamma_coolant)
+
+                change = M_coolant_old - M_coolant
+
+            R_coolant = cp_coolant * (1 - 1/gamma_coolant)
+            V_coolant = M_coolant * (gamma_coolant * R_coolant * T_coolant)**0.5
+            rho_coolant = self.cooling_jacket.coolant_transport.rho(T = T_coolant, p = p_coolant)
+
+        else:
+            # Incompressible coolant
+            # Initial guess of density using stagnation conditions
+            T_coolant = T0_coolant
+            p_coolant = p0_coolant
+            rho_coolant = self.cooling_jacket.coolant_transport.rho(T = T_coolant, p = p_coolant)
+
+            # Iterate
+            change = np.inf
+            while abs(change) > abs(rho_coolant * 1e-12):
+                V_coolant = self.cooling_jacket.mdot_coolant / (rho_coolant * A_coolant)
+                p_coolant = p0_coolant - 0.5 * rho_coolant * V_coolant**2
+                cp_coolant = self.cooling_jacket.coolant_transport.cp(T = T_coolant, p = p_coolant)
+                T_coolant = T0_coolant - 0.5 * V_coolant**2 / cp_coolant
+                new_rho_coolant = self.cooling_jacket.coolant_transport.rho(T = T_coolant, p = p_coolant)
+                change = new_rho_coolant - rho_coolant
+                rho_coolant = new_rho_coolant
+
+        return T_coolant, p_coolant, rho_coolant, V_coolant
 
     def V_coolant(self, x, rho_coolant):
         """Get the coolant velocity at an axial position.
