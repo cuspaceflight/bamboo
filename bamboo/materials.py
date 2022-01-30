@@ -61,9 +61,9 @@ class TransportProperties:
         self._gamma_coolant = gamma_coolant
 
         if gamma_coolant is None:
-            self.compressible_coolant == False
+            self.compressible_coolant = False
         else:
-            self.compressible_coolant == True
+            self.compressible_coolant = True
 
     def Pr(self, T, p):
         """Prandtl number.

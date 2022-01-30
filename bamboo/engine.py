@@ -189,7 +189,7 @@ class Wall:
             return self._thickness
 
 class CoolingJacket:
-    def __init__(self, T_coolant_in, p0_coolant_in, mdot_coolant, channel_height, coolant_transport, roughness = None, configuration = "vertical", **kwargs):
+    def __init__(self, T0_coolant_in, p0_coolant_in, mdot_coolant, channel_height, coolant_transport, roughness = None, configuration = "vertical", **kwargs):
         """Class for representing cooling jacket properties. 
 
         Note:
@@ -199,7 +199,7 @@ class CoolingJacket:
             All channels are assumed to have a rectangular cross section.
 
         Args:
-            T_coolant_in (float): Inlet temperature of the coolant (K)
+            T0_coolant_in (float): Inlet temperature of the coolant (K)
             p0_coolant_in (float): Inlet stagnation pressure of the coolant (Pa)
             mdot_coolant (float): Mass flow rate of the coolant (kg/s)
             channel_height (float or callable): Radial height of the cooling channels (i.e. the distance between the inner and outer wall that the coolant flows through) (m). Can be a constant float, or function of axial position (x).
@@ -223,7 +223,7 @@ class CoolingJacket:
         # Assign variables
         assert configuration == "vertical" or configuration == "spiral", "'configuration' input must be either 'vertical' or 'spiral'"
 
-        self.T_coolant_in = T_coolant_in
+        self.T0_coolant_in = T0_coolant_in
         self.p0_coolant_in = p0_coolant_in
         self.mdot_coolant = mdot_coolant
         self.coolant_transport = coolant_transport
@@ -753,6 +753,16 @@ class Engine:
                 return 4 * A_per_channel / P_per_channel
 
     def coolant_state(self, x, T0_coolant, p0_coolant):
+        """Get the coolant state.
+
+        Args:
+            x (float): Axial position (m)
+            T0_coolant (float): Coolant stagnation temperature (K)
+            p0_coolant (float): Coolant stagnation pressure (Pa)
+
+        Returns:
+            float, float, float, float: Coolant static temperature (K), coolant static pressure (K), coolant density (kg/m3), coolant velocity (m/s)
+        """
         A_coolant = self.A_coolant(x)
 
         if self.cooling_jacket.coolant_transport.compressible_coolant:
@@ -772,6 +782,7 @@ class Engine:
 
             # Iterate
             change = np.inf
+            i = 0
             while abs(change) > abs(M_coolant * 1e-12):
                 M_coolant_old = M_coolant
 
@@ -788,6 +799,9 @@ class Engine:
                                                         gamma = gamma_coolant)
 
                 change = M_coolant_old - M_coolant
+                i += 1
+                if i > 500:
+                    raise ValueError("Failed to converge on compressible coolant state.")
 
             R_coolant = cp_coolant * (1 - 1/gamma_coolant)
             V_coolant = M_coolant * (gamma_coolant * R_coolant * T_coolant)**0.5
@@ -802,6 +816,7 @@ class Engine:
 
             # Iterate
             change = np.inf
+            i = 0
             while abs(change) > abs(rho_coolant * 1e-12):
                 V_coolant = self.cooling_jacket.mdot_coolant / (rho_coolant * A_coolant)
                 p_coolant = p0_coolant - 0.5 * rho_coolant * V_coolant**2
@@ -811,58 +826,12 @@ class Engine:
                 change = new_rho_coolant - rho_coolant
                 rho_coolant = new_rho_coolant
 
+                i += 1
+                if i > 500:
+                    raise ValueError("Failed to converge on incompressible coolant state.")
+
+
         return T_coolant, p_coolant, rho_coolant, V_coolant
-
-    def V_coolant(self, x, rho_coolant):
-        """Get the coolant velocity at an axial position.
-
-        Args:
-            x (float): Axial position (m)
-            rho_coolant (float): Coolant density (kg/m3)
-
-        Returns:
-            float: Coolant velocity (m/s)
-        """
-        assert hasattr(self, "cooling_jacket"), "Must have given a 'cooling_jacket' input to the Engine object to use Engine.coolant_velocity()"
-        return self.cooling_jacket.mdot_coolant / (rho_coolant * self.A_coolant(x))
-
-    def p_coolant(self, x, p0_coolant, rho_coolant):
-        """Get the static pressure of the coolant from the stagnation pressure. Uses Bernoulli's equation, which assumes the coolant to be incompressible. 
-
-        Args:
-            x (float): Axial position (m)
-            p0_coolant (float): Stagnation pressure (Pa)
-            rho_coolant (float): Coolant density (kg/m3)
-
-        Returns:
-            float: Static pressure (Pa)
-        """
-        return p0_coolant - 0.5 * rho_coolant * self.V_coolant(x = x, rho_coolant = rho_coolant)**2
-
-    def rho_coolant(self, x, T_coolant, p0_coolant):
-        """Use iteration to find the coolant density. It's a function of pressure, but we don't know the static pressure since it is a function of the density (from Bernoulli).
-
-        Args:
-            x (float): Axial position (m)
-            T_coolant (float): Coolant temperature (K)
-            p0_coolant (float): Coolant stagnation pressure
-
-        Returns:
-            float: Coolant density (kg/m3)
-        """
-        
-        # Initial guess of density using stagnation pressure
-        rho_coolant = self.cooling_jacket.coolant_transport.rho(T = T_coolant, p = p0_coolant)
-
-        # Iterate
-        change = np.inf
-        while change > rho_coolant * 1e-12:
-            p_coolant = self.p_coolant(x = x, p0_coolant = p0_coolant, rho_coolant = rho_coolant)
-            new_rho_coolant = self.cooling_jacket.coolant_transport.rho(T = T_coolant, p = p_coolant)
-            change = new_rho_coolant - rho_coolant
-            rho_coolant = new_rho_coolant
-
-        return rho_coolant
 
     # Thrust functions
     def thrust(self, p_amb = 1e5):
@@ -893,14 +862,26 @@ class Engine:
         return self.thrust(p_amb = p_amb) / self.mdot
 
     # Functions that need to be submitted to bamboo.hx.HXSolver
+    def T_c(self, state):
+        x = state["x"]
+        T0_coolant = state["T0_c"]
+        p0_coolant = state["p0_c"]
+
+        T_coolant, p_coolant, rho_coolant, V_coolant = self.coolant_state(x = x, T0_coolant = T0_coolant, p0_coolant = p0_coolant)
+
+        return T_coolant
+
     def T_h(self, state):
         return self.T(state["x"])
 
     def cp_c(self, state):
-        rho_coolant = self.rho_coolant(x = state["x"], T_coolant = state["T_c"], p0_coolant = state["p0_c"])
-        p_coolant = self.p_coolant(x = state["x"], p0_coolant = state["p0_c"], rho_coolant = rho_coolant)
+        x = state["x"]
+        T0_coolant = state["T0_c"]
+        p0_coolant = state["p0_c"]
 
-        return self.cooling_jacket.coolant_transport.cp(T = state["T_c"], p = p_coolant)
+        T_coolant, p_coolant, rho_coolant, V_coolant = self.coolant_state(x = x, T0_coolant = T0_coolant, p0_coolant = p0_coolant)
+
+        return self.cooling_jacket.coolant_transport.cp(T = T_coolant, p = p_coolant)
 
     def R_th(self, state):
         R_list = []
@@ -908,15 +889,13 @@ class Engine:
         # Need a list of thermal circuit resistances [R1, R2 ...], in the order T_cold --> T_hot
         x = state["x"]
         y = self.geometry.y(x)
-        T_coolant = state["T_c"]
+        T0_coolant = state["T0_c"]
         T_coolant_wall = state["T_cw"]
         p0_coolant = state["p0_c"]
 
         # -------------------------------- COOLANT --------------------------------
         # Collect all the coolant transport properties, and find the convective resistance
-        rho_coolant = self.rho_coolant(x = x, T_coolant = T_coolant, p0_coolant = p0_coolant)
-        p_coolant = self.p_coolant(x = x, p0_coolant = p0_coolant, rho_coolant = rho_coolant)
-        V_coolant = self.V_coolant(x = x, rho_coolant = rho_coolant)
+        T_coolant, p_coolant, rho_coolant, V_coolant = self.coolant_state(x = x, T0_coolant = T0_coolant, p0_coolant = p0_coolant)
         Dh_coolant = self.Dh_coolant(x = x)
         
         Pr_coolant = self.cooling_jacket.coolant_transport.Pr(T = T_coolant, p = p_coolant)
@@ -1120,15 +1099,13 @@ class Engine:
             elif self.cooling_jacket.configuration == "spiral":
                 return abs(dQ_dx_single_fin * self.cooling_jacket.number_of_channels) - pitch * (1 - blockage_ratio) * self.h_coolant * (T_b - T_inf)   
 
-    def dp_dx(self, state):
+    def dp0_dx(self, state):
         x = state["x"]
-        T_coolant = state["T_c"]
+        T0_coolant = state["T0_c"]
         p0_coolant = state["p0_c"]
         
         Dh = self.Dh_coolant(x)
-        rho_coolant = self.rho_coolant(x = x, T_coolant = T_coolant, p0_coolant = p0_coolant)
-        p_coolant = self.p_coolant(x = x, p0_coolant = p0_coolant, rho_coolant = rho_coolant)
-        V_coolant = self.V_coolant(x = x, rho_coolant = rho_coolant)
+        T_coolant, p_coolant, rho_coolant, V_coolant = self.coolant_state(x = x, T0_coolant = T0_coolant, p0_coolant = p0_coolant)
         mu_coolant = self.cooling_jacket.coolant_transport.mu(T = T_coolant, p = p_coolant)
         
         ReDh = rho_coolant * V_coolant * Dh / mu_coolant
@@ -1244,17 +1221,18 @@ class Engine:
         self.x_end = x_end
         self.counterflow = counterflow
 
-        cooling_simulation = bamboo.hx.HXSolver(T_c_in = self.cooling_jacket.T_coolant_in, 
-                                                          T_h = self.T_h, 
-                                                          p0_c_in = self.cooling_jacket.p0_coolant_in, 
-                                                          cp_c = self.cp_c, 
-                                                          mdot_c = self.cooling_jacket.mdot_coolant, 
-                                                          R_th = self.R_th,  
-                                                          extra_dQ_dx = self.extra_dQ_dx,
-                                                          dp_dx = self.dp_dx, 
-                                                          x_start = self.x_start, 
-                                                          dx = self.dx, 
-                                                          x_end = self.x_end)
+        cooling_simulation = bamboo.hx.HXSolver(T0_c_in = self.cooling_jacket.T0_coolant_in, 
+                                                T_c = self.T_c,
+                                                T_h = self.T_h, 
+                                                p0_c_in = self.cooling_jacket.p0_coolant_in, 
+                                                cp_c = self.cp_c, 
+                                                mdot_c = self.cooling_jacket.mdot_coolant, 
+                                                R_th = self.R_th,  
+                                                extra_dQ_dx = self.extra_dQ_dx,
+                                                dp0_dx = self.dp0_dx, 
+                                                x_start = self.x_start, 
+                                                dx = self.dx, 
+                                                x_end = self.x_end)
 
         cooling_simulation.run(iter_start = iter_start, iter_each = iter_each)
 
@@ -1266,10 +1244,11 @@ class Engine:
         results["info"] = {}                                                            
         results["x"]                    = [None] * len(cooling_simulation.state)       
         results["T"]                    = [None] * len(cooling_simulation.state)     
-        results["T_coolant"]            = None
+        results["T0_coolant"]           = [None] * len(cooling_simulation.state)     
+        results["T_coolant"]            = [None] * len(cooling_simulation.state)     
         results["T_exhaust"]            = None
         results["dQ_dx"]                = [None] * len(cooling_simulation.state)  
-        results["dQ_dL"]                = [None] * len(cooling_simulation.state)       
+        results["dQ_dLc"]               = [None] * len(cooling_simulation.state)       
         results["dQ_dA"]                = [None] * len(cooling_simulation.state)       
         results["p0_coolant"]           = [None] * len(cooling_simulation.state)     
         results["p_coolant"]            = [None] * len(cooling_simulation.state)           
@@ -1282,8 +1261,9 @@ class Engine:
 
         # Explanation of what all the keys mean
         results["info"]["x"] = "Axial position along the engine (m)."
-        results["info"]["T"] = "Temperature at each position (K). T[i][j], is the temperature at x[i], at the j'th wall boundary. j = 0 corresponds to the coolant, j = -1 corresponds to the exhaust gas."
-        results["info"]["T_coolant"] = "Coolant temperature at each position (K). T_coolant[i] is the value at x[i]."
+        results["info"]["T"] = "Static temperature at each position (K). T[i][j], is the temperature at x[i], at the j'th wall boundary. j = 0 corresponds to the coolant, j = -1 corresponds to the exhaust gas."
+        results["info"]["T0_coolant"] = "Coolant stagnation temperature at each position (K). T0_coolant[i] is the value at x[i]."
+        results["info"]["T_coolant"] = "Coolant static temperature at each position (K). T_coolant[i] is the value at x[i]."
         results["info"]["T_exhaust"] = "Exhaust temperature at each position (K). T_exhaust[i] is the value at x[i]. "
         results["info"]["dQ_dx"] = "Heat transfer rate per unit axial length (W/m). dQ_dx[i] is the value at x[i]."
         results["info"]["dQ_dLc"] = "Heat transfer rate per unit length along the cooling channel (W/m) - equal to dQ/dx for 'vertical' channels but not for 'spiral' channels. dQ_dx[i] is the value at x[i]."
@@ -1306,20 +1286,19 @@ class Engine:
             results["dQ_dx"][i] = -cooling_simulation.state[i]["circuit"].Qdot
             results["dQ_dA"][i] = results["dQ_dx"][i] / (2 * np.pi * self.geometry.y(x = results["x"][i]))
             results["p0_coolant"][i] = cooling_simulation.state[i]["p0_c"]
-            results["rho_coolant"][i] = self.rho_coolant(x = results["x"][i], T_coolant = cooling_simulation.state[i]["T_c"], p0_coolant = results["p0_coolant"][i])
-            results["p_coolant"][i] = self.p_coolant(x = results["x"][i], p0_coolant = results["p0_coolant"][i], rho_coolant = results["rho_coolant"][i])
-            results["V_coolant"][i] = self.V_coolant(x = results["x"][i], rho_coolant = results["rho_coolant"][i])
+            results["T0_coolant"][i] = cooling_simulation.state[i]["T0_c"]
             results["Dh_coolant"][i] = self.Dh_coolant(x = results["x"][i])
+
+            results["T_coolant"][i], results["p_coolant"][i], results["rho_coolant"][i], results["V_coolant"][i] = self.coolant_state(x = x, 
+                                                                                                                        T0_coolant = results["T0_coolant"][i], 
+                                                                                                                        p0_coolant = results["p0_coolant"][i])
 
             if self.cooling_jacket.configuration == "vertical":
                 results["dQ_dL"][i] = results["dQ_dx"][i]
             
             elif self.cooling_jacket.configuration == "spiral":
-                R_inner = self.geometry.y(x) + self.total_wall_thickness(x)
-                helix_angle = np.arctan(2 * np.pi * R_inner / self.cooling_jacket.bundle_width(x))
-                dx_dL = np.cos(helix_angle)                         # Length travelled along the spiral channel for each 'dx'
-
-                results["dQ_dLc"][i] = results["dQ_dx"][i] * dx_dL
+                dLc_dx = self.dLc_dx(x)
+                results["dQ_dLc"][i] = results["dQ_dx"][i] / dLc_dx
                 
 
             # Calculate relevant stresses
@@ -1375,6 +1354,4 @@ class Engine:
                 D -= t_w / 2
 
         results["T_exhaust"] = list(np.array(results["T"])[:, -1])
-        results["T_coolant"] = list(np.array(results["T"])[:, 0])
-
         return results
