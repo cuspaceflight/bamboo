@@ -1242,14 +1242,15 @@ class Engine:
 
         results = {}
         results["info"] = {}                                                            
-        results["x"]                    = [None] * len(cooling_simulation.state)       
+        results["x"]                    = [None] * len(cooling_simulation.state)     
         results["T"]                    = [None] * len(cooling_simulation.state)     
         results["T0_coolant"]           = [None] * len(cooling_simulation.state)     
         results["T_coolant"]            = [None] * len(cooling_simulation.state)     
         results["T_exhaust"]            = None
         results["dQ_dx"]                = [None] * len(cooling_simulation.state)  
         results["dQ_dLc"]               = [None] * len(cooling_simulation.state)       
-        results["dQ_dA"]                = [None] * len(cooling_simulation.state)       
+        results["dQ_dA"]                = [None] * len(cooling_simulation.state)  
+        results["Rdx"]                  = [None] * len(cooling_simulation.state)        
         results["p0_coolant"]           = [None] * len(cooling_simulation.state)     
         results["p_coolant"]            = [None] * len(cooling_simulation.state)           
         results["rho_coolant"]          = [None] * len(cooling_simulation.state)        
@@ -1261,6 +1262,7 @@ class Engine:
 
         # Explanation of what all the keys mean
         results["info"]["x"] = "Axial position along the engine (m)."
+        results["info"]["y"] = "Engine combustion chamber radius (m). y[i] is the value at x[i]."
         results["info"]["T"] = "Static temperature at each position (K). T[i][j], is the temperature at x[i], at the j'th wall boundary. j = 0 corresponds to the coolant, j = -1 corresponds to the exhaust gas."
         results["info"]["T0_coolant"] = "Coolant stagnation temperature at each position (K). T0_coolant[i] is the value at x[i]."
         results["info"]["T_coolant"] = "Coolant static temperature at each position (K). T_coolant[i] is the value at x[i]."
@@ -1268,6 +1270,7 @@ class Engine:
         results["info"]["dQ_dx"] = "Heat transfer rate per unit axial length (W/m). dQ_dx[i] is the value at x[i]."
         results["info"]["dQ_dLc"] = "Heat transfer rate per unit length along the cooling channel (W/m) - equal to dQ/dx for 'vertical' channels but not for 'spiral' channels. dQ_dx[i] is the value at x[i]."
         results["info"]["dQ_dA"] = "Heat transfer rate per unit chamber area (W/m2). dQ_dA[i] is the value at x[i]."
+        results["info"]["Rdx"] = "Local thermal resistances at each position (K m/W), in the order coolant convection (index 0) --> exhaust convection. R_dx[i] a list of resistances at the value at x[i]"
         results["info"]["p0_coolant"] = "Stagnation pressure of coolant (Pa). p0_coolant[i] is the value at x[i]."
         results["info"]["rho_coolant"] = "Density of coolant (kg/m3). rho_coolant[i] is the value at x[i]."
         results["info"]["p_coolant"] = "Static pressure of coolant (Pa). p_coolant[i] is the value at x[i]."
@@ -1287,6 +1290,7 @@ class Engine:
             results["dQ_dA"][i] = results["dQ_dx"][i] / (2 * np.pi * self.geometry.y(x = results["x"][i]))
             results["p0_coolant"][i] = cooling_simulation.state[i]["p0_c"]
             results["T0_coolant"][i] = cooling_simulation.state[i]["T0_c"]
+            results["Rdx"][i] = cooling_simulation.state[i]["circuit"].R
             results["Dh_coolant"][i] = self.Dh_coolant(x = results["x"][i])
 
             results["T_coolant"][i], results["p_coolant"][i], results["rho_coolant"][i], results["V_coolant"][i] = self.coolant_state(x = x, 
@@ -1353,5 +1357,8 @@ class Engine:
                 # Remove t_w / 2, so the next wall calculation uses the right diameter
                 D -= t_w / 2
 
+        # Stuff we can collect all at once
+        results["y"] = self.geometry.y(results["x"])  
         results["T_exhaust"] = list(np.array(results["T"])[:, -1])
+
         return results
