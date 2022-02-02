@@ -1037,7 +1037,7 @@ class Engine:
         f_darcy = self.cooling_jacket.f_darcy(Dh = Dh, ReDh = ReDh, x = x)
 
         # Fully developed pipe flow pressure drop [3] - this is dp/dL (pressure drop per unit length travelled by the fluid)
-        dp_dLc = f_darcy * (rho_coolant / 2) * (V_coolant**2)/Dh
+        dp_dLc = - f_darcy * (rho_coolant / 2) * (V_coolant**2)/Dh
 
         """
         # I have commented this out, as it's not actually significant
@@ -1212,6 +1212,7 @@ class Engine:
             results["p_coolant"][i] = cooling_simulation.state[i]["p_c"]
             results["T_coolant"][i] = cooling_simulation.state[i]["T_c"]
             results["V_coolant"][i] = cooling_simulation.state[i]["V_c"]
+            results["rho_coolant"][i] = self.cooling_jacket.coolant_transport.rho(T = results["T_coolant"][i], p = results["p_coolant"][i])
             results["Rdx"][i] = cooling_simulation.state[i]["circuit"].R
             results["Dh_coolant"][i] = self.Dh_coolant(x = results["x"][i])
 

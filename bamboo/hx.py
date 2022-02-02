@@ -64,14 +64,19 @@ class HXSolver:
         self.state[0]["V_c"] = self.V_c(self.state[0])
         self.state[0]["cp_c"] = self.cp_c(self.state[0])
 
-        self.state[1]["p_c"] = self.state[0]["p_c"]
+        # Initial guess for the next T_c, T_wc, T_wh, and p_c
+        self.state[1]["x"] = self.state[0]["x"] + self.dx
         self.state[1]["T_c"] = self.state[0]["T_c"]
+        self.state[1]["T_cw"] = self.state[0]["T_cw"] 
+        self.state[1]["T_hw"] = self.state[0]["T_hw"]
+        self.state[1]["p_c"] = self.state[0]["p_c"] 
 
     def iterate(self):
         """
         Iterate one step at the current 'x' position. 
         """
         i = self.i 
+        #print(f'{100*abs((self.state[i]["x"] - self.x_start) / (self.x_start - self.x_end)):.2f}%, Tc = {self.state[i]["T_c"]}, pc = {self.state[i]["p_c"]}')
 
         # Calculate thermal resistance and solve thermal circuit
         self.state[i]["circuit"] = ThermalCircuit(T1 = self.state[self.i]["T_c"], 
@@ -81,25 +86,27 @@ class HXSolver:
         self.state[i]["T_hw"] = self.state[i]["circuit"].T[-2]
         self.state[i]["T_cw"] = self.state[i]["circuit"].T[1]
 
-        dQ_dx_i = self.state[i]["circuit"].Qdot - self.extra_dQ_dx(self.state[i])       # extra_Q is positive into the coolant, but circuit.Qdot is positive into the exhaust
-        
-        # Steady flow energy equation to get the i+1 coolant temperature
-        self.state[i]["cp_c"] = self.cp_c(self.state[i])
-        self.state[i+1]["cp_c"] = self.cp_c(self.state[i+1])
+        # For the last point we only need to iterate for wall temperature
+        if i != len(self.state) - 1:
+            dQ_dx_i = - self.state[i]["circuit"].Qdot + self.extra_dQ_dx(self.state[i])       # extra_Q is positive into the coolant, but circuit.Qdot is positive into the exhaust
 
-        self.state[i]["V_c"] = self.V_c(self.state[i])
-        self.state[i+1]["V_c"] = self.V_c(self.state[i+1])
+            # Steady flow energy equation to get the i+1 coolant temperature
+            self.state[i]["cp_c"] = self.cp_c(self.state[i])
+            self.state[i+1]["cp_c"] = self.cp_c(self.state[i+1])
 
-        self.state[i+1]["T_c"] = self.state[i]["T_c"] * self.state[i]["cp_c"] / self.state[i+1]["cp_c"]                                             \
-                                 + 0.5 * (self.state[i]["V_c"]**2 / self.state[i+1]["cp_c"] - self.state[i+1]["V_c"]**2 / self.state[i+1]["cp_c"])  \
-                                 + 1.0 / (self.mdot_c * self.state[i+1]["cp_c"]) * dQ_dx_i * self.dx      
+            self.state[i]["V_c"] = self.V_c(self.state[i])
+            self.state[i+1]["V_c"] = self.V_c(self.state[i+1])
 
-        # Momentum equation to get pressure drop
-        self.state[i+1]["V_c"] = self.V_c(self.state[i+1])     # Update V_c[i+1], since we have a new T_c[i+1]
+            self.state[i+1]["T_c"] = self.state[i]["T_c"] * self.state[i]["cp_c"] / self.state[i+1]["cp_c"]                                             \
+                                    + 0.5 * (self.state[i]["V_c"]**2 / self.state[i+1]["cp_c"] - self.state[i+1]["V_c"]**2 / self.state[i+1]["cp_c"])  \
+                                    + 1.0 / (self.mdot_c * self.state[i+1]["cp_c"]) * dQ_dx_i * abs(self.dx)      
 
-        dp_dx_f_i = self.dp_dx_f(self.state[i]) 
+            # Momentum equation to get pressure drop
+            self.state[i+1]["V_c"] = self.V_c(self.state[i+1])     # Update V_c[i+1], since we have a new T_c[i+1]
 
-        self.state[i+1]["p_c"] = self.state[i]["p_c"] + self.mdot_c / self.A_c(self.state[i]) * (self.state[i+1]["V_c"] - self.state[i]["V_c"]) + dp_dx_f_i * self.dx
+            dp_dx_f_i = self.dp_dx_f(self.state[i]) 
+
+            self.state[i+1]["p_c"] = self.state[i]["p_c"] - self.mdot_c / self.A_c(self.state[i]) * (self.state[i+1]["V_c"] - self.state[i]["V_c"]) + dp_dx_f_i * self.dx
 
     def step(self):
         """
@@ -107,9 +114,18 @@ class HXSolver:
         """
         self.i += 1
         i = self.i
+        #print(f"i = {i}")
 
-        self.state[i]["x"] = self.state[i-1]["x"] + self.dx
-        self.state[i+1] = self.state[i]                         # Initial guess for the next T_c, T_wc, T_wh, and p_c
+        # Don't try and guess the future state if we're on the last grid point
+        if i != len(self.state) - 1:           
+            self.state[i+1]["x"] = self.state[i]["x"] + self.dx
+
+            # Initial guess for the next T_c, T_wc, T_wh, and p_c
+            self.state[i+1]["T_c"] = self.state[i]["T_c"] + self.dx
+            self.state[i+1]["T_cw"] = self.state[i]["T_cw"] 
+            self.state[i+1]["T_hw"] = self.state[i]["T_hw"] 
+            self.state[i+1]["p_c"] = self.state[i]["p_c"] 
+
 
     def run(self, iter_start = 5, iter_each = 2):
         """Run the simulation until we reach x >= x_end.

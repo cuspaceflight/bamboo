@@ -69,52 +69,40 @@ def plot_temperatures(data_dict, only_indexes = None):
     handles, labels = ax.get_legend_handles_labels()
     ax.legend(reversed(handles), reversed(labels))
 
-def plot_coolant_pressures(data_dict, plot_static = True, plot_stagnation = True):
-    """Given the output dictionary from a engine cooling analysis, plot the cooling jacket pressure against x position. 
+def plot_p_coolant(data_dict):
+    """Given the output dictionary from a engine cooling analysis, plot the cooling jacket static pressure against x position. 
     Note you will have to run matplotlib.pyplot.show() or bamboo.plot.show() to see the plot.
 
     Args:
         data_dict (dict): Dictionary contaning the cooling analysis results.
-        plot_static (bool): Whether or not to plot the static pressure.
-        plot_stagnation (bool): Whether or not to plot the stagnation pressure.
 
     """
 
     fig, axs = plt.subplots()
 
-    if plot_stagnation == True:
-        axs.plot(data_dict["x"], np.array(data_dict["p0_coolant"])/1e5, label = "Stagnation pressure")
-
-    if plot_static == True:
-        axs.plot(data_dict["x"], np.array(data_dict["p_coolant"])/1e5, label = "Static pressure")
+    axs.plot(data_dict["x"], np.array(data_dict["p_coolant"])/1e5, label = "Static pressure")
         
-    axs.legend()
+    #axs.legend()
     axs.grid()
     axs.set_xlabel("Axial position (m)")
-    axs.set_ylabel("Coolant pressure (bar)")
+    axs.set_ylabel("Coolant static pressure (bar)")
 
-def plot_coolant_temperatures(data_dict, plot_static = True, plot_stagnation = True):
-    """Given the output dictionary from a engine cooling analysis, plot the coolant static and stagnation temperature against postiion
+def plot_T_coolant(data_dict):
+    """Given the output dictionary from a engine cooling analysis, plot the coolant static temperature against postiion
 
     Args:
         data_dict (dict): Dictionary contaning the cooling analysis results.
-        plot_static (bool): Whether or not to plot the static pressure.
-        plot_stagnation (bool): Whether or not to plot the stagnation pressure.
 
     """
 
     fig, axs = plt.subplots()
 
-    if plot_stagnation == True:
-        axs.plot(data_dict["x"], np.array(data_dict["T0_coolant"]), label = "Stagnation temperature")
-
-    if plot_static == True:
-        axs.plot(data_dict["x"], np.array(data_dict["T_coolant"]), label = "Static temperature")
+    axs.plot(data_dict["x"], np.array(data_dict["T_coolant"]), label = "Static temperature")
         
-    axs.legend()
+    #axs.legend()
     axs.grid()
     axs.set_xlabel("Axial position (m)")
-    axs.set_ylabel("Temperature (K)")
+    axs.set_ylabel("Coolant static temperature (K)")
 
 def plot_q_per_area(data_dict):
     """Given the output dictionary from a engine cooling analysis, plot the heat flux against position. 
