@@ -10,33 +10,35 @@ Notation:
 from bamboo.circuit import ThermalCircuit
 
 class HXSolver:
-    def __init__(self, T0_c_in, T_c, T_h, p0_c_in, cp_c, mdot_c, R_th, extra_dQ_dx, dp0_dx, x_start, dx, x_end):
+    def __init__(self, T_c_in, T_h, p_c_in, cp_c, mdot_c, V_c, A_c, Rdx, extra_dQ_dx, dp_dx_f, x_start, dx, x_end):
         """Class for solving heat exchanger problems.
 
         Args:
-            T0_c_in (float): Coolant inlet stagnation temperature (K)
-            T_c (callable): Coolant static temperature (K). Must be a function of 'state'.
+            T_c_in (float): Coolant inlet static temperature (K)
             T_h (callable): Exhaust gas static temperature (K). Must be a function of 'state'.
-            p0_c_in (float): Coolant inlet stagnation pressure (Pa)
+            p_c_in (float): Coolant inlet static pressure (Pa)
             cp_c (callable): Coolant isobaric specific heat capacity (J/kg/K). Must be a function of 'state'.
             mdot_c (float): Coolant mass flow rate (kg/s)
-            R_th (callable): List of thermal resistances [R1, R2 ... etc], in the order T_cold --> T_hot. Note they need to be 1D resistances, so Qdot is per unit length. Must be a function of 'state'.
+            V_c (callable): Coolant velocity (m/s). Must be a function of 'state'.
+            A_c (callable): Coolant flow area (m2). Must be a function of 'state'.
+            Rdx (callable): List of thermal resistances [R1, R2 ... etc], in the order T_cold --> T_hot. Note they need to be 1D resistances, so Qdot is per unit length. Must be a function of 'state'.
             extra_dQ_dx (callable): Extra heat transfer rate (positive into the coolant), to add on (W), to represent things like fins protruding into the coolant flow. Must be a function of 'state'.
-            dp0_dx (callable): Stagnation pressure drop per unit length (Pa/m)
+            dp_dx_f (callable): Frictional pressure drop per unit length (Pa/m)
             x_start (float): Initial value of x to start at (m)
             dx (float): dx to move by for each step, corresponding to the direction that coolant flows in. Usually negative for counterflow heat exchanger (m)
             x_end (float): Value of x to stop at (m)
         """
 
-        self.T0_c_in = T0_c_in     
-        self.T_c = T_c  
+        self.T_c_in = T_c_in     
         self.T_h = T_h             
-        self.p0_c_in = p0_c_in      
+        self.p_c_in = p_c_in      
         self.cp_c = cp_c          
-        self.mdot_c = mdot_c      
-        self.R_th = R_th            
+        self.mdot_c = mdot_c  
+        self.V_c = V_c    
+        self.A_c = A_c
+        self.Rdx = Rdx            
         self.extra_dQ_dx = extra_dQ_dx
-        self.dp0_dx = dp0_dx         
+        self.dp_dx_f = dp_dx_f         
         self.x_start = x_start     
         self.dx = dx                
         self.x_end = x_end         
@@ -54,45 +56,62 @@ class HXSolver:
         for i in range(len(self.state)):
             self.state[i] = {}
 
-        self.state[self.i]["x"] = self.x_start
-        self.state[self.i]["T0_c"] = self.T0_c_in
-        self.state[self.i]["T_cw"] = self.state[self.i]["T0_c"]
-        self.state[self.i]["T_hw"] = self.T_h(self.state[self.i])
-        self.state[self.i]["p0_c"] = self.p0_c_in
-        self.state[self.i]["T_c"] = self.T_c(self.state[self.i])
+        self.state[0]["x"] = self.x_start
+        self.state[0]["p_c"] = self.p_c_in
+        self.state[0]["T_c"] = self.T_c_in
+        self.state[0]["T_cw"] = self.state[0]["T_c"]
+        self.state[0]["T_hw"] = self.T_h(self.state[0])
+        self.state[0]["V_c"] = self.V_c(self.state[0])
+        self.state[0]["cp_c"] = self.cp_c(self.state[0])
+
+        self.state[1]["p_c"] = self.state[0]["p_c"]
+        self.state[1]["T_c"] = self.state[0]["T_c"]
 
     def iterate(self):
         """
         Iterate one step at the current 'x' position. 
         """
+        i = self.i 
 
-        circuit = ThermalCircuit(T1 = self.state[self.i]["T_c"], 
-                                 T2 = self.T_h(self.state[self.i]),
-                                 R = self.R_th(self.state[self.i]) )       
+        # Calculate thermal resistance and solve thermal circuit
+        self.state[i]["circuit"] = ThermalCircuit(T1 = self.state[self.i]["T_c"], 
+                                                  T2 = self.T_h(self.state[i]),
+                                                  R = self.Rdx(self.state[i]))       
 
-        self.state[self.i]["circuit"] = circuit
-        self.state[self.i]["T_hw"] = circuit.T[-2]
-        self.state[self.i]["T_cw"] = circuit.T[1]
+        self.state[i]["T_hw"] = self.state[i]["circuit"].T[-2]
+        self.state[i]["T_cw"] = self.state[i]["circuit"].T[1]
+
+        dQ_dx_i = self.state[i]["circuit"].Qdot - self.extra_dQ_dx(self.state[i])       # extra_Q is positive into the coolant, but circuit.Qdot is positive into the exhaust
+        
+        # Steady flow energy equation to get the i+1 coolant temperature
+        self.state[i]["cp_c"] = self.cp_c(self.state[i])
+        self.state[i+1]["cp_c"] = self.cp_c(self.state[i+1])
+
+        self.state[i]["V_c"] = self.V_c(self.state[i])
+        self.state[i+1]["V_c"] = self.V_c(self.state[i+1])
+
+        self.state[i+1]["T_c"] = self.state[i]["T_c"] * self.state[i]["cp_c"] / self.state[i+1]["cp_c"]                                             \
+                                 + 0.5 * (self.state[i]["V_c"]**2 / self.state[i+1]["cp_c"] - self.state[i+1]["V_c"]**2 / self.state[i+1]["cp_c"])  \
+                                 + 1.0 / (self.mdot_c * self.state[i+1]["cp_c"]) * dQ_dx_i * self.dx      
+
+        # Momentum equation to get pressure drop
+        self.state[i+1]["V_c"] = self.V_c(self.state[i+1])     # Update V_c[i+1], since we have a new T_c[i+1]
+
+        dp_dx_f_i = self.dp_dx_f(self.state[i]) 
+
+        self.state[i+1]["p_c"] = self.state[i]["p_c"] + self.mdot_c / self.A_c(self.state[i]) * (self.state[i+1]["V_c"] - self.state[i]["V_c"]) + dp_dx_f_i * self.dx
 
     def step(self):
         """
-        Move 'dx' onto the next x position, using the state from the previous position to calculate property changes.
+        Move 'dx' onto the next x position. Make an initial guess for T_c[i+2] and p_c[i+2] based on T_c[i+1] and p_c[i+1].
         """
-
-        old_state = self.state[self.i]
-
         self.i += 1
-        self.state[self.i]["x"] = old_state["x"] + self.dx
+        i = self.i
 
-        Q_tot = old_state["circuit"].Qdot - self.extra_dQ_dx(old_state) * abs(self.dx)     # extra_Q is positive into the coolant, but circuit.Qdot is positive into the exhaust
-        
-        self.state[self.i]["T0_c"] = old_state["T0_c"] - Q_tot * abs(self.dx) / (self.mdot_c * self.cp_c(old_state) ) # Temperature rise due to heat transfer in - note the Qdot is per unit length
-        self.state[self.i]["T_cw"] = old_state["T_cw"]
-        self.state[self.i]["T_hw"] = old_state["T_hw"]
-        self.state[self.i]["p0_c"] = old_state["p0_c"] - self.dp0_dx(old_state) * abs(self.dx)
-        self.state[self.i]["T_c"] = self.T_c(self.state[self.i])
+        self.state[i]["x"] = self.state[i-1]["x"] + self.dx
+        self.state[i+1] = self.state[i]                         # Initial guess for the next T_c, T_wc, T_wh, and p_c
 
-    def run(self, iter_start = 5, iter_each = 1):
+    def run(self, iter_start = 5, iter_each = 2):
         """Run the simulation until we reach x >= x_end.
 
         Args:
