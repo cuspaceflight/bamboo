@@ -88,18 +88,19 @@ class HXSolver:
 
         # For the last point we only need to iterate for wall temperature
         if i != len(self.state) - 1:
-            dQ_dx_i = - self.state[i]["circuit"].Qdot + self.extra_dQ_dx(self.state[i])       # extra_Q is positive into the coolant, but circuit.Qdot is positive into the exhaust
+            dQ_dx_i = - self.state[i]["circuit"].Qdot #+ self.extra_dQ_dx(self.state[i])       # extra_Q is positive into the coolant, but circuit.Qdot is positive into the exhaust
 
             # Steady flow energy equation to get the i+1 coolant temperature
             self.state[i]["cp_c"] = self.cp_c(self.state[i])
             self.state[i+1]["cp_c"] = self.cp_c(self.state[i+1])
+            cp_mean = (self.state[i]["cp_c"] + self.state[i+1]["cp_c"]) / 2
 
             self.state[i]["V_c"] = self.V_c(self.state[i])
             self.state[i+1]["V_c"] = self.V_c(self.state[i+1])
 
-            self.state[i+1]["T_c"] = self.state[i]["T_c"] * self.state[i]["cp_c"] / self.state[i+1]["cp_c"]                                             \
-                                    + 0.5 * (self.state[i]["V_c"]**2 / self.state[i+1]["cp_c"] - self.state[i+1]["V_c"]**2 / self.state[i+1]["cp_c"])  \
-                                    + 1.0 / (self.mdot_c * self.state[i+1]["cp_c"]) * dQ_dx_i * abs(self.dx)      
+            self.state[i+1]["T_c"] = self.state[i]["T_c"]                                                               \
+                                    + 0.5 * (self.state[i]["V_c"]**2 / cp_mean - self.state[i+1]["V_c"]**2 / cp_mean)   \
+                                    + 1.0 / (self.mdot_c * cp_mean) * dQ_dx_i * abs(self.dx)      
 
             # Momentum equation to get pressure drop
             self.state[i+1]["V_c"] = self.V_c(self.state[i+1])     # Update V_c[i+1], since we have a new T_c[i+1]

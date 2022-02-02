@@ -668,6 +668,9 @@ class Engine:
         elif self.cooling_jacket.configuration == "spiral":
             return np.arccos(self.cooling_jacket.bundle_width(x) / (2 * np.pi * self.geometry.y(x)))
 
+    def coolant_pitch(self, x):
+        return self.cooling_jacket.bundle_width(x) / np.sin(self.helix_angle(x))
+
     def coolant_slope(self, x):
         """Angle that the coolant wall is sloped at radially, same as alpha in Ref [7]
 
@@ -908,9 +911,11 @@ class Engine:
         M_exhaust = self.M(x)
         V_exhaust = (self.perfect_gas.gamma * self.perfect_gas.R * T_exhaust)**0.5 * M_exhaust      # V = sqrt(gamma * R * T) * M, from speed of sound for an ideal gas
         Dh_exhaust = 2 * y
-        mu_exhaust = self.exhaust_transport.mu(T = T_exhaust, p = p_exhaust)
-        Pr_exhaust = self.exhaust_transport.Pr(T = T_exhaust, p = p_exhaust)
-        k_exhaust = self.exhaust_transport.k(T = T_exhaust, p = p_exhaust)
+
+        T_film = (T_exhaust + T_exhaust_wall)/2
+        mu_exhaust = self.exhaust_transport.mu(T = T_film, p = p_exhaust)
+        Pr_exhaust = self.exhaust_transport.Pr(T = T_film, p = p_exhaust)
+        k_exhaust = self.exhaust_transport.k(T = T_film, p = p_exhaust)
 
 
         if self.exhaust_convection == "dittus-boelter":
@@ -986,7 +991,7 @@ class Engine:
         else:
             P = 2.0                                     # For dQ, the perimeter is 2 * dx. We must divide this by dx to get dQ/dx
             L = self.cooling_jacket.channel_height(x)
-            
+
             R = self.geometry.y(x)
             for i in range(len(self.walls)):
                 R += self.walls[i].thickness(x)
@@ -996,8 +1001,8 @@ class Engine:
                 Ac = 2 * np.pi * R * blockage_ratio / self.cooling_jacket.number_of_channels  
 
             elif self.cooling_jacket.configuration == "spiral":
-                pitch = self.cooling_jacket.bundle_width(x)
-                Ac = pitch * blockage_ratio / self.cooling_jacket.number_of_channels
+                channel_width = self.cooling_jacket.channel_width(x) 
+                Ac = channel_width * blockage_ratio
 
                 # Need to correct the perimeter to take into account that the length travelled by a fluid along a the spiral channel is longer than 'dx'
                 # IS THIS THE CORRECT WAY OF TAKING THIS INTO ACCOUNT???
@@ -1020,7 +1025,7 @@ class Engine:
                 return abs(dQ_dx_single_fin * self.cooling_jacket.number_of_channels) - 2 * np.pi * R * (1 - blockage_ratio) * self.h_coolant * (T_b - T_inf)   
 
             elif self.cooling_jacket.configuration == "spiral":
-                return abs(dQ_dx_single_fin * self.cooling_jacket.number_of_channels) - pitch * (1 - blockage_ratio) * self.h_coolant * (T_b - T_inf)   
+                return abs(dQ_dx_single_fin * self.cooling_jacket.number_of_channels) - channel_width * (1 - blockage_ratio) * self.h_coolant * (T_b - T_inf)   
 
     def dp_dx_f(self, state):
         x = state["x"]   
