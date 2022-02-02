@@ -982,6 +982,8 @@ class Engine:
         return np.array(R_list) 
 
     def extra_dQ_dx(self, state):
+        return 0.0      # Disabled fin heat transfer for now - it seemed to be massively excessive (I suspect the adiabatic tip assumption is questionable)
+
         x = state["x"]
         blockage_ratio = self.cooling_jacket.blockage_ratio(x)
 
