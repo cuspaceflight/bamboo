@@ -912,10 +912,9 @@ class Engine:
         V_exhaust = (self.perfect_gas.gamma * self.perfect_gas.R * T_exhaust)**0.5 * M_exhaust      # V = sqrt(gamma * R * T) * M, from speed of sound for an ideal gas
         Dh_exhaust = 2 * y
 
-        T_film = (T_exhaust + T_exhaust_wall)/2
-        mu_exhaust = self.exhaust_transport.mu(T = T_film, p = p_exhaust)
-        Pr_exhaust = self.exhaust_transport.Pr(T = T_film, p = p_exhaust)
-        k_exhaust = self.exhaust_transport.k(T = T_film, p = p_exhaust)
+        mu_exhaust = self.exhaust_transport.mu(T = T_exhaust, p = p_exhaust)
+        Pr_exhaust = self.exhaust_transport.Pr(T = T_exhaust, p = p_exhaust)
+        k_exhaust = self.exhaust_transport.k(T = T_exhaust, p = p_exhaust)
 
 
         if self.exhaust_convection == "dittus-boelter":
