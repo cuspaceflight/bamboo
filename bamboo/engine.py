@@ -932,12 +932,19 @@ class Engine:
 
 
         if self.exhaust_convection == "dittus-boelter":
-            h_exhaust = bamboo.circuit.h_coolant_dittus_boelter(rho = rho_exhaust, 
+            T_exhaust_am = (T_exhaust + T_exhaust_wall) / 2                                 # Arithmetic mean of wall and freestream
+
+            mu_exhaust_am = self.exhaust_transport.mu(T = T_exhaust_am, p = p_exhaust)
+            rho_exhaust_am = p_exhaust/(self.perfect_gas.R * T_exhaust_am)
+            Pr_exhaust_am = self.exhaust_transport.Pr(T = T_exhaust_am, p = p_exhaust)
+            k_exhaust_am = self.exhaust_transport.k(T = T_exhaust_am, p = p_exhaust)
+
+            h_exhaust = bamboo.circuit.h_coolant_dittus_boelter(rho = rho_exhaust_am, 
                                                                 V = V_exhaust, 
                                                                 D = Dh_exhaust, 
-                                                                mu = mu_exhaust, 
-                                                                Pr = Pr_exhaust, 
-                                                                k = k_exhaust)
+                                                                mu = mu_exhaust_am, 
+                                                                Pr = Pr_exhaust_am, 
+                                                                k = k_exhaust_am)
 
         elif self.exhaust_convection == "bartz":
             T_exhaust_am = (T_exhaust + T_exhaust_wall) / 2                                                             # Arithmetic mean of wall and freestream
