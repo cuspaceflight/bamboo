@@ -1,6 +1,6 @@
 """
 Isentropic compressible flow relations.
- - [1] - Heister et al., Rocket Propulsion
+ - [1] - Heister et al., Rocket Propulsion (https://doi.org/10.1017/9781108381376)
 """
 
 import scipy.optimize

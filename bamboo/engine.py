@@ -10,7 +10,7 @@ References:
  - [6] - https://en.wikipedia.org/wiki/Hydraulic_diameter
  - [7] - https://mathcurve.com/courbes3d.gb/heliceconic/heliceconic.shtml#:~:text=The%20conical%20helix%20can%20be,a%20geodesic%20of%20the%20cone
  - [8] - https://neutrium.net/fluid-flow/pressure-loss-from-fittings-expansion-and-reduction-in-pipe-size/
- - [9] - Heister et al., Rocket Propulsion
+ - [9] - Heister et al., Rocket Propulsion (https://doi.org/10.1017/9781108381376)
 
 Notes:
  - With some exceptions, fluid properties are currently evaluated at the bulk temperature, instead of the film temperature. This is because the high wall temperature can sometimes 
