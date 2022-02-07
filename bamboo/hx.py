@@ -15,7 +15,7 @@ class HXSolver:
 
         Args:
             T_c_in (float): Coolant inlet static temperature (K)
-            T_h (callable): Exhaust gas static temperature (K). Must be a function of 'state'.
+            T_h (callable): Exhaust gas recovery temperature (K). Must be a function of 'state'.
             p_c_in (float): Coolant inlet static pressure (Pa)
             cp_c (callable): Coolant isobaric specific heat capacity (J/kg/K). Must be a function of 'state'.
             mdot_c (float): Coolant mass flow rate (kg/s)

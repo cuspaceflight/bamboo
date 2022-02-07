@@ -31,7 +31,7 @@ def plot_temperatures(data_dict, only_indexes = None):
                 label = f"Wall (coolant contact)"    
             
             elif i == len(T[0]) - 1 or i == -1:
-                label = "Exhaust"
+                label = "Exhaust recovery"
 
             elif i == len(T[0]) - 2 or i == -2:
                 label = "Wall (exhaust contact)"
@@ -50,7 +50,7 @@ def plot_temperatures(data_dict, only_indexes = None):
                 label = f"Wall (coolant contact)"    
             
             elif i == len(T[0]) - 1 or i == -1:
-                label = "Exhaust"
+                label = "Exhaust recovery"
 
             elif i == len(T[0]) - 2 or i == -2:
                 label = "Wall (exhaust contact)"

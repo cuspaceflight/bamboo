@@ -1,5 +1,6 @@
 """
 Isentropic compressible flow relations.
+ - [1] - Heister et al., Rocket Propulsion
 """
 
 import scipy.optimize
@@ -41,6 +42,21 @@ def T0(T, M, gamma):
         float: Stagnation temperature (K)
     """
     return T*(1+ M**2 * (gamma-1)/2)
+
+
+def Tr(T, M, gamma, r):
+    """Get the recovery temperature, which is the temperature you should use for convective heat transfer (i.e. q = h(Tr - Tw)).
+
+    Args:
+        T (float): Freestream static tempreature (K)
+        M (float): Mach number
+        gamma (float): Ratio of specific heats cp/cv
+        r (float): 'Recovery factor', usually equal to Pr^(1/3) for 'turbulent free boundary layers' [1]
+
+    Returns:
+        float: Recovery temperature
+    """
+    return T * (1 + (gamma - 1)/2 * r * M**2)
 
 def M_from_p(p, p0, gamma):
     """Mach number from static pressure and stagnation pressure.

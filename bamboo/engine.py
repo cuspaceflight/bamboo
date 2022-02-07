@@ -10,6 +10,7 @@ References:
  - [6] - https://en.wikipedia.org/wiki/Hydraulic_diameter
  - [7] - https://mathcurve.com/courbes3d.gb/heliceconic/heliceconic.shtml#:~:text=The%20conical%20helix%20can%20be,a%20geodesic%20of%20the%20cone
  - [8] - https://neutrium.net/fluid-flow/pressure-loss-from-fittings-expansion-and-reduction-in-pipe-size/
+ - [9] - Heister et al., Rocket Propulsion
 
 Notes:
  - With some exceptions, fluid properties are currently evaluated at the bulk temperature, instead of the film temperature. This is because the high wall temperature can sometimes 
@@ -786,7 +787,20 @@ class Engine:
 
     # Functions that need to be submitted to bamboo.hx.HXSolver
     def T_h(self, state):
-        return self.T(state["x"])
+        T = self.T(state["x"])
+        p = self.p(state["x"])
+        M = self.M(state["x"])
+
+        if "T_hw" in state.keys():
+            T_w = state["T_hw"]
+            T_am = (T + T_w)/2
+        else:
+            T_am = T
+
+        Pr_am = self.exhaust_transport.Pr(T = T_am, p = p)
+        r = Pr_am**(1/3)                    # Recovery ffactory for turbulent free boundary layer [9]
+
+        return bamboo.isen.Tr(T = T, M = M, gamma = self.perfect_gas.gamma, r = r)
 
     def cp_c(self, state):
         T_coolant = state["T_c"]
@@ -1044,63 +1058,6 @@ class Engine:
 
         # Fully developed pipe flow pressure drop [3] - this is dp/dL (pressure drop per unit length travelled by the fluid)
         dp_dLc = - f_darcy * (rho_coolant / 2) * (V_coolant**2)/Dh
-
-        """
-        # I have commented this out, as it's not actually significant
-        # We need to account for the area change pressure loss as well - especially if the cooling channels are expanding (diffusion causing large pressure losses)
-        next_x = x + self.dx
-
-        if (self.counterflow and (next_x < self.x_end)) or ((not self.counterflow) and (next_x > self.x_end)):
-            pass
-
-        else:
-            # Using Ref [8] - assume we can use Dh in replacement of their diameters
-            Dh1 = Dh
-            Dh2 = self.Dh_coolant(next_x)
-            dLc = abs(self.dLc_dx(x) * self.dx)
-            theta = abs ( 2 * np.arctan( (Dh2 - Dh1) / (2 * dLc) ) ) 
-
-            if Dh2 > Dh1:
-                # Square expansion
-                if ReDh < 4000:
-                    K = 2 * ( 1 - (Dh1/Dh2)**4 )
-                
-                else:
-                    K = (1 + 0.8 * f_darcy) * (1 - (Dh1/Dh2)**2 )**2
-
-                # Correction for tapered expansion
-                theta = np.arctan( (Dh2 - Dh1) / (2 * dLc) )
-
-                if theta > np.pi/4:
-                    pass
-                elif theta < np.pi/4:
-                    K = K * 2.6 * np.sin(theta / 2)
-                else:
-                    raise ValueError("Error with calculating pipe expansion angle")
-            
-            else:
-                # Square reduction
-                if ReDh < 2500:
-                    K = (1.2 + 160/ReDh) * ((Dh1/Dh2)**4 - 1)
-
-                else:
-                    K = (0.6 + 0.48 * f_darcy) * (Dh1/Dh2)**2 * ((Dh1/Dh2)**2 - 1)
-
-                # Correction for tapered reduction
-                if theta > np.pi/4 and theta < np.pi:
-                    K = K * np.sqrt( np.sin(theta/2) )
-
-                elif theta < np.pi/4:
-                    K = K * 1.6 * np.sin(theta / 2)
-                
-                else:
-                    raise ValueError("Error with calculating pipe expansion angle")
-            
-            # Add on to the pressure drop from friction
-            dp = 0.5 * rho_coolant * V_coolant**2 * K
-
-            dp_dLc = dp_dLc + dp/dLc
-            """
 
         return dp_dLc * self.dLc_dx(x)
 
