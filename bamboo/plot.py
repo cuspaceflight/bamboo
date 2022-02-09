@@ -8,6 +8,9 @@ from matplotlib.colors import ListedColormap, BoundaryNorm, LinearSegmentedColor
 import numpy as np
 
 def show():
+    """
+    Show a plot. Internally, this simply runs matplotlib.pyplot.show().
+    """
     plt.show()
 
 def plot_temperatures(data_dict, only_indexes = None):
@@ -235,12 +238,12 @@ def plot_coolant_h(data_dict):
     fig, axs = plt.subplots()
 
     R = np.array(data_dict["Rdx"]) # Index zero is coolant
-    y = np.array(data_dict["y"])
+    r = np.array(data_dict["r"])
     h = np.zeros(len(R))
 
     for i in range(len(R)):
         # R = 1 / (hA)
-        A = 2 * np.pi * y[i]
+        A = 2 * np.pi * r[i]
         h[i] = 1 / (A * R[i][0])
 
     axs.plot(data_dict["x"], h, label = "Coolant convection")
