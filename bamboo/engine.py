@@ -11,6 +11,7 @@ References:
  - [7] - https://mathcurve.com/courbes3d.gb/heliceconic/heliceconic.shtml#:~:text=The%20conical%20helix%20can%20be,a%20geodesic%20of%20the%20cone
  - [8] - https://neutrium.net/fluid-flow/pressure-loss-from-fittings-expansion-and-reduction-in-pipe-size/
  - [9] - Heister et al., Rocket Propulsion (https://doi.org/10.1017/9781108381376)
+ - [10] - Brkic 2012, Lambert W function in hydraulic problems (https://www.scipedia.com/public/Brkic_2012a)
 
 Notes:
  - With some exceptions, coolant properties are currently evaluated at the bulk temperature, instead of the film temperature. This is because the high wall temperature can sometimes 
@@ -377,12 +378,20 @@ class CoolingJacket:
             return (0.79 * np.log(ReDh) - 1.64)**(-2)   
 
         else:
-            # Colebrook-White with Lambert W function [2]
+            # Colebrook-White with Lambert W function 
+            """
             a = 2.51 / ReDh
             two_a = 2*a
             b = roughness / (3.71 * Dh)
             
-            return ( (2 * scipy.special.lambertw(np.log(10) / two_a * 10**(b/two_a) )) / np.log(10) - b/a )**(-2)
+            return ( (2 * scipy.special.lambertw(np.log(10) / two_a * 10**(b/two_a) )) / np.log(10) - b/a )**(-2) # Reference [2]
+            """
+            
+            O1 = roughness / (3.71 * Dh)
+            O2 = 2.51 / ReDh
+            O3 = 2 / np.log(10)
+
+            return (O1 * scipy.special.lambertw( np.exp(O1 / (O2*O3)) / (O2*O3) ) - O1/O2)**(-2)        # Reference [10]
 
     def f_darcy(self, ReDh, Dh, x):
         # Check for laminar flow
