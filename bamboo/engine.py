@@ -506,22 +506,10 @@ class Engine:
 
         #If we're not at the throat:
         else:
-            # Collect the relevant variables
-            A = self.geometry.A(x)
-            mdot = self.mdot
-            p0 = self.chamber_conditions.p0
-            cp = self.perfect_gas.cp
-            T0 = self.chamber_conditions.T0
-            gamma = self.perfect_gas.gamma
-
-            # Function to find the root of
-            def func_to_solve(Mach):
-                return mdot * (cp * T0)**0.5 / (A  * p0) - bamboo.isen.m_bar(M = Mach, gamma = gamma)
- 
             if x > self.geometry.x_t:
-                Mach = scipy.optimize.root_scalar(func_to_solve, bracket = [1, 500], x0 = 1).root
+                Mach = bamboo.isen.M_from_A_supersonic(A = self.geometry.A(x), A_t = self.geometry.A_t, gamma = self.perfect_gas.gamma)
             else:
-                Mach = scipy.optimize.root_scalar(func_to_solve, bracket = [0.0,1], x0 = 0.5).root
+                Mach = bamboo.isen.M_from_A_subsonic(A = self.geometry.A(x), A_t = self.geometry.A_t, gamma = self.perfect_gas.gamma)
             return Mach
 
     def T(self, x):

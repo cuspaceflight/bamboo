@@ -17,8 +17,17 @@ def m_bar(M, gamma):
     """
     return gamma/(gamma-1)**0.5 * M * (1+ M**2 * (gamma-1)/2)**(-0.5*(gamma+1)/(gamma-1))
 
+def A_At(M, gamma):
+    """Ratio of local flow area to the throat area, for a given Mach number [1].
+
+    Args:
+        M (float): Mach number
+        gamma (float): Ratio of specific heats cp/cv
+    """
+    return 1/M * ( (2 + (gamma-1) * M**2) / (gamma + 1) )**( (gamma+1) / (2 * (gamma-1) ) )
+
 def p0(p, M, gamma):
-    """Get stagnation pressure from static pressure and Mach number
+    """Get stagnation pressure from static pressure and Mach number [1]
 
     Args:
         p (float): Pressure (Pa)
@@ -31,7 +40,7 @@ def p0(p, M, gamma):
     return p*(1 + M**2 * (gamma-1)/2)**(gamma/(gamma-1))
 
 def T0(T, M, gamma):
-    """Get the stangation temperature from the static temperature and Mach number
+    """Get the stangation temperature from the static temperature and Mach number [1]
 
     Args:
         T (float): Temperature (K)
@@ -45,7 +54,7 @@ def T0(T, M, gamma):
 
 
 def Tr(T, M, gamma, r):
-    """Get the recovery temperature, which is the temperature you should use for convective heat transfer (i.e. q = h(Tr - Tw)).
+    """Get the recovery temperature, which is the temperature you should use for convective heat transfer (i.e. q = h(Tr - Tw)). [1]
 
     Args:
         T (float): Freestream static tempreature (K)
@@ -71,17 +80,30 @@ def M_from_p(p, p0, gamma):
     """
     return ( (2/(gamma-1)) * ( (p/p0)**((gamma-1)/(-gamma)) - 1 ) )**0.5
 
-def M_from_A_subsonic(A, mdot, T0, p0, cp, gamma):
+def M_from_A_subsonic(A, A_t, gamma):
+    """Get the Mach number from the local flow area, assuming subsonic flow.
+
+    Args:
+        A (float): Local area (m2)
+        A_t (float): Throat area (m2)
+        gamma (float): Ratio of specific heats cp/cv
+    """
 
     def func_to_solve(Mach):
-        return mdot * (cp * T0)**0.5 / (A  * p0) - m_bar(M = Mach, gamma = gamma)
+        return  A/A_t - A_At(M = Mach, gamma = gamma)
         
-    return scipy.optimize.root_scalar(func_to_solve, bracket = [0.0,1], x0 = 0.5).root
+    return scipy.optimize.root_scalar(func_to_solve, bracket = [1e-10, 1], x0 = 0.5).root
 
-def M_from_A_supersonic(A, mdot, T0, p0, cp, gamma):
+def M_from_A_supersonic(A, A_t, gamma):
+    """Get the Mach number from the local flow area, assuming supersonic flow.
 
+    Args:
+        A (float): Local area (m2)
+        A_t (float): Throat area (m2)
+        gamma (float): Ratio of specific heats cp/cv
+    """
     def func_to_solve(Mach):
-        return mdot * (cp * T0)**0.5 / (A  * p0) - m_bar(M = Mach, gamma = gamma)
+        return  A/A_t - A_At(M = Mach, gamma = gamma)
 
     return scipy.optimize.root_scalar(func_to_solve, bracket = [1, 500], x0 = 1).root
 
