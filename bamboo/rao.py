@@ -63,12 +63,12 @@ def rao_theta_e(area_ratio, length_fraction = 0.8):
         #Linearly interpolate and return the result, after converting it to radians
         return np.interp(area_ratio, data["area_ratio"], data["theta_e"]) * np.pi/180
 
-def get_rao_contour(Rc, Rt, area_ratio, Lc, theta_conv = 45):
+def get_rao_contour(r_c, r_t, area_ratio, Lc, theta_conv = 45):
     """Get the x and y positions for an 80% Rao bell nozzle
 
     Args:
-        Rc (float): Chamber radius (m)
-        Rt (float): Throat radius (m)
+        r_c (float): Chamber radius (m)
+        r_t (float): Throat radius (m)
         area_ratio (float): The area ratio (exit area / throat area).
         Lc (float): Chamber length, from the injector to the start of the nozzle converging section (m)
         theta_conv (int, optional): Angle of converging nozzle section (deg). Defaults to 45.
@@ -88,7 +88,7 @@ def get_rao_contour(Rc, Rt, area_ratio, Lc, theta_conv = 45):
             theta_e = theta_n
             use_cone = True
     
-    Re = (area_ratio)**0.5 * Rt                          # Equation 2 from Reference [1]
+    Re = (area_ratio)**0.5 * r_t                          # Equation 2 from Reference [1]
     theta_conv = (-180 + theta_conv) * np.pi/180         # Convert to radian
 
     # Equations from Reference [1]
@@ -97,13 +97,13 @@ def get_rao_contour(Rc, Rt, area_ratio, Lc, theta_conv = 45):
 
     # Entrant section
     for theta in np.linspace(theta_conv, -np.pi/2, 500):
-        xs.append(1.5 * Rt * np.cos(theta))
-        ys.append(1.5 * Rt * np.sin(theta) + 1.5 * Rt + Rt)          # Equations 4 from Reference [1]
+        xs.append(1.5 * r_t * np.cos(theta))
+        ys.append(1.5 * r_t * np.sin(theta) + 1.5 * r_t + r_t)          # Equations 4 from Reference [1]
 
     # Initial diverging section
     for theta in np.linspace(-np.pi/2, theta_n - np.pi/2, 500):
-        xs.append(0.382 * Rt * np.cos(theta))                       # Equations 5 from Reference [1]
-        ys.append(0.382 * Rt * np.sin(theta) + 0.382 * Rt + Rt)
+        xs.append(0.382 * r_t * np.cos(theta))                       # Equations 5 from Reference [1]
+        ys.append(0.382 * r_t * np.sin(theta) + 0.382 * r_t + r_t)
 
     # 15 degree cone diverging section (if area ratio is outside of the Rao data)
     if use_cone:
@@ -117,7 +117,7 @@ def get_rao_contour(Rc, Rt, area_ratio, Lc, theta_conv = 45):
         Nx =  xs[-1]
         Ny = ys[-1]
 
-        Ex = 0.8 * ((area_ratio)**0.5 - 1) * Rt / np.tan(np.pi / 12)    # Equation 3 from Reference [1]
+        Ex = 0.8 * ((area_ratio)**0.5 - 1) * r_t / np.tan(np.pi / 12)    # Equation 3 from Reference [1]
         Ey = Re
 
         m1 = np.tan(theta_n)
@@ -133,12 +133,12 @@ def get_rao_contour(Rc, Rt, area_ratio, Lc, theta_conv = 45):
             ys.append( (1 - t)**2 * Ny + 2 * (1 - t) * t * Qy + t**2 * Ey)
 
     # Now do the combustion chamber
-    ys.insert(0, Rc)
+    ys.insert(0, r_c)
     dy = ys[0] - ys[1]
     dx = dy / np.tan(theta_conv)
     xs.insert(0, xs[0] - dx)
     
-    ys.insert(0, Rc)
+    ys.insert(0, r_c)
     xs.insert(0, xs[0] - Lc)
 
     return xs, ys

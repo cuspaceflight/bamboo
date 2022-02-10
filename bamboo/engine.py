@@ -95,11 +95,11 @@ class Geometry:
             rs (list): Array, containing local engine radius (m).
 
         Attributes:
-            xt (float): x-position of the throat (m)
-            Rt (float): Throat radius (m)
-            At (float): Throat area (m2)
-            Re (float): Exit radius (m)
-            Ae (float): Exit area (m2)
+            x_t (float): x-position of the throat (m)
+            r_t (float): Throat radius (m)
+            A_t (float): Throat area (m2)
+            r_e (float): Exit radius (m)
+            A_e (float): Exit area (m2)
             r_curvature_t (float): Radius of curvature at the throat (m)
         """
         self.xs = xs
@@ -117,24 +117,24 @@ class Geometry:
         super(Geometry, self).__setattr__(name, value)
 
     @property
-    def xt(self):
+    def x_t(self):
         return self.xs[np.argmin(self.rs)]
 
     @property
-    def Rt(self):
+    def r_t(self):
         return min(self.rs)
 
     @property
-    def At(self):
-        return np.pi * self.Rt**2
+    def A_t(self):
+        return np.pi * self.r_t**2
 
     @property
-    def Re(self):
+    def r_e(self):
         return self.rs[-1]
     
     @property
-    def Ae(self):
-        return np.pi * self.Re**2
+    def A_e(self):
+        return np.pi * self.r_e**2
 
 
     def plot(self):
@@ -441,10 +441,10 @@ class Engine:
         self.exhaust_convection = exhaust_convection
 
         # Find the choked mass flow rate
-        self.mdot = bamboo.isen.get_choked_mdot(self.perfect_gas, self.chamber_conditions, self.geometry.At)
+        self.mdot = bamboo.isen.get_choked_mdot(self.perfect_gas, self.chamber_conditions, self.geometry.A_t)
 
         # C* value, for convenience with 'bartz-sigma' convection model
-        self.c_star = self.chamber_conditions.p0 * self.geometry.At / self.mdot
+        self.c_star = self.chamber_conditions.p0 * self.geometry.A_t / self.mdot
 
         # Additional keyword arguments
         if "walls" in kwargs:
@@ -501,7 +501,7 @@ class Engine:
             float: Mach number of the freestream.
         """
         #If we're at the throat then M = 1 by default:
-        if abs(x - self.geometry.xt) <= 1e-12:
+        if abs(x - self.geometry.x_t) <= 1e-12:
             return 1.00
 
         #If we're not at the throat:
@@ -518,7 +518,7 @@ class Engine:
             def func_to_solve(Mach):
                 return mdot * (cp * T0)**0.5 / (A  * p0) - bamboo.isen.m_bar(M = Mach, gamma = gamma)
  
-            if x > self.geometry.xt:
+            if x > self.geometry.x_t:
                 Mach = scipy.optimize.root_scalar(func_to_solve, bracket = [1, 500], x0 = 1).root
             else:
                 Mach = scipy.optimize.root_scalar(func_to_solve, bracket = [0.0,1], x0 = 0.5).root
@@ -708,7 +708,6 @@ class Engine:
             return self.geometry.r(x_position) + self.total_wall_thickness(x_position)
 
         dr_dx = scipy.optimize.approx_fprime(xk = x, f = r, epsilon = 1e-6)         # Assume wall is smooth over a 1e-6 m segment.
-        print(dr_dx)
         return np.arctan(dr_dx[0])
 
     def dLc_dx(self, x):
@@ -789,7 +788,7 @@ class Engine:
         Te = self.T(x = self.geometry.xs[-1])
         pe = self.p(x = self.geometry.xs[-1])
 
-        return self.mdot * Me * (self.perfect_gas.gamma * self.perfect_gas.R * Te)**0.5 + (pe - p_amb) * self.geometry.Ae    #Generic equation for rocket thrust
+        return self.mdot * Me * (self.perfect_gas.gamma * self.perfect_gas.R * Te)**0.5 + (pe - p_amb) * self.geometry.A_e    #Generic equation for rocket thrust
     
     def isp(self, p_amb = 1e5):
         """Get the specific impulse of the engine for a given ambient pressure.
@@ -983,7 +982,7 @@ class Engine:
             Pr_exhaust_0 = self.exhaust_transport.Pr(T = self.chamber_conditions.T0, p = self.chamber_conditions.p0)   
             
             h_exhaust = bamboo.circuit.h_gas_bartz_sigma(c_star = self.c_star, 
-                                                         At = self.geometry.At, 
+                                                         A_t = self.geometry.A_t, 
                                                          A = np.pi * Dh_exhaust**2 / 4, 
                                                          p_chamber = self.chamber_conditions.p0, 
                                                          T_chamber = self.chamber_conditions.T0, 
@@ -1000,7 +999,7 @@ class Engine:
             
             # Calculate radius of curvature at the throat
             h_exhaust = bamboo.circuit.h_gas_bartz_sigma_curve(c_star = self.c_star, 
-                                                               At = self.geometry.At, 
+                                                               A_t = self.geometry.A_t, 
                                                                A = np.pi * Dh_exhaust**2 / 4, 
                                                                p_chamber = self.chamber_conditions.p0, 
                                                                T_chamber = self.chamber_conditions.T0, 
