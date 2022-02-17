@@ -378,20 +378,28 @@ class CoolingJacket:
             return (0.79 * np.log(ReDh) - 1.64)**(-2)   
 
         else:
-            # Colebrook-White with Lambert W function 
+            # Colebrook-White by iteration
+            def func_to_solve(f):
+                return 1/(f**0.5) + 2 * np.log10( roughness / (3.71 * Dh) + 2.51 / (ReDh * f**0.5) )    # Reference [2]
+
+            return scipy.optimize.fsolve(func = func_to_solve, x0 = 0.02)[0]
+
+            # Colebrook-White with Lambert W function - commented out because they seem to give very questionable results
             """
             a = 2.51 / ReDh
             two_a = 2*a
             b = roughness / (3.71 * Dh)
             
-            return ( (2 * scipy.special.lambertw(np.log(10) / two_a * 10**(b/two_a) )) / np.log(10) - b/a )**(-2) # Reference [2]
-            """
+            f = ( (2 * scipy.special.lambertw(np.log(10) / two_a * 10**(b/two_a) )) / np.log(10) - b/a )**(-2) # Reference [2]
+            return f.real
             
             O1 = roughness / (3.71 * Dh)
             O2 = 2.51 / ReDh
             O3 = 2 / np.log(10)
 
-            return (O1 * scipy.special.lambertw( np.exp(O1 / (O2*O3)) / (O2*O3) ) - O1/O2)**(-2)        # Reference [10]
+            f = (O1 * scipy.special.lambertw( np.exp(O1 / (O2*O3)) / (O2*O3) ) - O1/O2)**(-2)        # Reference [10]
+            return f.real
+            """
 
     def f_darcy(self, ReDh, Dh, x):
         # Check for laminar flow
@@ -1077,7 +1085,6 @@ class Engine:
 
         # Fully developed pipe flow pressure drop [3] - this is dp/dL (pressure drop per unit length travelled by the fluid)
         dp_dLc = - f_darcy * (rho_coolant / 2) * (V_coolant**2)/Dh
-
         return dp_dLc * self.dLc_dx(x)
 
     # Functions for thermal simulations

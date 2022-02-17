@@ -107,7 +107,7 @@ class HXSolver:
 
             dp_dx_f_i = self.dp_dx_f(self.state[i]) 
 
-            self.state[i+1]["p_c"] = self.state[i]["p_c"] - self.mdot_c / self.A_c(self.state[i]) * (self.state[i+1]["V_c"] - self.state[i]["V_c"]) + dp_dx_f_i * self.dx
+            self.state[i+1]["p_c"] = self.state[i]["p_c"] - self.mdot_c / self.A_c(self.state[i]) * (self.state[i+1]["V_c"] - self.state[i]["V_c"]) - abs(dp_dx_f_i) * abs(self.dx)
 
     def step(self):
         """

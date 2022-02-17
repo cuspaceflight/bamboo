@@ -41,6 +41,7 @@ raw["Ljungkrona_T_Exp"] = np.loadtxt("Vulcain/Ljungkrona_1998_Fig8_Exp.csv", del
 raw["Ljungkrona_T_Sim"] = np.loadtxt("Vulcain/Ljungkrona_1998_Fig8_Sim.csv", delimiter =',', skiprows = 1)
 raw["Ljungkrona_h_Exp"]= np.loadtxt("Vulcain/Ljungkrona_1998_Fig9_Exp.csv", delimiter =',', skiprows = 1)
 raw["Ljungkrona_h_Sim"]= np.loadtxt("Vulcain/Ljungkrona_1998_Fig9_Sim.csv", delimiter =',', skiprows = 1)
+raw["Ljungkrona_dp_Coolant"] = np.loadtxt("Vulcain/Ljungkrona_1998_Fig12.csv", delimiter =',', skiprows = 1)
 
 # Convert into dictionaries
 output["Ljungkrona"]["Extension Coolant Temperature (Exp)"] = {"x" : raw["Ljungkrona_T_Exp"][:, 0],
@@ -91,8 +92,8 @@ for key in output["Ljungkrona"].keys():
                                                fp = x_positions)
 
 # Collect the Nyden_1991 data
-raw["Nyden_Twc_Exp"] = np.loadtxt("Nyden_1991_Fig2_Twc_Exp.csv", delimiter =',', skiprows = 1)
-raw["Nyden_Twc_Sim"] = np.loadtxt("Nyden_1991_Fig2_Twc_Sim.csv", delimiter =',', skiprows = 1)
+raw["Nyden_Twc_Exp"] = np.loadtxt("Vulcain/Nyden_1991_Fig2_Twc_Exp.csv", delimiter =',', skiprows = 1)
+raw["Nyden_Twc_Sim"] = np.loadtxt("Vulcain/Nyden_1991_Fig2_Twc_Sim.csv", delimiter =',', skiprows = 1)
 
 # I'm not sure if the 'experimental' data is actually experimental
 output["Nyden"]["Cooling Side Wall Temperature (Sim)"] = {"x" : raw["Nyden_Twc_Sim"][:, 0],
@@ -103,6 +104,10 @@ for key in output["Nyden"].keys():
     output["Nyden"][key]["x"] = np.interp(x = output["Nyden"][key]["x"], 
                                                xp = L_positions,
                                                fp = x_positions)
+
+# Collect the Ljungkrona pressure drops (do it after everything else, as it has a different x-axis that does not need to be scaled)
+output["Ljungkrona"]["Pressure Drop"] = {"x" : raw["Ljungkrona_dp_Coolant"][:, 0],
+                                         "y" : raw["Ljungkrona_dp_Coolant"][:, 1]}
 
 # Save everything to a .json file
 
