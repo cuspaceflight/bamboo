@@ -25,7 +25,7 @@ All validation cases are available as Jupyter notebook, with hyperlinks below. P
 
 All validation cases were performed with the Gnielinski equation for coolant-side convection, the Bartz (sigma) equation for exhaust-side convection, and smooth walls were assumed for the pressure drop.
 
-It can be seen that overall, Bamboo tends to overpredict temperatures and pressure drops, and so would result in a conservative design if used to design an engine.
+It can be seen that overall, Bamboo tends to overpredict temperatures and pressure drops, and so would <i>usually</i> result in a conservative design if used to design an engine.
 
 A key effect that needs to be investigated is nucleate boiling, and how significantly that affects the results. Test cases that use a supercritical coolant will not be susceptible to nucleate boiling, and so are better modelled by Bamboo (which currently ignores two-phase effects).
 
