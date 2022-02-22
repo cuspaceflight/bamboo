@@ -63,18 +63,18 @@ def rao_theta_e(area_ratio, length_fraction = 0.8):
         #Linearly interpolate and return the result, after converting it to radians
         return np.interp(area_ratio, data["area_ratio"], data["theta_e"]) * np.pi/180
 
-def get_rao_contour(r_c, r_t, area_ratio, Lc, theta_conv = 45):
+def get_rao_contour(r_c, r_t, area_ratio, L_c, theta_conv = 45):
     """Get the x and y positions for an 80% Rao bell nozzle
 
     Args:
         r_c (float): Chamber radius (m)
         r_t (float): Throat radius (m)
         area_ratio (float): The area ratio (exit area / throat area).
-        Lc (float): Chamber length, from the injector to the start of the nozzle converging section (m)
+        L_c (float): Chamber length, from the injector to the start of the nozzle converging section (m)
         theta_conv (int, optional): Angle of converging nozzle section (deg). Defaults to 45.
 
     Returns:
-        (list, list): Nozzle coordinates xs, ys (m)
+        (list, list): Nozzle x coordinates and corresponding radii, xs, rs (m)
     """
     try:
         theta_n = rao_theta_n(area_ratio = area_ratio)
@@ -139,6 +139,6 @@ def get_rao_contour(r_c, r_t, area_ratio, Lc, theta_conv = 45):
     xs.insert(0, xs[0] - dx)
     
     ys.insert(0, r_c)
-    xs.insert(0, xs[0] - Lc)
+    xs.insert(0, xs[0] - L_c)
 
     return xs, ys
