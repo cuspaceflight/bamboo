@@ -73,7 +73,12 @@
              
   <section id="module-bamboo.isen">
 <span id="bamboo-isen"></span><h1>bamboo.isen<a class="headerlink" href="#module-bamboo.isen" title="Permalink to this headline"></a></h1>
-<p>Isentropic compressible flow relations.</p>
+<dl class="simple">
+<dt>Isentropic compressible flow relations.</dt><dd><ul class="simple">
+<li><p>[1] - Heister et al., Rocket Propulsion (<a class="reference external" href="https://doi.org/10.1017/9781108381376">https://doi.org/10.1017/9781108381376</a>)</p></li>
+</ul>
+</dd>
+</dl>
 <p class="rubric">Functions</p>
 <table class="longtable docutils align-default">
 <colgroup>
@@ -81,14 +86,26 @@
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.isen.M_from_p" title="bamboo.isen.M_from_p"><code class="xref py py-obj docutils literal notranslate"><span class="pre">M_from_p</span></code></a>(p, p0, gamma)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.isen.A_At" title="bamboo.isen.A_At"><code class="xref py py-obj docutils literal notranslate"><span class="pre">A_At</span></code></a>(M, gamma)</p></td>
+<td><p>Ratio of local flow area to the throat area, for a given Mach number [1].</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.isen.M_from_A_subsonic" title="bamboo.isen.M_from_A_subsonic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">M_from_A_subsonic</span></code></a>(A, A_t, gamma)</p></td>
+<td><p>Get the Mach number from the local flow area, assuming subsonic flow.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.isen.M_from_A_supersonic" title="bamboo.isen.M_from_A_supersonic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">M_from_A_supersonic</span></code></a>(A, A_t, gamma)</p></td>
+<td><p>Get the Mach number from the local flow area, assuming supersonic flow.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.isen.M_from_p" title="bamboo.isen.M_from_p"><code class="xref py py-obj docutils literal notranslate"><span class="pre">M_from_p</span></code></a>(p, p0, gamma)</p></td>
 <td><p>Mach number from static pressure and stagnation pressure.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.isen.T" title="bamboo.isen.T"><code class="xref py py-obj docutils literal notranslate"><span class="pre">T</span></code></a>(T0, M, gamma)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.isen.T" title="bamboo.isen.T"><code class="xref py py-obj docutils literal notranslate"><span class="pre">T</span></code></a>(T0, M, gamma)</p></td>
 <td><p>Get local temperature from the Mach number and stagnation temperature.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.isen.T0" title="bamboo.isen.T0"><code class="xref py py-obj docutils literal notranslate"><span class="pre">T0</span></code></a>(T, M, gamma)</p></td>
-<td><p>Get the stangation temperature from the static temperature and Mach number</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.isen.T0" title="bamboo.isen.T0"><code class="xref py py-obj docutils literal notranslate"><span class="pre">T0</span></code></a>(T, M, gamma)</p></td>
+<td><p>Get the stangation temperature from the static temperature and Mach number [1]</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.isen.Tr" title="bamboo.isen.Tr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Tr</span></code></a>(T, M, gamma, r)</p></td>
+<td><p>Get the recovery temperature, which is the temperature you should use for convective heat transfer (i.e.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.isen.get_choked_mdot" title="bamboo.isen.get_choked_mdot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_choked_mdot</span></code></a>(perfect_gas, …)</p></td>
 <td><p>Get the mass flow rate through a choked nozzle.</p></td>
@@ -106,7 +123,7 @@
 <td><p>Get local pressure from the Mach number and stagnation pressure.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.isen.p0" title="bamboo.isen.p0"><code class="xref py py-obj docutils literal notranslate"><span class="pre">p0</span></code></a>(p, M, gamma)</p></td>
-<td><p>Get stagnation pressure from static pressure and Mach number</p></td>
+<td><p>Get stagnation pressure from static pressure and Mach number [1]</p></td>
 </tr>
 </tbody>
 </table>

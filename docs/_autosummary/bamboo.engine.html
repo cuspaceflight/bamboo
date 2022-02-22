@@ -80,11 +80,17 @@
 <li><p>[2] - <a class="reference external" href="https://en.wikipedia.org/wiki/Darcy_friction_factor_formulae">https://en.wikipedia.org/wiki/Darcy_friction_factor_formulae</a></p></li>
 <li><p>[3] - <a class="reference external" href="https://en.wikipedia.org/wiki/Darcy%E2%80%93Weisbach_equation">https://en.wikipedia.org/wiki/Darcy%E2%80%93Weisbach_equation</a></p></li>
 <li><p>[4] - Huang and Huzel, Modern Engineering for Design of Liquid-Propellant Rocket Engines</p></li>
+<li><p>[5] - <a class="reference external" href="https://en.wikipedia.org/wiki/Radius_of_curvature">https://en.wikipedia.org/wiki/Radius_of_curvature</a></p></li>
+<li><p>[6] - <a class="reference external" href="https://en.wikipedia.org/wiki/Hydraulic_diameter">https://en.wikipedia.org/wiki/Hydraulic_diameter</a></p></li>
+<li><p>[7] - <a class="reference external" href="https://mathcurve.com/courbes3d.gb/heliceconic/heliceconic.shtml#:~:text=The%20conical%20helix%20can%20be,a%20geodesic%20of%20the%20cone">https://mathcurve.com/courbes3d.gb/heliceconic/heliceconic.shtml#:~:text=The%20conical%20helix%20can%20be,a%20geodesic%20of%20the%20cone</a></p></li>
+<li><p>[8] - <a class="reference external" href="https://neutrium.net/fluid-flow/pressure-loss-from-fittings-expansion-and-reduction-in-pipe-size/">https://neutrium.net/fluid-flow/pressure-loss-from-fittings-expansion-and-reduction-in-pipe-size/</a></p></li>
+<li><p>[9] - Heister et al., Rocket Propulsion (<a class="reference external" href="https://doi.org/10.1017/9781108381376">https://doi.org/10.1017/9781108381376</a>)</p></li>
+<li><p>[10] - Brkic 2012, Lambert W function in hydraulic problems (<a class="reference external" href="https://www.scipedia.com/public/Brkic_2012a">https://www.scipedia.com/public/Brkic_2012a</a>)</p></li>
 </ul>
 <p class="rubric">Notes</p>
 <ul class="simple">
-<li><p>With some exceptions, fluid properties are currently evaluated at the bulk temperature, instead of the film temperature. This is because the high wall temperature can sometimes
-be above the fluid boiling point, which can cause errors. Ideally you would use nucleate boiling correlations in this case, but this is not always possible, and so use the bulk
+<li><p>With some exceptions, coolant properties are currently evaluated at the bulk temperature, instead of the film temperature. This is because the high wall temperature can sometimes
+be above the coolant boiling point, which can cause errors. Ideally you would use nucleate boiling correlations in this case, but this is not always possible, and so use the bulk
 properties is available as a compromise.</p></li>
 </ul>
 <p class="rubric">Classes</p>
@@ -97,13 +103,13 @@ properties is available as a compromise.</p></li>
 <tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.engine.ChamberConditions" title="bamboo.engine.ChamberConditions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ChamberConditions</span></code></a>(p0, T0)</p></td>
 <td><p>Object for storing combustion chamber thermodynamic conditions.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.engine.CoolingJacket" title="bamboo.engine.CoolingJacket"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CoolingJacket</span></code></a>(T_coolant_in, p0_coolant_in, …)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.engine.CoolingJacket" title="bamboo.engine.CoolingJacket"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CoolingJacket</span></code></a>(T_coolant_in, p_coolant_in, …)</p></td>
 <td><p>Class for representing cooling jacket properties.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.engine.Engine" title="bamboo.engine.Engine"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Engine</span></code></a>(perfect_gas, chamber_conditions, geometry)</p></td>
 <td><p>Class for representing a liquid rocket engine.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.engine.Geometry" title="bamboo.engine.Geometry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Geometry</span></code></a>(xs, ys)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.engine.Geometry" title="bamboo.engine.Geometry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Geometry</span></code></a>(xs, rs)</p></td>
 <td><p>Class for representing the inner contour of a rocket engine, from the beginning of the combustion chamber to the nozzle exit.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.engine.PerfectGas" title="bamboo.engine.PerfectGas"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PerfectGas</span></code></a>(**kwargs)</p></td>
