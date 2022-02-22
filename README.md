@@ -37,7 +37,7 @@ A key effect that needs to be investigated is nucleate boiling, and how signific
 
 ## Release 0.2.1
 - Added additional validation cases.
-- Coolant flow solver can now accomodate compressible coolants automatically.
+- Coolant flow solver can now accommodate compressible coolants automatically.
 - Removed fin heat transfer for now, as it was producing spurious results.
 - Corrected mistakes with spiralling channel geometry.
 - Swapped to using the recovery temperature instead of static temperature for the exhaust gas temperature in thermal circuits.
