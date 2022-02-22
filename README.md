@@ -21,6 +21,12 @@ https://cuspaceflight.github.io/bamboo/
 
 ## Validation
 
+All validation cases are available as Jupyter notebook, with hyperlinks below. Positive signs on the errors represent an overprediction (i.e. excess heat transfer rate, excess pressure drop, or excess temperature rise).
+
+All validation cases were performed with the Gnielinski equation for coolant-side convection, the Bartz (sigma) equation for exhaust-side convection, and smooth walls were assumed for the pressure drop.
+
+It can be seen that overall, Bamboo tends to overpredict temperatures and pressure drops, and so would result in a conservative design if used to design an engine.
+
 A key effect that needs to be investigated is nucleate boiling, and how significantly that affects the results. Test cases that use a supercritical coolant will not be susceptible to nucleate boiling, and so are better modelled by Bamboo (which currently ignores two-phase effects).
 
 |         Engine          |  Coolant State | Peak Heat Flux Error  | Coolant Temperature Rise Error |  Coolant Pressure Drop Error | 
