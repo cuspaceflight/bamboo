@@ -17,8 +17,6 @@ Bamboo can be installed via pip, with the following command:
 Made using Sphinx, available at: 
 https://cuspaceflight.github.io/bamboo/
 
-(sometimes outdated)
-
 ## Validation
 
 All validation cases are available as Jupyter notebook, with hyperlinks below. Positive signs on the errors represent an overprediction (i.e. excess heat transfer rate, excess pressure drop, or excess temperature rise).
