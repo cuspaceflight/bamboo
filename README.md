@@ -27,7 +27,7 @@ A key effect that needs to be investigated is nucleate boiling, and how signific
 |:-----------------------:|:-----------------------:|:---------------------:|:------------------------:|:------------------------:|
 |[Vulcain Chamber](https://github.com/cuspaceflight/bamboo/blob/master/validation/Vulcain%20Combustion%20Chamber.ipynb) |Supercritical|40.3%|17.9%|56.1%|
 |[Vulcain Nozzle Extension](https://github.com/cuspaceflight/bamboo/blob/master/validation/Vulcain%20Nozzle%20Extension.ipynb) |Supercritical| - | 2.75% | 33.4% |
-|[Pavli 1966](https://github.com/cuspaceflight/bamboo/blob/master/validation/Pavli%201966.ipynb)|Gaseous|-| 33.1% | -|
+|[Pavli 1966](https://github.com/cuspaceflight/bamboo/blob/master/validation/Pavli%201966.ipynb)|Gaseous|23.2%| 33.1% | -|
 
 ## Release 0.2.1
 - Added additional validation cases.
