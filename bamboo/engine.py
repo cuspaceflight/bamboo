@@ -6,16 +6,25 @@ References:
  - [2] - https://en.wikipedia.org/wiki/Darcy_friction_factor_formulae
  - [3] - https://en.wikipedia.org/wiki/Darcy%E2%80%93Weisbach_equation
  - [4] - Huang and Huzel, Modern Engineering for Design of Liquid-Propellant Rocket Engines
+ - [5] - https://en.wikipedia.org/wiki/Radius_of_curvature
+ - [6] - https://en.wikipedia.org/wiki/Hydraulic_diameter
+ - [7] - https://mathcurve.com/courbes3d.gb/heliceconic/heliceconic.shtml#:~:text=The%20conical%20helix%20can%20be,a%20geodesic%20of%20the%20cone
+ - [8] - https://neutrium.net/fluid-flow/pressure-loss-from-fittings-expansion-and-reduction-in-pipe-size/
+ - [9] - Heister et al., Rocket Propulsion (https://doi.org/10.1017/9781108381376)
+ - [10] - Brkic 2012, Lambert W function in hydraulic problems (https://www.scipedia.com/public/Brkic_2012a)
 
 Notes:
- - With some exceptions, fluid properties are currently evaluated at the bulk temperature, instead of the film temperature. This is because the high wall temperature can sometimes 
-   be above the fluid boiling point, which can cause errors. Ideally you would use nucleate boiling correlations in this case, but this is not always possible, and so use the bulk 
+ - With some exceptions, coolant properties are currently evaluated at the bulk temperature, instead of the film temperature. This is because the high wall temperature can sometimes 
+   be above the coolant boiling point, which can cause errors. Ideally you would use nucleate boiling correlations in this case, but this is not always possible, and so use the bulk 
    properties is available as a compromise.
 """
 
+from math import gamma
+from multiprocessing.sharedctypes import Value
 import numpy as np
 import scipy.optimize
 import scipy.special
+import scipy.interpolate
 import matplotlib.pyplot as plt
 import matplotlib.patches
 import warnings
@@ -79,57 +88,69 @@ class ChamberConditions:
         self.T0 = T0
 
 class Geometry:
-    def __init__(self, xs, ys):
+    def __init__(self, xs, rs):
         """Class for representing the inner contour of a rocket engine, from the beginning of the combustion chamber to the nozzle exit.
 
         Args:
             xs (list): Array of x-positions, that the 'y' list corresponds to (m). Must be increasing values of x.
-            ys (list): Array, containing the distances from the engine centreline to the inner wall (m).
+            rs (list): Array, containing local engine radius (m).
 
         Attributes:
-            xt (float): x-position of the throat (m)
-            Rt (float): Throat radius (m)
-            At (float): Throat area (m2)
-            Re (float): Exit radius (m)
-            Ae (float): Exit area (m2)
+            x_t (float): x-position of the throat (m)
+            r_t (float): Throat radius (m)
+            A_t (float): Throat area (m2)
+            r_e (float): Exit radius (m)
+            A_e (float): Exit area (m2)
+            r_curvature_t (float): Radius of curvature at the throat (m)
         """
         self.xs = xs
-        self.ys = ys
+        self.rs = rs
+        self._dr_dx = np.gradient(rs, xs)
+
+    def __setattr__(self, name, value):
+        # If the user tries to set 'xs' or 'rs', we need to recalculate self.dr_dx
+        if name == "xs" and hasattr(self, "rs"):
+            self._dr_dx = np.gradient(self.rs, value)
+
+        elif name == "rs" and hasattr(self, "xs"):
+            self._dr_dx = np.gradient(value, self.xs)
+
+        super(Geometry, self).__setattr__(name, value)
 
     @property
-    def xt(self):
-        return self.xs[np.argmin(self.ys)]
+    def x_t(self):
+        return self.xs[np.argmin(self.rs)]
 
     @property
-    def Rt(self):
-        return min(self.ys)
+    def r_t(self):
+        return min(self.rs)
 
     @property
-    def At(self):
-        return np.pi * self.Rt**2
+    def A_t(self):
+        return np.pi * self.r_t**2
 
     @property
-    def Re(self):
-        return self.ys[-1]
+    def r_e(self):
+        return self.rs[-1]
     
     @property
-    def Ae(self):
-        return np.pi * self.Re**2
+    def A_e(self):
+        return np.pi * self.r_e**2
+
 
     def plot(self):
         """
         Plot the engine geometry. Must run bamboo.plot.show() or matplotlib.pyplot.show() to see the plot.
         """
         fig, axs = plt.subplots()
-        axs.plot(self.xs, self.ys, color = "blue")
-        axs.plot(self.xs, -np.array(self.ys), color = "blue")
+        axs.plot(self.xs, self.rs, color = "blue")
+        axs.plot(self.xs, -np.array(self.rs), color = "blue")
         axs.grid()
         axs.set_xlabel("x (m)")
         axs.set_ylabel("y (m)")
         axs.set_aspect('equal')
 
-
-    def y(self, x):
+    def r(self, x):
         """Get the distance from the centreline to the inner wall of the engine.
 
         Args:
@@ -138,7 +159,18 @@ class Geometry:
         Returns:
             float: Distance from engine centreline to edge of inner wall (m)
         """
-        return np.interp(x, self.xs, self.ys)
+        return np.interp(x, self.xs, self.rs)
+
+    def dr_dx(self, x):
+        """Get the slope of the engine wall, dr/dx.
+
+        Args:
+            x (float): Axial position (m).
+
+        Returns:
+            float: Rate of change of contour radius with respect to position, dr/dx
+        """
+        return np.interp(x, self.xs, self._dr_dx)
 
     def A(self, x):
         """Get the flow area for the exhaust gas
@@ -149,7 +181,8 @@ class Geometry:
         Returns:
             float: Flow area (m2)
         """
-        return np.pi * self.y(x)**2
+        return np.pi * self.r(x)**2
+
 
 class Wall:
     def __init__(self, material, thickness):
@@ -180,18 +213,18 @@ class Wall:
             return self._thickness
 
 class CoolingJacket:
-    def __init__(self, T_coolant_in, p0_coolant_in, mdot_coolant, channel_height, coolant_transport, roughness = None, configuration = "vertical", **kwargs):
+    def __init__(self, T_coolant_in, p_coolant_in, mdot_coolant, channel_height, coolant_transport, roughness = None, configuration = "vertical", **kwargs):
         """Class for representing cooling jacket properties. 
 
         Note:
-            Spiralling channels are assumed to cover the entire surface area of the outer chamber wall (i.e. the width of the channels is equal to the pitch, if the blockage ratio = 0). A blockage ratio can still be used to 'block up' part of the channels with fins.
+            Spiralling channels are assumed to cover the entire surface area of the outer chamber wall. A blockage ratio can still be used to 'block up' part of the channels with fins.
 
         Note:
             All channels are assumed to have a rectangular cross section.
 
         Args:
-            T_coolant_in (float): Inlet temperature of the coolant (K)
-            p0_coolant_in (float): Inlet stagnation pressure of the coolant (Pa)
+            T_coolant_in (float): Inlet static temperature of the coolant (K)
+            p_coolant_in (float): Inlet static pressure of the coolant (Pa)
             mdot_coolant (float): Mass flow rate of the coolant (kg/s)
             channel_height (float or callable): Radial height of the cooling channels (i.e. the distance between the inner and outer wall that the coolant flows through) (m). Can be a constant float, or function of axial position (x).
             coolant_transport (TransportProperties): Transport properties of the coolant
@@ -200,28 +233,30 @@ class CoolingJacket:
         
         Keyword Args:
             blockage_ratio (float or callable): This is the proportion (by area) of the channel cross section occupied by fins. Can be a constant float, or a function of axial position (x). Defaults to zero.
-            number_of_fins (int): Only relevant if 'blockage_ratio' !=0. This is the number of fins present in the cooling channel. For spiral channels this is the number of fins 'per pitch' - it is numerically equal to the number of channels that are spiralling around in parallel.
-            pitch (float or callable): Only relevant if configuration = 'spiral'. This is the total width (i.e. pitch) of the cooling channels (m). Can be a constant float, or a function of axial position (x).
+            number_of_channels (int): The number of parallel cooling channels (with fins in between them). Only relevant if 'blockage_ratio' !=0.
+            channel_width (float or callable): Width of a single coolant channel. Can be a constant float, or a function of axial position (x).
             xs (list): Minimum and maximum x value which the cooling jacket is present over (m), e.g. (x_min, x_max). Can be in either order. 
             restrain_fins (bool): Whether or not the fins in cooling channels are physically restrained by (i.e. attached to) the outer cooling jacket. This affects the pressure stress. Automatically ignored if blockage_ratio = 0. Defaults to False.
             """
 
         # Check that the user has not mispelt or used additional kwargs
-        allowed_kwargs = {"blockage_ratio", "number_of_fins", "pitch", "xs", "restrain_fins"}
+        allowed_kwargs = {"blockage_ratio", "number_of_channels", "channel_width", "xs", "restrain_fins"}
         left_over = set(kwargs.keys()) - allowed_kwargs
         assert not left_over, f'Unrecognised keyword arguments for CoolingJacket: {left_over}'
 
-        # Main code
+        # Assign variables
         assert configuration == "vertical" or configuration == "spiral", "'configuration' input must be either 'vertical' or 'spiral'"
 
         self.T_coolant_in = T_coolant_in
-        self.p0_coolant_in = p0_coolant_in
+        self.p_coolant_in = p_coolant_in
         self.mdot_coolant = mdot_coolant
         self.coolant_transport = coolant_transport
+        self.configuration = configuration
         self._channel_height = channel_height
         self._roughness = roughness
 
-        self.configuration = configuration
+        if "xs" in kwargs:
+            self.xs = kwargs["xs"]
 
         if "restrain_fins" in kwargs:
             self.restrain_fins = kwargs["restrain_fins"]
@@ -230,37 +265,36 @@ class CoolingJacket:
         else:
             self.restrain_fins = False
 
-        if "xs" in kwargs:
-            self.xs = kwargs["xs"]
 
         if self.configuration == "spiral":
-            assert "pitch" in kwargs, "Must input 'pitch' in order to use configuration = 'spiral'"
-            self._pitch = kwargs["pitch"]
+            assert "channel_width" in kwargs, "Must input 'channel_width' in order to use configuration = 'spiral'"
+            self._channel_width = kwargs["channel_width"]
+
 
         if "blockage_ratio" in kwargs:
             self._blockage_ratio = kwargs["blockage_ratio"]
 
-            if "number_of_fins" in kwargs:
-                self.number_of_fins = kwargs["number_of_fins"]
-                assert type(self.number_of_fins) is int, "Keyword argument 'number_of_fins' must be an integer"
+            if "number_of_channels" in kwargs:
+                self.number_of_channels = kwargs["number_of_channels"]
+                assert type(self.number_of_channels) is int, "Keyword argument 'number_of_channels' must be an integer"
 
                 if self.configuration == "spiral":
-                    assert self.number_of_fins >= 1, "Keyword argument 'number_of_fins' must be at least 1 for spiral channels (it is numerically equal to the number of channels in parallel)."
+                    assert self.number_of_channels >= 1, "Keyword argument 'number_of_channels' must be at least 1 for spiral channels (it is numerically equal to the number of channels in parallel)."
 
             elif configuration == "spiral":
-                self.number_of_fins = 1
+                self.number_of_channels = 1
 
             elif configuration == "vertical":
-                raise ValueError("Must also specify 'number_of_fins' for configuration = 'vertical', if you want to specify 'blockage_ratio'")
+                raise ValueError("Must also specify 'number_of_channels' for configuration = 'vertical', if you want to specify 'blockage_ratio'")
 
         else:
             self._blockage_ratio = 0
             
             if self.configuration == "spiral":
-                self.number_of_fins = 1
+                self.number_of_channels = 1
 
             elif self.configuration == "vertical":
-                self.number_of_fins = 0
+                self.number_of_channels = 0
 
     def channel_height(self, x):
         """Get the channel height at a position, x.
@@ -292,8 +326,8 @@ class CoolingJacket:
         else:
             return self._blockage_ratio
         
-    def pitch(self, x):
-        """Get the channel width for a spiral channel, at a position, x.
+    def channel_width(self, x):
+        """Get the width of a single cooling channel for a spiral configuration, at a position, x.
 
         Args:
             x (float): Axial position along the engine (m)
@@ -301,11 +335,23 @@ class CoolingJacket:
         Returns:
             float: Channel width (m)
         """
-        if callable(self._pitch):
-            return self._pitch(x)
+        if callable(self._channel_width):
+            return self._channel_width(x)
 
         else:
-            return self._pitch
+            return self._channel_width
+
+    def bundle_width(self, x):
+        """Width of a 'bundle' of spiralling cooling channels. Equal to channel_width * number_of_channels.
+
+        Args:
+            x (float): Axial position along the engine (m)
+
+        Returns:
+            float: Width per channel multiplied by number of channels (m)
+        """
+
+        return self.channel_width(x) * self.number_of_channels
 
     def roughness(self, x):
         """Get the channel roughness, at a position, x.
@@ -332,13 +378,28 @@ class CoolingJacket:
             return (0.79 * np.log(ReDh) - 1.64)**(-2)   
 
         else:
-            # Colebrook-White with Lambert W function [2]
+            # Colebrook-White by iteration
+            def func_to_solve(f):
+                return 1/(f**0.5) + 2 * np.log10( roughness / (3.71 * Dh) + 2.51 / (ReDh * f**0.5) )    # Reference [2]
+
+            return scipy.optimize.fsolve(func = func_to_solve, x0 = 0.02)[0]
+
+            # Colebrook-White with Lambert W function - commented out because they seem to give very questionable results
+            """
             a = 2.51 / ReDh
             two_a = 2*a
             b = roughness / (3.71 * Dh)
             
-            return ( (2 * scipy.special.lambertw(np.log(10) / two_a * 10**(b/two_a) )) / np.log(10) - b/a )**(-2)
+            f = ( (2 * scipy.special.lambertw(np.log(10) / two_a * 10**(b/two_a) )) / np.log(10) - b/a )**(-2) # Reference [2]
+            return f.real
+            
+            O1 = roughness / (3.71 * Dh)
+            O2 = 2.51 / ReDh
+            O3 = 2 / np.log(10)
 
+            f = (O1 * scipy.special.lambertw( np.exp(O1 / (O2*O3)) / (O2*O3) ) - O1/O2)**(-2)        # Reference [10]
+            return f.real
+            """
 
     def f_darcy(self, ReDh, Dh, x):
         # Check for laminar flow
@@ -352,7 +413,7 @@ class CoolingJacket:
             # "Blend" between the laminar and turbulent region
             return np.interp(ReDh, [REDH_LAMINAR, REDH_TURBULENT], [f_darcy_laminar, f_darcy_turbulent])
 
-        # Turbulen tflow
+        # Turbulent flow
         else:
             return self.f_darcy_turbulent(ReDh = ReDh, Dh = Dh, x = x)     
 
@@ -377,12 +438,15 @@ class Engine:
         c_star (float): C* for the engine (m/s).
         coolant_convection (str): Convective heat transfer model to use for the coolant side.
         exhaust_convection (str): Convective heat transfer model to use the for exhaust side.
+        h_exhaust_sf (float): Scale factor for the exhaust convective heat transfer coeffcient. Defaults to 1.
+        h_coolant_sf (float): Scale factor for the coolant convective heat transfer coeffcient. Defaults to 1.
         walls (list): List of Wall objects between the hot gas and coolant
 
     """
     def __init__(self, perfect_gas, chamber_conditions, geometry, coolant_convection = "gnielinski", exhaust_convection = "bartz-sigma", **kwargs):
+
         # Check that the user has not mispelt or used additional kwargs
-        allowed_kwargs = {"walls", "cooling_jacket", "exhaust_transport"}
+        allowed_kwargs = {"walls", "cooling_jacket", "exhaust_transport", "h_exhaust_sf", "h_coolant_sf"}
         left_over = set(kwargs.keys()) - allowed_kwargs
         assert not left_over, f'Unrecognised keyword arguments for Engine: {left_over}'
         
@@ -394,10 +458,10 @@ class Engine:
         self.exhaust_convection = exhaust_convection
 
         # Find the choked mass flow rate
-        self.mdot = bamboo.isen.get_choked_mdot(self.perfect_gas, self.chamber_conditions, self.geometry.At)
+        self.mdot = bamboo.isen.get_choked_mdot(self.perfect_gas, self.chamber_conditions, self.geometry.A_t)
 
         # C* value, for convenience with 'bartz-sigma' convection model
-        self.c_star = self.chamber_conditions.p0 * self.geometry.At / self.mdot
+        self.c_star = self.chamber_conditions.p0 * self.geometry.A_t / self.mdot
 
         # Additional keyword arguments
         if "walls" in kwargs:
@@ -417,6 +481,16 @@ class Engine:
         
         if "exhaust_transport" in kwargs:
             self.exhaust_transport = kwargs["exhaust_transport"]  
+
+        if "h_exhaust_sf" in kwargs:
+            self.h_exhaust_sf = kwargs["h_exhaust_sf"]
+        else:
+            self.h_exhaust_sf = 1.0
+
+        if "h_coolant_sf" in kwargs:
+            self.h_coolant_sf = kwargs["h_coolant_sf"]
+        else:
+            self.h_coolant_sf = 1.0
 
     def __setattr__(self, name, value):
         # If the user tries to set 'cooling_jacket' or 'wall' after the creation of the Engine object then we must run checks on the submitted values
@@ -444,27 +518,15 @@ class Engine:
             float: Mach number of the freestream.
         """
         #If we're at the throat then M = 1 by default:
-        if abs(x - self.geometry.xt) <= 1e-12:
+        if abs(x - self.geometry.x_t) <= 1e-12:
             return 1.00
 
         #If we're not at the throat:
         else:
-            # Collect the relevant variables
-            A = self.geometry.A(x)
-            mdot = self.mdot
-            p0 = self.chamber_conditions.p0
-            cp = self.perfect_gas.cp
-            T0 = self.chamber_conditions.T0
-            gamma = self.perfect_gas.gamma
-
-            # Function to find the root of
-            def func_to_solve(Mach):
-                return mdot * (cp * T0)**0.5 / (A  * p0) - bamboo.isen.m_bar(M = Mach, gamma = gamma)
- 
-            if x > self.geometry.xt:
-                Mach = scipy.optimize.root_scalar(func_to_solve, bracket = [1, 500], x0 = 1).root
+            if x > self.geometry.x_t:
+                Mach = bamboo.isen.M_from_A_supersonic(A = self.geometry.A(x), A_t = self.geometry.A_t, gamma = self.perfect_gas.gamma)
             else:
-                Mach = scipy.optimize.root_scalar(func_to_solve, bracket = [0.0,1], x0 = 0.5).root
+                Mach = bamboo.isen.M_from_A_subsonic(A = self.geometry.A(x), A_t = self.geometry.A_t, gamma = self.perfect_gas.gamma)
             return Mach
 
     def T(self, x):
@@ -521,7 +583,7 @@ class Engine:
                     y_top = np.zeros(len(xs))
 
                     for j in range(len(y_bottom)):
-                        y_bottom[j] = self.geometry.y(xs[j])
+                        y_bottom[j] = self.geometry.r(xs[j])
                         y_top[j] = y_bottom[j] + self.walls[i].thickness(xs[j])
 
                 else:
@@ -566,7 +628,7 @@ class Engine:
                     #Just for the legends
                     axs.plot(0, 0, color = 'blue', label = 'Cooling channels')  
 
-                    if self.cooling_jacket.number_of_fins != 1:
+                    if self.cooling_jacket.number_of_channels != 1:
 
                         axs.plot(0, 0, color = 'red', label = 'Channel fins')  
                         fin_color = 'red'
@@ -580,14 +642,14 @@ class Engine:
                     while current_x < max_x_jacket:
                         y_jacket_inner = np.interp(current_x, xs, y_bottom)
                         H = self.cooling_jacket.channel_height(current_x)           # Current channel height
-                        W = self.cooling_jacket.pitch(current_x)            # Current channel width
+                        W = self.cooling_jacket.bundle_width(current_x)            # Current channel width
 
                         #Show the ribs as filled in rectangles
-                        area_per_fin = W * H * self.cooling_jacket.blockage_ratio(current_x)/self.cooling_jacket.number_of_fins
+                        area_per_fin = W * H * self.cooling_jacket.blockage_ratio(current_x)/self.cooling_jacket.number_of_channels
                         fin_width = area_per_fin / H
 
-                        for j in range(self.cooling_jacket.number_of_fins):
-                            distance_to_next_rib = W/self.cooling_jacket.number_of_fins
+                        for j in range(self.cooling_jacket.number_of_channels):
+                            distance_to_next_rib = W/self.cooling_jacket.number_of_channels
 
                             # Make all ribs red
                             axs.add_patch(matplotlib.patches.Rectangle([current_x + j*distance_to_next_rib, y_jacket_inner], fin_width, H, color = fin_color, fill = True))
@@ -612,14 +674,58 @@ class Engine:
         else:
             fig, axs = plt.subplots()
 
-            line = axs.plot(self.geometry.xs, self.geometry.ys)
-            axs.plot(self.geometry.xs, -np.array(self.geometry.ys), color = line[0].get_color())
+            line = axs.plot(self.geometry.xs, self.geometry.rs)
+            axs.plot(self.geometry.xs, -np.array(self.geometry.rs), color = line[0].get_color())
             axs.grid()
             axs.set_aspect('equal')
             axs.set_xlabel("x (m)")
             axs.set_ylabel("y (m)")
 
     # Cooling jacket functions
+    def helix_angle(self, x):
+        """Angle between the spiralling helix and the axial direction. Same as beta in Ref [7].
+
+        Args:
+            x (float): Axial position (m)
+
+        Returns:
+            float: Helix angle (rad)
+        """
+        if self.cooling_jacket.configuration == "vertical":
+            return 0.0
+
+        elif self.cooling_jacket.configuration == "spiral":
+            return np.arccos(self.cooling_jacket.bundle_width(x) / (2 * np.pi * self.geometry.r(x)))
+
+    def coolant_pitch(self, x):
+        return self.cooling_jacket.bundle_width(x) / np.sin(self.helix_angle(x))
+
+    def coolant_slope(self, x):
+        """Angle that the coolant wall is sloped at radially, same as alpha in Ref [7]
+
+        Args:
+            x (float): Axial position (m)
+
+        Returns:
+            float: Coolant wall slope (rad)
+        """
+        def r(x_position):
+            return self.geometry.r(x_position) + self.total_wall_thickness(x_position)
+
+        dr_dx = scipy.optimize.approx_fprime(xk = x, f = r, epsilon = 1e-6)         # Assume wall is smooth over a 1e-6 m segment.
+        return np.arctan(dr_dx[0])
+
+    def dLc_dx(self, x):
+        """Conversion factor between travelling a distance 'dx' in the axial direction, and the path taken by the cooling fluid 'dLc'.
+
+        Args:
+            x (float): Axial position x (m).
+
+        Returns:
+            float: dLc/dx
+        """
+        return 1 / ( np.cos(self.coolant_slope(x)) * np.cos(self.helix_angle(x)) )
+
     def A_coolant(self, x):
         """Flow area of the coolant at an axial position.
 
@@ -630,13 +736,13 @@ class Engine:
             float: Coolant flow area (m2)
         """
         if self.cooling_jacket.configuration == "vertical":
-            R_in = self.geometry.y(x) + self.total_wall_thickness(x)
+            R_in = self.geometry.r(x) + self.total_wall_thickness(x)
             R_out = R_in + self.cooling_jacket.channel_height(x)
             flow_area_unblocked = np.pi * (R_out**2 - R_in**2)
             return flow_area_unblocked * (1 - self.cooling_jacket.blockage_ratio(x))
 
         elif self.cooling_jacket.configuration == "spiral":
-            flow_area_unblocked = self.cooling_jacket.pitch(x) * self.cooling_jacket.channel_height(x)
+            flow_area_unblocked = self.cooling_jacket.bundle_width(x) * self.cooling_jacket.channel_height(x)
             return flow_area_unblocked * (1 - self.cooling_jacket.blockage_ratio(x))
 
     def Dh_coolant(self, x):
@@ -649,66 +755,28 @@ class Engine:
             float: Hydraulic diameter (m)
         """
         channel_height = self.cooling_jacket.channel_height(x)
+        A_coolant_tot = self.A_coolant(x)
 
         if self.cooling_jacket.configuration == 'spiral':
-            perimeter = 2 * self.cooling_jacket.pitch(x) + 2 * channel_height + 2 * channel_height * self.cooling_jacket.number_of_fins
-            return 4 * self.A_coolant(x) / perimeter
+            A_coolant_per_channel = A_coolant_tot / self.cooling_jacket.number_of_channels
+            P_per_channel = 2 * self.cooling_jacket.channel_width(x)  + 2 * channel_height
+
+            return 4 * A_coolant_per_channel / P_per_channel
 
         elif self.cooling_jacket.configuration == 'vertical':
-            R_in = self.geometry.y(x) + self.total_wall_thickness(x)
-            perimeter = (2*np.pi*R_in + 2*np.pi*(R_in + channel_height)) * (1 - self.cooling_jacket.blockage_ratio(x)) + 2 * self.cooling_jacket.number_of_fins * channel_height
-            return 4 * self.A_coolant(x) / perimeter
+            # Inner and outer radius of the cooling channel (m)
+            R_in = self.geometry.r(x) + self.total_wall_thickness(x)
+            R_out = R_in + channel_height
 
-    def V_coolant(self, x, rho_coolant):
-        """Get the coolant velocity at an axial position.
+            if self.cooling_jacket.number_of_channels == 0:
+                return 2 * (R_out - R_in)               # Reference [6] - Hydraulic diameter of an annulus
+            
+            else:
+                A_per_channel = A_coolant_tot / self.cooling_jacket.number_of_channels
+                P_per_channel = 2*np.pi*R_in / self.cooling_jacket.number_of_channels + 2*np.pi*R_out / self.cooling_jacket.number_of_channels + 2*channel_height
 
-        Args:
-            x (float): Axial position (m)
-            rho_coolant (float): Coolant density (kg/m3)
+                return 4 * A_per_channel / P_per_channel
 
-        Returns:
-            float: Coolant velocity (m/s)
-        """
-        assert hasattr(self, "cooling_jacket"), "Must have given a 'cooling_jacket' input to the Engine object to use Engine.coolant_velocity()"
-        return self.cooling_jacket.mdot_coolant / (rho_coolant * self.A_coolant(x))
-
-    def p_coolant(self, x, p0_coolant, rho_coolant):
-        """Get the static pressure of the coolant from the stagnation pressure. Uses Bernoulli's equation, which assumes the coolant to be incompressible. 
-
-        Args:
-            x (float): Axial position (m)
-            p0_coolant (float): Stagnation pressure (Pa)
-            rho_coolant (float): Coolant density (kg/m3)
-
-        Returns:
-            float: Static pressure (Pa)
-        """
-        return p0_coolant - 0.5 * rho_coolant * self.V_coolant(x = x, rho_coolant = rho_coolant)**2
-
-    def rho_coolant(self, x, T_coolant, p0_coolant):
-        """Use iteration to find the coolant density. It's a function of pressure, but we don't know the static pressure since it is a function of the density (from Bernoulli).
-
-        Args:
-            x (float): Axial position (m)
-            T_coolant (float): Coolant temperature (K)
-            p0_coolant (float): Coolant stagnation pressure
-
-        Returns:
-            float: Coolant density (kg/m3)
-        """
-        
-        # Initial guess of density using stagnation pressure
-        rho_coolant = self.cooling_jacket.coolant_transport.rho(T = T_coolant, p = p0_coolant)
-
-        # Iterate
-        change = np.inf
-        while change > rho_coolant * 1e-12:
-            p_coolant = self.p_coolant(x = x, p0_coolant = p0_coolant, rho_coolant = rho_coolant)
-            new_rho_coolant = self.cooling_jacket.coolant_transport.rho(T = T_coolant, p = p_coolant)
-            change = new_rho_coolant - rho_coolant
-            rho_coolant = new_rho_coolant
-
-        return rho_coolant
 
     # Thrust functions
     def thrust(self, p_amb = 1e5):
@@ -725,7 +793,7 @@ class Engine:
         Te = self.T(x = self.geometry.xs[-1])
         pe = self.p(x = self.geometry.xs[-1])
 
-        return self.mdot * Me * (self.perfect_gas.gamma * self.perfect_gas.R * Te)**0.5 + (pe - p_amb) * self.geometry.Ae    #Generic equation for rocket thrust
+        return self.mdot * Me * (self.perfect_gas.gamma * self.perfect_gas.R * Te)**0.5 + (pe - p_amb) * self.geometry.A_e    #Generic equation for rocket thrust
     
     def isp(self, p_amb = 1e5):
         """Get the specific impulse of the engine for a given ambient pressure.
@@ -740,31 +808,57 @@ class Engine:
 
     # Functions that need to be submitted to bamboo.hx.HXSolver
     def T_h(self, state):
-        return self.T(state["x"])
+        T = self.T(state["x"])
+        p = self.p(state["x"])
+        M = self.M(state["x"])
+
+        if "T_hw" in state.keys():
+            T_w = state["T_hw"]
+            T_am = (T + T_w)/2
+        else:
+            T_am = T
+
+        Pr_am = self.exhaust_transport.Pr(T = T_am, p = p)
+        r = Pr_am**(1/3)                    # Recovery ffactory for turbulent free boundary layer [9]
+
+        return bamboo.isen.Tr(T = T, M = M, gamma = self.perfect_gas.gamma, r = r)
 
     def cp_c(self, state):
-        rho_coolant = self.rho_coolant(x = state["x"], T_coolant = state["T_c"], p0_coolant = state["p0_c"])
-        p_coolant = self.p_coolant(x = state["x"], p0_coolant = state["p0_c"], rho_coolant = rho_coolant)
+        T_coolant = state["T_c"]
+        p_coolant = state["p_c"]
 
-        return self.cooling_jacket.coolant_transport.cp(T = state["T_c"], p = p_coolant)
+        return self.cooling_jacket.coolant_transport.cp(T = T_coolant, p = p_coolant)
 
-    def R_th(self, state):
+    def A_c(self, state):
+        x = state["x"]
+        return self.A_coolant(x = x)
+
+    def V_c(self, state):
+        x = state["x"]
+        T_c = state["T_c"]
+        p_c = state["p_c"]
+
+        A_c = self.A_c(state)
+        rho_c = self.cooling_jacket.coolant_transport.rho(T = T_c, p = p_c)
+
+        return self.cooling_jacket.mdot_coolant / (rho_c * A_c)
+
+    def Rdx(self, state):
         R_list = []
 
         # Need a list of thermal circuit resistances [R1, R2 ...], in the order T_cold --> T_hot
         x = state["x"]
-        y = self.geometry.y(x)
-        T_coolant = state["T_c"]
-        T_coolant_wall = state["T_cw"]
-        p0_coolant = state["p0_c"]
+        y = self.geometry.r(x)
 
-        # COOLANT
+        # -------------------------------- COOLANT --------------------------------
         # Collect all the coolant transport properties, and find the convective resistance
-        rho_coolant = self.rho_coolant(x = x, T_coolant = T_coolant, p0_coolant = p0_coolant)
-        p_coolant = self.p_coolant(x = x, p0_coolant = p0_coolant, rho_coolant = rho_coolant)
-        V_coolant = self.V_coolant(x = x, rho_coolant = rho_coolant)
+        T_coolant_wall = state["T_cw"]
+        V_coolant = state["V_c"]
+        T_coolant = state["T_c"]
+        p_coolant = state["p_c"]
         Dh_coolant = self.Dh_coolant(x = x)
-        
+
+        rho_coolant =  self.cooling_jacket.coolant_transport.rho(T = T_coolant, p = p_coolant)
         Pr_coolant = self.cooling_jacket.coolant_transport.Pr(T = T_coolant, p = p_coolant)
         mu_coolant = self.cooling_jacket.coolant_transport.mu(T = T_coolant, p = p_coolant)
         k_coolant = self.cooling_jacket.coolant_transport.k(T = T_coolant, p = p_coolant)
@@ -788,7 +882,7 @@ class Engine:
                                                                     Pr = Pr_coolant, 
                                                                     k = k_coolant)
 
-            if self.coolant_convection == "sieder-tate":
+            elif self.coolant_convection == "sieder-tate":
                 mu_coolant_wall = self.cooling_jacket.coolant_transport.mu(T = T_coolant_wall, p = p_coolant)
                 h_coolant_turb = bamboo.circuit.h_coolant_sieder_tate(rho = rho_coolant, 
                                                                     V = V_coolant, 
@@ -799,7 +893,7 @@ class Engine:
                                                                     k = k_coolant)
 
             elif self.coolant_convection == "gnielinski":
-                f_darcy = self.cooling_jacket.f_darcy(Dh = Dh_coolant, ReDh = ReDh_coolant, x = x)
+                f_darcy = self.cooling_jacket.f_darcy_turbulent(Dh = Dh_coolant, ReDh = ReDh_coolant, x = x)
                 h_coolant_turb = bamboo.circuit.h_coolant_gnielinski(rho = rho_coolant, 
                                                                     V = V_coolant, 
                                                                     D = Dh_coolant, 
@@ -824,10 +918,11 @@ class Engine:
                 # Turbulent flow
                 self.h_coolant = h_coolant_turb
 
-        A_coolant = 2 * np.pi * (y + self.total_wall_thickness(x) + self.cooling_jacket.channel_height(x))      # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.hx.HXSolver
+        self.h_coolant = self.h_coolant * self.h_coolant_sf             # Multiply h_coolant by the scale factor given by the user.
+        A_coolant = 2 * np.pi * (y + self.total_wall_thickness(x))      # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.hx.HXSolver
         R_list.append(1.0 / (self.h_coolant * A_coolant))
         
-        # SOLID WALLS
+        # -------------------------------- SOLID WALLS --------------------------------
         # Find the thermal resistance of the solid boundaries between the coolant and the gas - note our resistance list goes in the order [Cold --> Hot], but the walls are in the order [Hot --> Cold]
         for i in range(len(self.walls)):   
             # Work in reverse from the cold side to the hot side
@@ -842,7 +937,7 @@ class Engine:
 
             R_list.append(np.log(r2/r1) / (2 * np.pi * reversed_walls[i].material.k))
 
-        # EXHAUST GAS
+        # -------------------------------- EXHAUST GAS --------------------------------
         # Get the gas properties, and find the thermal resistance of the convection on the hot gas side
         rho_exhaust = self.rho(x)
         T_exhaust = self.T(x)
@@ -851,18 +946,25 @@ class Engine:
         M_exhaust = self.M(x)
         V_exhaust = (self.perfect_gas.gamma * self.perfect_gas.R * T_exhaust)**0.5 * M_exhaust      # V = sqrt(gamma * R * T) * M, from speed of sound for an ideal gas
         Dh_exhaust = 2 * y
+
         mu_exhaust = self.exhaust_transport.mu(T = T_exhaust, p = p_exhaust)
         Pr_exhaust = self.exhaust_transport.Pr(T = T_exhaust, p = p_exhaust)
         k_exhaust = self.exhaust_transport.k(T = T_exhaust, p = p_exhaust)
 
-
         if self.exhaust_convection == "dittus-boelter":
-            h_exhaust = bamboo.circuit.h_coolant_dittus_boelter(rho = rho_exhaust, 
+            T_exhaust_am = (T_exhaust + T_exhaust_wall) / 2                                 # Arithmetic mean of wall and freestream
+
+            mu_exhaust_am = self.exhaust_transport.mu(T = T_exhaust_am, p = p_exhaust)
+            rho_exhaust_am = p_exhaust/(self.perfect_gas.R * T_exhaust_am)
+            Pr_exhaust_am = self.exhaust_transport.Pr(T = T_exhaust_am, p = p_exhaust)
+            k_exhaust_am = self.exhaust_transport.k(T = T_exhaust_am, p = p_exhaust)
+
+            h_exhaust = bamboo.circuit.h_coolant_dittus_boelter(rho = rho_exhaust_am, 
                                                                 V = V_exhaust, 
                                                                 D = Dh_exhaust, 
-                                                                mu = mu_exhaust, 
-                                                                Pr = Pr_exhaust, 
-                                                                k = k_exhaust)
+                                                                mu = mu_exhaust_am, 
+                                                                Pr = Pr_exhaust_am, 
+                                                                k = k_exhaust_am)
 
         elif self.exhaust_convection == "bartz":
             T_exhaust_am = (T_exhaust + T_exhaust_wall) / 2                                                             # Arithmetic mean of wall and freestream
@@ -885,7 +987,7 @@ class Engine:
             Pr_exhaust_0 = self.exhaust_transport.Pr(T = self.chamber_conditions.T0, p = self.chamber_conditions.p0)   
             
             h_exhaust = bamboo.circuit.h_gas_bartz_sigma(c_star = self.c_star, 
-                                                         At = self.geometry.At, 
+                                                         A_t = self.geometry.A_t, 
                                                          A = np.pi * Dh_exhaust**2 / 4, 
                                                          p_chamber = self.chamber_conditions.p0, 
                                                          T_chamber = self.chamber_conditions.T0, 
@@ -896,12 +998,32 @@ class Engine:
                                                          gamma = self.perfect_gas.gamma, 
                                                          Pr0 = Pr_exhaust_0)
 
-        A_exhaust = 2 * np.pi * y                       # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.hx.HXSolver
-        R_list.append(1.0 / (h_exhaust * A_exhaust))
+        elif self.exhaust_convection == "bartz-sigma-curve":
+            mu_exhaust_0 = self.exhaust_transport.mu(T = self.chamber_conditions.T0, p = self.chamber_conditions.p0)    # At stagnation conditions
+            Pr_exhaust_0 = self.exhaust_transport.Pr(T = self.chamber_conditions.T0, p = self.chamber_conditions.p0)   
+            
+            # Calculate radius of curvature at the throat
+            h_exhaust = bamboo.circuit.h_gas_bartz_sigma_curve(c_star = self.c_star, 
+                                                               A_t = self.geometry.A_t, 
+                                                               A = np.pi * Dh_exhaust**2 / 4, 
+                                                               p_chamber = self.chamber_conditions.p0, 
+                                                               T_chamber = self.chamber_conditions.T0, 
+                                                               M = M_exhaust, 
+                                                               Tw = T_exhaust_wall, 
+                                                               mu0 = mu_exhaust_0, 
+                                                               cp0 = self.perfect_gas.cp, 
+                                                               gamma = self.perfect_gas.gamma, 
+                                                               Pr0 = Pr_exhaust_0,
+                                                               rc_t = self.geometry.r_curvature_t)
+
+        A_exhaust = 2 * np.pi * y                                           # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.hx.HXSolver. 
+        R_list.append(1.0 / (self.h_exhaust_sf * h_exhaust * A_exhaust))    # Don't forget to multiply by any scale factor (self.h_exhaust_sf) that the user requested.
         
-        return R_list
+        return np.array(R_list) 
 
     def extra_dQ_dx(self, state):
+        return 0.0      # Disabled fin heat transfer for now - it seemed to be massively excessive (I suspect the adiabatic tip assumption is questionable)
+
         x = state["x"]
         blockage_ratio = self.cooling_jacket.blockage_ratio(x)
 
@@ -911,18 +1033,22 @@ class Engine:
         else:
             P = 2.0                                     # For dQ, the perimeter is 2 * dx. We must divide this by dx to get dQ/dx
             L = self.cooling_jacket.channel_height(x)
-            
-            R = self.geometry.y(x)
+
+            R = self.geometry.r(x)
             for i in range(len(self.walls)):
                 R += self.walls[i].thickness(x)
 
             if self.cooling_jacket.configuration == "vertical":
-                # Base area (per dx) for a single fin = circumference * blockage_ratio / number_of_fins. Assume the fins are constant cross sectional area, equal to the base area.
-                Ac = 2 * np.pi * R * blockage_ratio / self.cooling_jacket.number_of_fins  
+                # Base area (per dx) for a single fin = circumference * blockage_ratio / number_of_channels. Assume the fins are constant cross sectional area, equal to the base area.
+                Ac = 2 * np.pi * R * blockage_ratio / self.cooling_jacket.number_of_channels  
 
             elif self.cooling_jacket.configuration == "spiral":
-                pitch = self.cooling_jacket.pitch(x)
-                Ac = pitch * blockage_ratio / self.cooling_jacket.number_of_fins
+                channel_width = self.cooling_jacket.channel_width(x) 
+                Ac = channel_width * blockage_ratio
+
+                # Need to correct the perimeter to take into account that the length travelled by a fluid along a the spiral channel is longer than 'dx'
+                # IS THIS THE CORRECT WAY OF TAKING THIS INTO ACCOUNT???
+                P = P / np.cos(self.helix_angle(x))
 
             T_b = state["T_cw"]
             T_inf = state["T_c"]
@@ -938,20 +1064,19 @@ class Engine:
             
             if self.cooling_jacket.configuration == "vertical":
                 # Subtract the heat transfer that we added assuming there were no fins, and replace it with the heat transfer from the fins
-                return abs(dQ_dx_single_fin * self.cooling_jacket.number_of_fins) - 2 * np.pi * R * (1 - blockage_ratio) * self.h_coolant * (T_b - T_inf)   
+                return abs(dQ_dx_single_fin * self.cooling_jacket.number_of_channels) - 2 * np.pi * R * (1 - blockage_ratio) * self.h_coolant * (T_b - T_inf)   
 
             elif self.cooling_jacket.configuration == "spiral":
-                return abs(dQ_dx_single_fin * self.cooling_jacket.number_of_fins) - pitch * (1 - blockage_ratio) * self.h_coolant * (T_b - T_inf)   
+                return abs(dQ_dx_single_fin * self.cooling_jacket.number_of_channels) - channel_width * (1 - blockage_ratio) * self.h_coolant * (T_b - T_inf)   
 
-    def dp_dx(self, state):
-        x = state["x"]
+    def dp_dx_f(self, state):
+        x = state["x"]   
+        V_coolant = state["V_c"]
         T_coolant = state["T_c"]
-        p0_coolant = state["p0_c"]
-        
+        p_coolant = state["p_c"]
         Dh = self.Dh_coolant(x)
-        rho_coolant = self.rho_coolant(x = x, T_coolant = T_coolant, p0_coolant = p0_coolant)
-        p_coolant = self.p_coolant(x = x, p0_coolant = p0_coolant, rho_coolant = rho_coolant)
-        V_coolant = self.V_coolant(x = x, rho_coolant = rho_coolant)
+
+        rho_coolant = self.cooling_jacket.coolant_transport.rho(T = T_coolant, p = p_coolant)
         mu_coolant = self.cooling_jacket.coolant_transport.mu(T = T_coolant, p = p_coolant)
         
         ReDh = rho_coolant * V_coolant * Dh / mu_coolant
@@ -959,35 +1084,18 @@ class Engine:
         f_darcy = self.cooling_jacket.f_darcy(Dh = Dh, ReDh = ReDh, x = x)
 
         # Fully developed pipe flow pressure drop [3] - this is dp/dL (pressure drop per unit length travelled by the fluid)
-        dp_dL = f_darcy * (rho_coolant / 2) * (V_coolant**2)/Dh
-
-        # For vertical channels, dp/dL = dp/dx
-        if self.cooling_jacket.configuration == "vertical":
-            return dp_dL
-        
-        # Need to add a scale factor for the fact that 'dx' is not the same as the path length that the fluid takes around the spiral
-        if self.cooling_jacket.configuration == "spiral":
-            pitch = self.cooling_jacket.pitch(x)
-            
-            R = self.geometry.y(x)
-            for i in range(len(self.walls)):
-                R += self.walls[i].thickness(x)
-
-            circumference = 2 * np.pi * R
-            helix_angle = np.arctan(circumference / pitch)
-            dL_dx = 1 / np.cos(helix_angle)                 # Length travelled along the spiral for each 'dx' you move axially
-
-            return dp_dL * dL_dx
+        dp_dLc = - f_darcy * (rho_coolant / 2) * (V_coolant**2)/Dh
+        return dp_dLc * self.dLc_dx(x)
 
     # Functions for thermal simulations
-    def steady_heating_analysis(self, num_grid = 1000, counterflow = True, iter_start = 5, iter_each = 1):
+    def steady_heating_analysis(self, num_grid = 1000, counterflow = True, iter_start = 5, iter_each = 2):
         """Run a steady state cooling simulation.
 
         Args:
             num_grid (int): Number of grid points to use (1-dimensional)
             counterflow (bool, optional): Whether or not the cooling is flowing coutnerflow or coflow, relative to the exhaust gas. Defaults to True (which means counterflow).
-            iter_start (int): Number of times to iterate on the entry conditions.
-            iter_each (int): Number of times to iterate on the solution at each datapoint.
+            iter_start (int): Number of times to iterate on the entry conditions. Defaults to 5.
+            iter_each (int): Number of times to iterate on the solution at each datapoint. Defaults to 2.
         """
 
         dx = (self.geometry.xs[0] - self.geometry.xs[-1]) / num_grid
@@ -1021,17 +1129,24 @@ class Engine:
             x_end = x_max
 
         # Set up and run simulation
-        cooling_simulation = bamboo.hx.HXSolver(T_c_in = self.cooling_jacket.T_coolant_in, 
-                                                          T_h = self.T_h, 
-                                                          p0_c_in = self.cooling_jacket.p0_coolant_in, 
-                                                          cp_c = self.cp_c, 
-                                                          mdot_c = self.cooling_jacket.mdot_coolant, 
-                                                          R_th = self.R_th,  
-                                                          extra_dQ_dx = self.extra_dQ_dx,
-                                                          dp_dx = self.dp_dx, 
-                                                          x_start = x_start, 
-                                                          dx = dx, 
-                                                          x_end = x_end)
+        self.dx = dx    
+        self.x_start = x_start
+        self.x_end = x_end
+        self.counterflow = counterflow
+
+        cooling_simulation = bamboo.hx.HXSolver(T_c_in = self.cooling_jacket.T_coolant_in,
+                                                T_h = self.T_h, 
+                                                p_c_in = self.cooling_jacket.p_coolant_in, 
+                                                cp_c = self.cp_c, 
+                                                mdot_c = self.cooling_jacket.mdot_coolant, 
+                                                V_c = self.V_c, 
+                                                A_c = self.A_c, 
+                                                Rdx = self.Rdx, 
+                                                extra_dQ_dx = self.extra_dQ_dx, 
+                                                dp_dx_f = self.dp_dx_f, 
+                                                x_start = self.x_start, 
+                                                dx = self.dx, 
+                                                x_end = self.x_end)
 
         cooling_simulation.run(iter_start = iter_start, iter_each = iter_each)
 
@@ -1041,31 +1156,36 @@ class Engine:
 
         results = {}
         results["info"] = {}                                                            
-        results["x"]                    = [None] * len(cooling_simulation.state)       
-        results["T"]                    = [None] * len(cooling_simulation.state)     
-        results["T_coolant"]            = None
+        results["x"]                    = [None] * len(cooling_simulation.state)     
+        results["T"]                    = [None] * len(cooling_simulation.state)       
+        results["T_coolant"]            = [None] * len(cooling_simulation.state)     
         results["T_exhaust"]            = None
-        results["dQ_dx"]                = [None] * len(cooling_simulation.state)        
-        results["dQ_dA"]                = [None] * len(cooling_simulation.state)       
-        results["p0_coolant"]           = [None] * len(cooling_simulation.state)     
+        results["dQ_dx"]                = [None] * len(cooling_simulation.state)  
+        results["dQ_dLc"]               = [None] * len(cooling_simulation.state)       
+        results["dQ_dA"]                = [None] * len(cooling_simulation.state)  
+        results["Rdx"]                  = [None] * len(cooling_simulation.state)        
         results["p_coolant"]            = [None] * len(cooling_simulation.state)           
         results["rho_coolant"]          = [None] * len(cooling_simulation.state)        
-        results["V_coolant"]            = [None] * len(cooling_simulation.state)        
+        results["V_coolant"]            = [None] * len(cooling_simulation.state)    
+        results["Dh_coolant"]           = [None] * len(cooling_simulation.state)    
         results["sigma_t_thermal"]      = [None] * len(cooling_simulation.state)        
         results["sigma_t_pressure"]     = [None] * len(cooling_simulation.state)        
         results["sigma_t_max"]          = [None] * len(cooling_simulation.state)        
 
         # Explanation of what all the keys mean
         results["info"]["x"] = "Axial position along the engine (m)."
-        results["info"]["T"] = "Temperature at each position (K). T[i][j], is the temperature at x[i], at the j'th wall boundary. j = 0 corresponds to the coolant, j = -1 corresponds to the exhaust gas."
-        results["info"]["T_coolant"] = "Coolant temperature at each position (K). T_coolant[i] is the value at x[i]."
+        results["info"]["r"] = "Engine combustion chamber radius (m). r[i] is the value at x[i]."
+        results["info"]["T"] = "Static temperature at each position (K). T[i][j], is the temperature at x[i], at the j'th wall boundary. j = 0 corresponds to the coolant, j = -1 corresponds to the exhaust gas."
+        results["info"]["T_coolant"] = "Coolant static temperature at each position (K). T_coolant[i] is the value at x[i]."
         results["info"]["T_exhaust"] = "Exhaust temperature at each position (K). T_exhaust[i] is the value at x[i]. "
         results["info"]["dQ_dx"] = "Heat transfer rate per unit axial length (W/m). dQ_dx[i] is the value at x[i]."
+        results["info"]["dQ_dLc"] = "Heat transfer rate per unit length along the cooling channel (W/m) - equal to dQ/dx for 'vertical' channels but not for 'spiral' channels. dQ_dx[i] is the value at x[i]."
         results["info"]["dQ_dA"] = "Heat transfer rate per unit chamber area (W/m2). dQ_dA[i] is the value at x[i]."
-        results["info"]["p0_coolant"] = "Stagnation pressure of coolant (Pa). p0_coolant[i] is the value at x[i]."
+        results["info"]["Rdx"] = "Local thermal resistances at each position (K m/W), in the order coolant convection (index 0) --> exhaust convection. R_dx[i] a list of resistances at the value at x[i]"
         results["info"]["rho_coolant"] = "Density of coolant (kg/m3). rho_coolant[i] is the value at x[i]."
         results["info"]["p_coolant"] = "Static pressure of coolant (Pa). p_coolant[i] is the value at x[i]."
         results["info"]["V_coolant"] = "Velocity of coolant (m/s). V_coolant[i] is the value at x[i]."
+        results["info"]["Dh_coolant"] = "Hydraulic diameter of the coolant."
         results["info"]["sigma_t_thermal"] = "Tangential stress due to uneven thermal expansion (Pa). sigma_t_thermal[i][j] corresponds to the stress at x[i], across the j'th wall. j = 0 is the wall in contact with the exhaust gas, j = -1 is the wall in contact with the coolant."
         results["info"]["sigma_t_pressure"] = "Tangential stress due to pressure difference across wall (Pa). sigma_t_pressure[i][j] corresponds to the stress at x[i], across the j'th wall. j = 0 is the wall in contact with the exhaust gas, j = -1 is the wall in contact with the coolant."
         results["info"]["sigma_t_max"] = "Maximum tangential stress (Pa), equal to abs(sigma_t_thermal) + abs(sigma_t_pressure). sigma_t_max[i][j] corresponds to the stress at x[i], across the j'th wall. j = 0 is the wall in contact with the exhaust gas, j = -1 is the wall in contact with the coolant."
@@ -1077,11 +1197,21 @@ class Engine:
             results["x"][i] = x
             results["T"][i] = list(cooling_simulation.state[i]["circuit"].T)
             results["dQ_dx"][i] = -cooling_simulation.state[i]["circuit"].Qdot
-            results["dQ_dA"][i] = results["dQ_dx"][i] / (2 * np.pi * self.geometry.y(x = results["x"][i]))
-            results["p0_coolant"][i] = cooling_simulation.state[i]["p0_c"]
-            results["rho_coolant"][i] = self.rho_coolant(x = results["x"][i], T_coolant = cooling_simulation.state[i]["T_c"], p0_coolant = results["p0_coolant"][i])
-            results["p_coolant"][i] = self.p_coolant(x = results["x"][i], p0_coolant = results["p0_coolant"][i], rho_coolant = results["rho_coolant"][i])
-            results["V_coolant"][i] = self.V_coolant(x = results["x"][i], rho_coolant = results["rho_coolant"][i])
+            results["dQ_dA"][i] = results["dQ_dx"][i] / (2 * np.pi * self.geometry.r(x = results["x"][i]))
+            results["p_coolant"][i] = cooling_simulation.state[i]["p_c"]
+            results["T_coolant"][i] = cooling_simulation.state[i]["T_c"]
+            results["V_coolant"][i] = cooling_simulation.state[i]["V_c"]
+            results["rho_coolant"][i] = self.cooling_jacket.coolant_transport.rho(T = results["T_coolant"][i], p = results["p_coolant"][i])
+            results["Rdx"][i] = cooling_simulation.state[i]["circuit"].R
+            results["Dh_coolant"][i] = self.Dh_coolant(x = results["x"][i])
+
+            if self.cooling_jacket.configuration == "vertical":
+                results["dQ_dLc"][i] = results["dQ_dx"][i]
+            
+            elif self.cooling_jacket.configuration == "spiral":
+                dLc_dx = self.dLc_dx(x)
+                results["dQ_dLc"][i] = results["dQ_dx"][i] / dLc_dx
+                
 
             # Calculate relevant stresses
             results["sigma_t_thermal"][i] = [None] * len(self.walls)
@@ -1092,17 +1222,17 @@ class Engine:
             p_l = results["p_coolant"][i]                           # Coolant pressure (Pa)
             p_g = self.p(results["x"][i])                           # Exhaust pressure (Pa)
             blockage_ratio = self.cooling_jacket.blockage_ratio(x)  # Channel blockage ratio
-            D = 2 * self.geometry.y(x)                              # Engine diameter (up to relevant wall) (m)
+            D = 2 * self.geometry.r(x)                              # Engine diameter (up to relevant wall) (m)
             t_w = 0                                                 # Wall thickness (will be updated as we go) (m)
 
             if self.cooling_jacket.configuration == "spiral":
-                pitch = self.cooling_jacket.pitch(x)
+                pitch = self.cooling_jacket.bundle_width(x)
 
             # Iterate through each wall
             for j in range(len(self.walls)):
                 D += t_w
 
-                # Thermal stress from Huzel and Huang [4]
+                # Thermal stress from Heister [9]
                 E = self.walls[j].material.E
                 alpha = self.walls[j].material.alpha
                 k = self.walls[j].material.k
@@ -1111,7 +1241,7 @@ class Engine:
 
                 results["sigma_t_thermal"][i][j] = E * alpha * results["dQ_dA"][i] * t_w / (2 * (1 - poisson) * k)
 
-                # Pressure stress from Huzel and Huang [4]
+                # Pressure stress from Heister [9]
                 D += t_w / 2        # Average diameter
 
                 # If we don't have fins in the cooling channels
@@ -1121,21 +1251,22 @@ class Engine:
                 # If we have fins in the cooling channels, and the fins restrain the inner wall (by being attached to the outer jacket)
                 else:
                     if self.cooling_jacket.configuration == "vertical":
-                        w = np.pi * D * (1 - blockage_ratio) / self.cooling_jacket.number_of_fins
+                        w = np.pi * D * (1 - blockage_ratio) / self.cooling_jacket.number_of_channels
 
                     elif self.cooling_jacket.configuration == "spiral":
                         w = pitch * (1 - blockage_ratio)
                     
                     results["sigma_t_pressure"][i][j] = 0.5 * (p_l - p_g) * (w / t_w)**2
 
-                # Total stress from Huzel and Huang [4]
+                # Total stress from Heister [9]
                 results["sigma_t_pressure"][i][j] = - results["sigma_t_pressure"][i][j]     # Use the convention that tensile stress is positive
                 results["sigma_t_max"][i][j] = abs(results["sigma_t_thermal"][i][j]) + abs(results["sigma_t_pressure"][i][j])
 
                 # Remove t_w / 2, so the next wall calculation uses the right diameter
                 D -= t_w / 2
 
+        # Stuff we can collect all at once
+        results["r"] = self.geometry.r(results["x"])  
         results["T_exhaust"] = list(np.array(results["T"])[:, -1])
-        results["T_coolant"] = list(np.array(results["T"])[:, 0])
 
         return results

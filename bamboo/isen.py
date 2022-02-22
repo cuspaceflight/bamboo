@@ -1,6 +1,9 @@
 """
 Isentropic compressible flow relations.
+ - [1] - Heister et al., Rocket Propulsion (https://doi.org/10.1017/9781108381376)
 """
+
+import scipy.optimize
 
 def m_bar(M, gamma):    
     """Non-dimensional mass flow rate, defined as m_bar = mdot * sqrt(cp*T0)/(A*p0). A is the local cross sectional area that the flow is moving through.
@@ -14,8 +17,17 @@ def m_bar(M, gamma):
     """
     return gamma/(gamma-1)**0.5 * M * (1+ M**2 * (gamma-1)/2)**(-0.5*(gamma+1)/(gamma-1))
 
+def A_At(M, gamma):
+    """Ratio of local flow area to the throat area, for a given Mach number [1].
+
+    Args:
+        M (float): Mach number
+        gamma (float): Ratio of specific heats cp/cv
+    """
+    return 1/M * ( (2 + (gamma-1) * M**2) / (gamma + 1) )**( (gamma+1) / (2 * (gamma-1) ) )
+
 def p0(p, M, gamma):
-    """Get stagnation pressure from static pressure and Mach number
+    """Get stagnation pressure from static pressure and Mach number [1]
 
     Args:
         p (float): Pressure (Pa)
@@ -28,7 +40,7 @@ def p0(p, M, gamma):
     return p*(1 + M**2 * (gamma-1)/2)**(gamma/(gamma-1))
 
 def T0(T, M, gamma):
-    """Get the stangation temperature from the static temperature and Mach number
+    """Get the stangation temperature from the static temperature and Mach number [1]
 
     Args:
         T (float): Temperature (K)
@@ -39,6 +51,21 @@ def T0(T, M, gamma):
         float: Stagnation temperature (K)
     """
     return T*(1+ M**2 * (gamma-1)/2)
+
+
+def Tr(T, M, gamma, r):
+    """Get the recovery temperature, which is the temperature you should use for convective heat transfer (i.e. q = h(Tr - Tw)). [1]
+
+    Args:
+        T (float): Freestream static tempreature (K)
+        M (float): Mach number
+        gamma (float): Ratio of specific heats cp/cv
+        r (float): 'Recovery factor', usually equal to Pr^(1/3) for 'turbulent free boundary layers' [1]
+
+    Returns:
+        float: Recovery temperature
+    """
+    return T * (1 + (gamma - 1)/2 * r * M**2)
 
 def M_from_p(p, p0, gamma):
     """Mach number from static pressure and stagnation pressure.
@@ -52,6 +79,33 @@ def M_from_p(p, p0, gamma):
         float: Mach number
     """
     return ( (2/(gamma-1)) * ( (p/p0)**((gamma-1)/(-gamma)) - 1 ) )**0.5
+
+def M_from_A_subsonic(A, A_t, gamma):
+    """Get the Mach number from the local flow area, assuming subsonic flow.
+
+    Args:
+        A (float): Local area (m2)
+        A_t (float): Throat area (m2)
+        gamma (float): Ratio of specific heats cp/cv
+    """
+
+    def func_to_solve(Mach):
+        return  A/A_t - A_At(M = Mach, gamma = gamma)
+        
+    return scipy.optimize.root_scalar(func_to_solve, bracket = [1e-10, 1], x0 = 0.5).root
+
+def M_from_A_supersonic(A, A_t, gamma):
+    """Get the Mach number from the local flow area, assuming supersonic flow.
+
+    Args:
+        A (float): Local area (m2)
+        A_t (float): Throat area (m2)
+        gamma (float): Ratio of specific heats cp/cv
+    """
+    def func_to_solve(Mach):
+        return  A/A_t - A_At(M = Mach, gamma = gamma)
+
+    return scipy.optimize.root_scalar(func_to_solve, bracket = [1, 500], x0 = 1).root
 
 def T(T0, M, gamma):
     """Get local temperature from the Mach number and stagnation temperature.
