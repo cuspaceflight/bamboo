@@ -21,23 +21,20 @@ https://cuspaceflight.github.io/bamboo/
 
 ## Validation
 
-One validation case has been performed so far, on the Ariane 5's Vulcain engine. It is hoped that more validation will be performed in the future.
-
 A key effect that needs to be investigated is nucleate boiling, and how significantly that affects the results. Test cases that use a supercritical coolant will not be susceptible to nucleate boiling, and so are better modelled by Bamboo (which currently ignores two-phase effects).
 
-|         Engine          |  Supercritical Coolant? | Peak Heat Flux Error  | Coolant Exit Temperature Error | 
-|:-----------------------:|:-----------------------:|:---------------------:|:------------------------------:|
-|        [Vulcain Chamber](https://github.com/cuspaceflight/bamboo/blob/master/validation/Vulcain%20Combustion%20Chamber.ipynb) |      Yes | 30.49% | 3.34% |
+|         Engine          |  Coolant State | Peak Heat Flux Error  | Coolant Temperature Rise Error |  Coolant Pressure Drop Error | 
+|:-----------------------:|:-----------------------:|:---------------------:|:------------------------:|:------------------------:|
+|[Vulcain Chamber](https://github.com/cuspaceflight/bamboo/blob/master/validation/Vulcain%20Combustion%20Chamber.ipynb) |Supercritical|40.3%|17.9%|56.1%|
+|[Vulcain Nozzle Extension](https://github.com/cuspaceflight/bamboo/blob/master/validation/Vulcain%20Nozzle%20Extension.ipynb) |Supercritical| - | 2.75% | 33.4% |
+|[Pavli 1966](https://github.com/cuspaceflight/bamboo/blob/master/validation/Pavli%201966.ipynb)|Gaseous|-| 33.1% | -|
 
-
-## Release 0.2.0
-- Refactored all code to be much more user friendly and intuitive. 
-- A generic heat exchanger solver has been implemented, which is now used for all simulations. This solver is more flexible than before, and allows for new features such as choice between co-flow or counter-flow cooling.
-- By default, iteration is now used to find the initial inlet conditions. This removes the 'steps' in data that used to exist at the beginning of simulations.
-- Any number of walls can now be added, with different materials.
-- The Rao bell nozzle geometry code has been separated from the main simulation code, but is still simple to use. By default the user now inputs custom geometry.
-- The mass flow rate through the engine is  automatically calculated from the geometry now (based on the throat area). It is no longer required as an input.
-- The extra heat transfer due to 'fins' in the cooling channels is now modelled.
+## Release 0.2.1
+- Added additional validation cases.
+- Coolant flow solver can now accomodate compressible coolants automatically.
+- Removed fin heat transfer for now, as it was producing spurious results.
+- Corrected mistakes with spiralling channel geometry.
+- Swapped to using the recovery temperature instead of static temperature for the exhaust gas temperature in thermal circuits.
 
 ## Useful Packages
 These packages are not installed with Bamboo by default, but can be very useful for creating accurate simulations.
