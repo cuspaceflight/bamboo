@@ -893,7 +893,7 @@ class Engine:
                                                                     k = k_coolant)
 
             elif self.coolant_convection == "gnielinski":
-                f_darcy = self.cooling_jacket.f_darcy(Dh = Dh_coolant, ReDh = ReDh_coolant, x = x)
+                f_darcy = self.cooling_jacket.f_darcy_turbulent(Dh = Dh_coolant, ReDh = ReDh_coolant, x = x)
                 h_coolant_turb = bamboo.circuit.h_coolant_gnielinski(rho = rho_coolant, 
                                                                     V = V_coolant, 
                                                                     D = Dh_coolant, 
