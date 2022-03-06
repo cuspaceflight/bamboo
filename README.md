@@ -1,5 +1,5 @@
 <p align="center">
-	<img width="600px" src="img/logo.png">
+	<img width="600px" src="https://github.com/cuspaceflight/bamboo/blob/master/img/logo.png">
 	<h1 align="center">BAMBOO</h1>
 	<h3 align="center">Cambridge University Spaceflight</h3>
 </p>
