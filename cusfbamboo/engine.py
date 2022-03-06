@@ -30,10 +30,10 @@ import matplotlib.patches
 import warnings
 #import time
 
-import bamboo.rao
-import bamboo.isen
-import bamboo.hx
-import bamboo.circuit
+import cusfbamboo.rao
+import cusfbamboo.isen
+import cusfbamboo.hx
+import cusfbamboo.circuit
 
 # Constants
 R_BAR = 8.3144621e3         # Universal gas constant (J/K/kmol)

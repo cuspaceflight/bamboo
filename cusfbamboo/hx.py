@@ -7,7 +7,7 @@ Notation:
  - 'w': At the wall (e.g. T_cw is the wall temperature on the cold side)
 """
 
-from bamboo.circuit import ThermalCircuit
+from cusfbamboo.circuit import ThermalCircuit
 
 class HXSolver:
     def __init__(self, T_c_in, T_h, p_c_in, cp_c, mdot_c, V_c, A_c, Rdx, extra_dQ_dx, dp_dx_f, x_start, dx, x_end):
