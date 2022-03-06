@@ -139,7 +139,7 @@ def get_choked_mdot(perfect_gas, chamber_conditions, At):
 
     Args:
         perfect_gas (PerfectGas): Exhaust gas leaving the combustion chamber.
-        chamber_conditions (CombustionChamber): Combustion chamber.
+        chamber_conditions (ChamberConditions): ChamberConditions object to represent combustion chamber conditions.
         At (float): Throat area (m2)
 
     """
@@ -151,7 +151,7 @@ def get_throat_area(perfect_gas, chamber_conditions, mdot):
 
     Args:
         perfect_gas (PerfectGas): Exhaust gas leaving the combustion chamber.
-        chamber_conditions (CombustionChamber): Combustion chamber.
+        chamber_conditions (ChamberConditions): ChamberConditions object to represent combustion chamber conditions.
         mdot (float): Mass flow rate of exhaust gas (kg/s)
 
     Returns:
@@ -164,7 +164,7 @@ def get_exit_area(perfect_gas, chamber_conditions, p_e, mdot):
 
     Args:
         perfect_gas (PerfectGas): Gas object.
-        chamber_conditions (CombustionChamber): CombustionChamber object
+        chamber_conditions (ChamberConditions): ChamberConditions object to represent combustion chamber conditions.
         p_e (float): Exit pressure (Pa)
 
     Returns:
