@@ -13,7 +13,7 @@ An introduction to the package can be found in the ['Introduction to Bamboo.ipyn
 ## Installation
 Bamboo can be installed via pip, with the following command:
 
-`pip install git+https://github.com/cuspaceflight/bamboo.git`
+`pip install cusfbamboo`
 
 ## Documentation
 Made using Sphinx, available at: 
