@@ -20,7 +20,7 @@ setup(
     install_requires = ['numpy', 'matplotlib', 'scipy'],
     description = 'Cooling system modelling for liquid rocket engines',
     keywords = ['rocket', 'engine', 'liquid', 'cooling', 'spaceflight', 'thermal'],
-    download_url = 'https://github.com/cuspaceflight/bamboo/archive/refs/tags/0.2.1.1.tar.gz',
+    download_url = 'https://github.com/cuspaceflight/bamboo/archive/refs/tags/0.2.2.tar.gz',
     url = 'https://github.com/cuspaceflight/bamboo',
     classifiers = [
         'Development Status :: 4 - Beta',     
