@@ -140,7 +140,7 @@ class Geometry:
 
     def plot(self):
         """
-        Plot the engine geometry. Must run bamboo.plot.show() or matplotlib.pyplot.show() to see the plot.
+        Plot the engine geometry. Must run cusfbamboo.plot.show() or matplotlib.pyplot.show() to see the plot.
         """
         fig, axs = plt.subplots()
         axs.plot(self.xs, self.rs, color = "blue")
@@ -458,7 +458,7 @@ class Engine:
         self.exhaust_convection = exhaust_convection
 
         # Find the choked mass flow rate
-        self.mdot = bamboo.isen.get_choked_mdot(self.perfect_gas, self.chamber_conditions, self.geometry.A_t)
+        self.mdot = cusfbamboo.isen.get_choked_mdot(self.perfect_gas, self.chamber_conditions, self.geometry.A_t)
 
         # C* value, for convenience with 'bartz-sigma' convection model
         self.c_star = self.chamber_conditions.p0 * self.geometry.A_t / self.mdot
@@ -524,9 +524,9 @@ class Engine:
         #If we're not at the throat:
         else:
             if x > self.geometry.x_t:
-                Mach = bamboo.isen.M_from_A_supersonic(A = self.geometry.A(x), A_t = self.geometry.A_t, gamma = self.perfect_gas.gamma)
+                Mach = cusfbamboo.isen.M_from_A_supersonic(A = self.geometry.A(x), A_t = self.geometry.A_t, gamma = self.perfect_gas.gamma)
             else:
-                Mach = bamboo.isen.M_from_A_subsonic(A = self.geometry.A(x), A_t = self.geometry.A_t, gamma = self.perfect_gas.gamma)
+                Mach = cusfbamboo.isen.M_from_A_subsonic(A = self.geometry.A(x), A_t = self.geometry.A_t, gamma = self.perfect_gas.gamma)
             return Mach
 
     def T(self, x):
@@ -536,7 +536,7 @@ class Engine:
         Returns:
             float: Temperature (K)
         """
-        return bamboo.isen.T(T0 = self.chamber_conditions.T0, M = self.M(x), gamma = self.perfect_gas.gamma)
+        return cusfbamboo.isen.T(T0 = self.chamber_conditions.T0, M = self.M(x), gamma = self.perfect_gas.gamma)
 
     def p(self, x):
         """Get pressure at a position along the nozzle.
@@ -545,7 +545,7 @@ class Engine:
         Returns:
             float: Pressure (Pa)
         """
-        return bamboo.isen.p(p0 = self.chamber_conditions.p0, M = self.M(x), gamma = self.perfect_gas.gamma)
+        return cusfbamboo.isen.p(p0 = self.chamber_conditions.p0, M = self.M(x), gamma = self.perfect_gas.gamma)
 
     def rho(self, x):
         """Get exhaust gas density.
@@ -566,7 +566,7 @@ class Engine:
         return thickness
 
     def plot(self):
-        """Plot the engine geometry, including the cooling channels, all to scale. You will need to run matplotlib.pyplot.show() or bamboo.plot.show() to see the plot.
+        """Plot the engine geometry, including the cooling channels, all to scale. You will need to run matplotlib.pyplot.show() or cusfbamboo.plot.show() to see the plot.
         """
         num_grid = 1000                         # Resolution to plot to (i.e. number of points to plot)
 
@@ -806,7 +806,7 @@ class Engine:
         """
         return self.thrust(p_amb = p_amb) / self.mdot
 
-    # Functions that need to be submitted to bamboo.hx.HXSolver
+    # Functions that need to be submitted to cusfbamboo.hx.HXSolver
     def T_h(self, state):
         T = self.T(state["x"])
         p = self.p(state["x"])
@@ -821,7 +821,7 @@ class Engine:
         Pr_am = self.exhaust_transport.Pr(T = T_am, p = p)
         r = Pr_am**(1/3)                    # Recovery ffactory for turbulent free boundary layer [9]
 
-        return bamboo.isen.Tr(T = T, M = M, gamma = self.perfect_gas.gamma, r = r)
+        return cusfbamboo.isen.Tr(T = T, M = M, gamma = self.perfect_gas.gamma, r = r)
 
     def cp_c(self, state):
         T_coolant = state["T_c"]
@@ -875,7 +875,7 @@ class Engine:
         else:
             # First get turbulent values
             if self.coolant_convection == "dittus-boelter":
-                h_coolant_turb = bamboo.circuit.h_coolant_dittus_boelter(rho = rho_coolant, 
+                h_coolant_turb = cusfbamboo.circuit.h_coolant_dittus_boelter(rho = rho_coolant, 
                                                                     V = V_coolant, 
                                                                     D = Dh_coolant, 
                                                                     mu = mu_coolant, 
@@ -884,7 +884,7 @@ class Engine:
 
             elif self.coolant_convection == "sieder-tate":
                 mu_coolant_wall = self.cooling_jacket.coolant_transport.mu(T = T_coolant_wall, p = p_coolant)
-                h_coolant_turb = bamboo.circuit.h_coolant_sieder_tate(rho = rho_coolant, 
+                h_coolant_turb = cusfbamboo.circuit.h_coolant_sieder_tate(rho = rho_coolant, 
                                                                     V = V_coolant, 
                                                                     D = Dh_coolant, 
                                                                     mu_bulk = mu_coolant, 
@@ -894,7 +894,7 @@ class Engine:
 
             elif self.coolant_convection == "gnielinski":
                 f_darcy = self.cooling_jacket.f_darcy_turbulent(Dh = Dh_coolant, ReDh = ReDh_coolant, x = x)
-                h_coolant_turb = bamboo.circuit.h_coolant_gnielinski(rho = rho_coolant, 
+                h_coolant_turb = cusfbamboo.circuit.h_coolant_gnielinski(rho = rho_coolant, 
                                                                     V = V_coolant, 
                                                                     D = Dh_coolant, 
                                                                     mu = mu_coolant, 
@@ -919,7 +919,7 @@ class Engine:
                 self.h_coolant = h_coolant_turb
 
         self.h_coolant = self.h_coolant * self.h_coolant_sf             # Multiply h_coolant by the scale factor given by the user.
-        A_coolant = 2 * np.pi * (y + self.total_wall_thickness(x))      # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.hx.HXSolver
+        A_coolant = 2 * np.pi * (y + self.total_wall_thickness(x))      # Note, this is the area per unit axial length. We will multiply by 'dx' later in the cusfbamboo.hx.HXSolver
         R_list.append(1.0 / (self.h_coolant * A_coolant))
         
         # -------------------------------- SOLID WALLS --------------------------------
@@ -959,7 +959,7 @@ class Engine:
             Pr_exhaust_am = self.exhaust_transport.Pr(T = T_exhaust_am, p = p_exhaust)
             k_exhaust_am = self.exhaust_transport.k(T = T_exhaust_am, p = p_exhaust)
 
-            h_exhaust = bamboo.circuit.h_coolant_dittus_boelter(rho = rho_exhaust_am, 
+            h_exhaust = cusfbamboo.circuit.h_coolant_dittus_boelter(rho = rho_exhaust_am, 
                                                                 V = V_exhaust, 
                                                                 D = Dh_exhaust, 
                                                                 mu = mu_exhaust_am, 
@@ -972,7 +972,7 @@ class Engine:
             rho_exhaust_am = p_exhaust/(self.perfect_gas.R * T_exhaust_am)
             mu_exhaust_0 = self.exhaust_transport.mu(T = self.chamber_conditions.T0, p = self.chamber_conditions.p0)    # At stagnation conditions
 
-            h_exhaust = bamboo.circuit.h_gas_bartz(D = Dh_exhaust, 
+            h_exhaust = cusfbamboo.circuit.h_gas_bartz(D = Dh_exhaust, 
                                                    cp_inf = self.perfect_gas.cp, 
                                                    mu_inf = mu_exhaust, 
                                                    Pr_inf = Pr_exhaust, 
@@ -986,7 +986,7 @@ class Engine:
             mu_exhaust_0 = self.exhaust_transport.mu(T = self.chamber_conditions.T0, p = self.chamber_conditions.p0)    # At stagnation conditions
             Pr_exhaust_0 = self.exhaust_transport.Pr(T = self.chamber_conditions.T0, p = self.chamber_conditions.p0)   
             
-            h_exhaust = bamboo.circuit.h_gas_bartz_sigma(c_star = self.c_star, 
+            h_exhaust = cusfbamboo.circuit.h_gas_bartz_sigma(c_star = self.c_star, 
                                                          A_t = self.geometry.A_t, 
                                                          A = np.pi * Dh_exhaust**2 / 4, 
                                                          p_chamber = self.chamber_conditions.p0, 
@@ -1003,7 +1003,7 @@ class Engine:
             Pr_exhaust_0 = self.exhaust_transport.Pr(T = self.chamber_conditions.T0, p = self.chamber_conditions.p0)   
             
             # Calculate radius of curvature at the throat
-            h_exhaust = bamboo.circuit.h_gas_bartz_sigma_curve(c_star = self.c_star, 
+            h_exhaust = cusfbamboo.circuit.h_gas_bartz_sigma_curve(c_star = self.c_star, 
                                                                A_t = self.geometry.A_t, 
                                                                A = np.pi * Dh_exhaust**2 / 4, 
                                                                p_chamber = self.chamber_conditions.p0, 
@@ -1016,7 +1016,7 @@ class Engine:
                                                                Pr0 = Pr_exhaust_0,
                                                                rc_t = self.geometry.r_curvature_t)
 
-        A_exhaust = 2 * np.pi * y                                           # Note, this is the area per unit axial length. We will multiply by 'dx' later in the bamboo.hx.HXSolver. 
+        A_exhaust = 2 * np.pi * y                                           # Note, this is the area per unit axial length. We will multiply by 'dx' later in the cusfbamboo.hx.HXSolver. 
         R_list.append(1.0 / (self.h_exhaust_sf * h_exhaust * A_exhaust))    # Don't forget to multiply by any scale factor (self.h_exhaust_sf) that the user requested.
         
         return np.array(R_list) 
@@ -1054,7 +1054,7 @@ class Engine:
             T_inf = state["T_c"]
 
             # extra_dQ_dx should always be called after R_th was called, so we can reuse the convective heat transfer coefficients calculacted from it.
-            dQ_dx_single_fin = bamboo.circuit.Q_fin_adiabatic(P = P, 
+            dQ_dx_single_fin = cusfbamboo.circuit.Q_fin_adiabatic(P = P, 
                                                               Ac = Ac, 
                                                               k = self.walls[-1].material.k, 
                                                               h = self.h_coolant, 
@@ -1134,7 +1134,7 @@ class Engine:
         self.x_end = x_end
         self.counterflow = counterflow
 
-        cooling_simulation = bamboo.hx.HXSolver(T_c_in = self.cooling_jacket.T_coolant_in,
+        cooling_simulation = cusfbamboo.hx.HXSolver(T_c_in = self.cooling_jacket.T_coolant_in,
                                                 T_h = self.T_h, 
                                                 p_c_in = self.cooling_jacket.p_coolant_in, 
                                                 cp_c = self.cp_c, 
