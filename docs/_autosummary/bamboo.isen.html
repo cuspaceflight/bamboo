@@ -17,9 +17,7 @@
         <script src="../_static/doctools.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="bamboo.hx" href="bamboo.hx.html" />
-    <link rel="prev" title="bamboo.rao" href="bamboo.rao.html" /> 
+    <link rel="search" title="Search" href="../search.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -37,14 +35,14 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="bamboo.engine.html">bamboo.engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bamboo.plot.html">bamboo.plot</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bamboo.materials.html">bamboo.materials</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bamboo.rao.html">bamboo.rao</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">bamboo.isen</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bamboo.hx.html">bamboo.hx</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bamboo.circuit.html">bamboo.circuit</a></li>
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.engine.html">cusfbamboo.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.plot.html">cusfbamboo.plot</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.materials.html">cusfbamboo.materials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.rao.html">cusfbamboo.rao</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.isen.html">cusfbamboo.isen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.hx.html">cusfbamboo.hx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.circuit.html">cusfbamboo.circuit</a></li>
 </ul>
 
         </div>
@@ -71,71 +69,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-bamboo.isen">
-<span id="bamboo-isen"></span><h1>bamboo.isen<a class="headerlink" href="#module-bamboo.isen" title="Permalink to this headline"></a></h1>
-<dl class="simple">
-<dt>Isentropic compressible flow relations.</dt><dd><ul class="simple">
-<li><p>[1] - Heister et al., Rocket Propulsion (<a class="reference external" href="https://doi.org/10.1017/9781108381376">https://doi.org/10.1017/9781108381376</a>)</p></li>
-</ul>
-</dd>
-</dl>
-<p class="rubric">Functions</p>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.isen.A_At" title="bamboo.isen.A_At"><code class="xref py py-obj docutils literal notranslate"><span class="pre">A_At</span></code></a>(M, gamma)</p></td>
-<td><p>Ratio of local flow area to the throat area, for a given Mach number [1].</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.isen.M_from_A_subsonic" title="bamboo.isen.M_from_A_subsonic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">M_from_A_subsonic</span></code></a>(A, A_t, gamma)</p></td>
-<td><p>Get the Mach number from the local flow area, assuming subsonic flow.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.isen.M_from_A_supersonic" title="bamboo.isen.M_from_A_supersonic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">M_from_A_supersonic</span></code></a>(A, A_t, gamma)</p></td>
-<td><p>Get the Mach number from the local flow area, assuming supersonic flow.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.isen.M_from_p" title="bamboo.isen.M_from_p"><code class="xref py py-obj docutils literal notranslate"><span class="pre">M_from_p</span></code></a>(p, p0, gamma)</p></td>
-<td><p>Mach number from static pressure and stagnation pressure.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.isen.T" title="bamboo.isen.T"><code class="xref py py-obj docutils literal notranslate"><span class="pre">T</span></code></a>(T0, M, gamma)</p></td>
-<td><p>Get local temperature from the Mach number and stagnation temperature.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.isen.T0" title="bamboo.isen.T0"><code class="xref py py-obj docutils literal notranslate"><span class="pre">T0</span></code></a>(T, M, gamma)</p></td>
-<td><p>Get the stangation temperature from the static temperature and Mach number [1]</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.isen.Tr" title="bamboo.isen.Tr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Tr</span></code></a>(T, M, gamma, r)</p></td>
-<td><p>Get the recovery temperature, which is the temperature you should use for convective heat transfer (i.e.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.isen.get_choked_mdot" title="bamboo.isen.get_choked_mdot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_choked_mdot</span></code></a>(perfect_gas, …)</p></td>
-<td><p>Get the mass flow rate through a choked nozzle.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.isen.get_exit_area" title="bamboo.isen.get_exit_area"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_exit_area</span></code></a>(perfect_gas, …)</p></td>
-<td><p>Get the nozzle exit area, given the gas properties and combustion chamber conditions.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.isen.get_throat_area" title="bamboo.isen.get_throat_area"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_throat_area</span></code></a>(perfect_gas, …)</p></td>
-<td><p>Get the nozzle throat area, given the gas properties and combustion chamber conditions.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.isen.m_bar" title="bamboo.isen.m_bar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">m_bar</span></code></a>(M, gamma)</p></td>
-<td><p>Non-dimensional mass flow rate, defined as m_bar = mdot * sqrt(cp*T0)/(A*p0).</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.isen.p" title="bamboo.isen.p"><code class="xref py py-obj docutils literal notranslate"><span class="pre">p</span></code></a>(p0, M, gamma)</p></td>
-<td><p>Get local pressure from the Mach number and stagnation pressure.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.isen.p0" title="bamboo.isen.p0"><code class="xref py py-obj docutils literal notranslate"><span class="pre">p0</span></code></a>(p, M, gamma)</p></td>
-<td><p>Get stagnation pressure from static pressure and Mach number [1]</p></td>
-</tr>
-</tbody>
-</table>
+  <section id="bamboo-isen">
+<h1>bamboo.isen<a class="headerlink" href="#bamboo-isen" title="Permalink to this headline"></a></h1>
 </section>
 
 
            </div>
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="bamboo.rao.html" class="btn btn-neutral float-left" title="bamboo.rao" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="bamboo.hx.html" class="btn btn-neutral float-right" title="bamboo.hx" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
+          <footer>
 
   <hr/>
 

@@ -13,66 +13,66 @@ Use the 'home' buttons (with the small image of a house) to navigate back to thi
    :toctree: _autosummary
    :recursive:
     
-    bamboo.engine
-    bamboo.plot
-    bamboo.materials
-    bamboo.rao
-    bamboo.isen
-    bamboo.hx
-    bamboo.circuit
+    cusfbamboo.engine
+    cusfbamboo.plot
+    cusfbamboo.materials
+    cusfbamboo.rao
+    cusfbamboo.isen
+    cusfbamboo.hx
+    cusfbamboo.circuit
 
-bamboo.engine module
+cusfbamboo.engine module
 ------------------
-.. automodule:: bamboo.engine
+.. automodule:: cusfbamboo.engine
     :members:
     :undoc-members:
     :show-inheritance:
     :member-order: bysource
 
-bamboo.plot module
+cusfbamboo.plot module
 ---------------------
-.. automodule:: bamboo.plot
+.. automodule:: cusfbamboo.plot
     :members:
     :undoc-members:
     :show-inheritance:
     :member-order: bysource
 
-bamboo.materials module
+cusfbamboo.materials module
 ------------------
-.. automodule:: bamboo.materials
+.. automodule:: cusfbamboo.materials
     :members:
     :undoc-members:
     :show-inheritance:
     :member-order: bysource
 
-bamboo.rao module
+cusfbamboo.rao module
 ------------------
-.. automodule:: bamboo.rao
+.. automodule:: cusfbamboo.rao
     :members:
     :undoc-members:
     :show-inheritance:
     :member-order: bysource
 
-bamboo.isen module
+cusfbamboo.isen module
 ------------------
-.. automodule:: bamboo.isen
+.. automodule:: cusfbamboo.isen
     :members:
     :undoc-members:
     :show-inheritance:
     :member-order: bysource
 
-bamboo.hx module
+cusfbamboo.hx module
 ------------------
-.. automodule:: bamboo.hx
+.. automodule:: cusfbamboo.hx
     :members:
     :undoc-members:
     :show-inheritance:
     :member-order: bysource
 
 
-bamboo.circuit module
+cusfbamboo.circuit module
 ------------------
-.. automodule:: bamboo.circuit
+.. automodule:: cusfbamboo.circuit
     :members:
     :undoc-members:
     :show-inheritance:

@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bamboo &mdash; Bamboo 0.2 documentation</title>
+  <title>cusfbamboo.hx &mdash; Bamboo 0.2 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -17,7 +17,9 @@
         <script src="../_static/doctools.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" /> 
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="cusfbamboo.circuit" href="cusfbamboo.circuit.html" />
+    <link rel="prev" title="cusfbamboo.isen" href="cusfbamboo.isen.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -35,13 +37,13 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul>
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="cusfbamboo.engine.html">cusfbamboo.engine</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cusfbamboo.plot.html">cusfbamboo.plot</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cusfbamboo.materials.html">cusfbamboo.materials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cusfbamboo.rao.html">cusfbamboo.rao</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cusfbamboo.isen.html">cusfbamboo.isen</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.hx.html">cusfbamboo.hx</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">cusfbamboo.hx</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cusfbamboo.circuit.html">cusfbamboo.circuit</a></li>
 </ul>
 
@@ -59,9 +61,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>bamboo</li>
+      <li>cusfbamboo.hx</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="../_sources/_autosummary/bamboo.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/_autosummary/cusfbamboo.hx.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -69,15 +71,27 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="bamboo">
-<h1>bamboo<a class="headerlink" href="#bamboo" title="Permalink to this headline"></a></h1>
-<p class="rubric">Modules</p>
+  <section id="module-cusfbamboo.hx">
+<span id="cusfbamboo-hx"></span><h1>cusfbamboo.hx<a class="headerlink" href="#module-cusfbamboo.hx" title="Permalink to this headline"></a></h1>
+<p>General solver for coflow and counterflow heat exchangers, using a 1-D thermal resistance model.</p>
+<dl class="simple">
+<dt>Notation:</dt><dd><ul class="simple">
+<li><p>‘c’: Cold side (usually coolant)</p></li>
+<li><p>‘h’: Hot side (usually exhaust gas)</p></li>
+<li><p>‘w’: At the wall (e.g. T_cw is the wall temperature on the cold side)</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Classes</p>
 <table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#cusfbamboo.hx.HXSolver" title="cusfbamboo.hx.HXSolver"><code class="xref py py-obj docutils literal notranslate"><span class="pre">HXSolver</span></code></a>(T_c_in, T_h, p_c_in, cp_c, mdot_c, …)</p></td>
+<td><p>Class for solving heat exchanger problems.</p></td>
+</tr>
 </tbody>
 </table>
 </section>
@@ -85,7 +99,10 @@
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="cusfbamboo.isen.html" class="btn btn-neutral float-left" title="cusfbamboo.isen" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="cusfbamboo.circuit.html" class="btn btn-neutral float-right" title="cusfbamboo.circuit" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 

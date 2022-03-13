@@ -17,9 +17,7 @@
         <script src="../_static/doctools.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="bamboo.plot" href="bamboo.plot.html" />
-    <link rel="prev" title="Welcome to Bamboo’s documentation!" href="../index.html" /> 
+    <link rel="search" title="Search" href="../search.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -37,14 +35,14 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">bamboo.engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bamboo.plot.html">bamboo.plot</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bamboo.materials.html">bamboo.materials</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bamboo.rao.html">bamboo.rao</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bamboo.isen.html">bamboo.isen</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bamboo.hx.html">bamboo.hx</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bamboo.circuit.html">bamboo.circuit</a></li>
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.engine.html">cusfbamboo.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.plot.html">cusfbamboo.plot</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.materials.html">cusfbamboo.materials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.rao.html">cusfbamboo.rao</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.isen.html">cusfbamboo.isen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.hx.html">cusfbamboo.hx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.circuit.html">cusfbamboo.circuit</a></li>
 </ul>
 
         </div>
@@ -71,64 +69,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-bamboo.engine">
-<span id="bamboo-engine"></span><h1>bamboo.engine<a class="headerlink" href="#module-bamboo.engine" title="Permalink to this headline"></a></h1>
-<p>Main Engine class, as well as tools for specifying engine geometry and the perfect gas model used to calculate flow properties.</p>
-<p class="rubric">References</p>
-<ul class="simple">
-<li><p>[1] - <a class="reference external" href="https://en.wikipedia.org/wiki/Nusselt_number">https://en.wikipedia.org/wiki/Nusselt_number</a></p></li>
-<li><p>[2] - <a class="reference external" href="https://en.wikipedia.org/wiki/Darcy_friction_factor_formulae">https://en.wikipedia.org/wiki/Darcy_friction_factor_formulae</a></p></li>
-<li><p>[3] - <a class="reference external" href="https://en.wikipedia.org/wiki/Darcy%E2%80%93Weisbach_equation">https://en.wikipedia.org/wiki/Darcy%E2%80%93Weisbach_equation</a></p></li>
-<li><p>[4] - Huang and Huzel, Modern Engineering for Design of Liquid-Propellant Rocket Engines</p></li>
-<li><p>[5] - <a class="reference external" href="https://en.wikipedia.org/wiki/Radius_of_curvature">https://en.wikipedia.org/wiki/Radius_of_curvature</a></p></li>
-<li><p>[6] - <a class="reference external" href="https://en.wikipedia.org/wiki/Hydraulic_diameter">https://en.wikipedia.org/wiki/Hydraulic_diameter</a></p></li>
-<li><p>[7] - <a class="reference external" href="https://mathcurve.com/courbes3d.gb/heliceconic/heliceconic.shtml#:~:text=The%20conical%20helix%20can%20be,a%20geodesic%20of%20the%20cone">https://mathcurve.com/courbes3d.gb/heliceconic/heliceconic.shtml#:~:text=The%20conical%20helix%20can%20be,a%20geodesic%20of%20the%20cone</a></p></li>
-<li><p>[8] - <a class="reference external" href="https://neutrium.net/fluid-flow/pressure-loss-from-fittings-expansion-and-reduction-in-pipe-size/">https://neutrium.net/fluid-flow/pressure-loss-from-fittings-expansion-and-reduction-in-pipe-size/</a></p></li>
-<li><p>[9] - Heister et al., Rocket Propulsion (<a class="reference external" href="https://doi.org/10.1017/9781108381376">https://doi.org/10.1017/9781108381376</a>)</p></li>
-<li><p>[10] - Brkic 2012, Lambert W function in hydraulic problems (<a class="reference external" href="https://www.scipedia.com/public/Brkic_2012a">https://www.scipedia.com/public/Brkic_2012a</a>)</p></li>
-</ul>
-<p class="rubric">Notes</p>
-<ul class="simple">
-<li><p>With some exceptions, coolant properties are currently evaluated at the bulk temperature, instead of the film temperature. This is because the high wall temperature can sometimes
-be above the coolant boiling point, which can cause errors. Ideally you would use nucleate boiling correlations in this case, but this is not always possible, and so use the bulk
-properties is available as a compromise.</p></li>
-</ul>
-<p class="rubric">Classes</p>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.engine.ChamberConditions" title="bamboo.engine.ChamberConditions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ChamberConditions</span></code></a>(p0, T0)</p></td>
-<td><p>Object for storing combustion chamber thermodynamic conditions.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.engine.CoolingJacket" title="bamboo.engine.CoolingJacket"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CoolingJacket</span></code></a>(T_coolant_in, p_coolant_in, …)</p></td>
-<td><p>Class for representing cooling jacket properties.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.engine.Engine" title="bamboo.engine.Engine"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Engine</span></code></a>(perfect_gas, chamber_conditions, geometry)</p></td>
-<td><p>Class for representing a liquid rocket engine.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.engine.Geometry" title="bamboo.engine.Geometry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Geometry</span></code></a>(xs, rs)</p></td>
-<td><p>Class for representing the inner contour of a rocket engine, from the beginning of the combustion chamber to the nozzle exit.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.engine.PerfectGas" title="bamboo.engine.PerfectGas"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PerfectGas</span></code></a>(**kwargs)</p></td>
-<td><p>Object to store a perfect gas model (i.e.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.engine.Wall" title="bamboo.engine.Wall"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Wall</span></code></a>(material, thickness)</p></td>
-<td><p>Object for representing an engine wall.</p></td>
-</tr>
-</tbody>
-</table>
+  <section id="bamboo-engine">
+<h1>bamboo.engine<a class="headerlink" href="#bamboo-engine" title="Permalink to this headline"></a></h1>
 </section>
 
 
            </div>
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="../index.html" class="btn btn-neutral float-left" title="Welcome to Bamboo’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="bamboo.plot.html" class="btn btn-neutral float-right" title="bamboo.plot" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
+          <footer>
 
   <hr/>
 

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>cusfbamboo.plot &mdash; Bamboo 0.2 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="cusfbamboo.materials" href="cusfbamboo.materials.html" />
+    <link rel="prev" title="cusfbamboo.engine" href="cusfbamboo.engine.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> Bamboo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.engine.html">cusfbamboo.engine</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">cusfbamboo.plot</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.materials.html">cusfbamboo.materials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.rao.html">cusfbamboo.rao</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.isen.html">cusfbamboo.isen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.hx.html">cusfbamboo.hx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.circuit.html">cusfbamboo.circuit</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Bamboo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>cusfbamboo.plot</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_autosummary/cusfbamboo.plot.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-cusfbamboo.plot">
+<span id="cusfbamboo-plot"></span><h1>cusfbamboo.plot<a class="headerlink" href="#module-cusfbamboo.plot" title="Permalink to this headline"></a></h1>
+<p>Module that provides plotting tools, to streamline the creation of plots.</p>
+<p class="rubric">Functions</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#cusfbamboo.plot.plot_T_coolant" title="cusfbamboo.plot.plot_T_coolant"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_T_coolant</span></code></a>(data_dict)</p></td>
+<td><p>Given the output dictionary from a engine cooling analysis, plot the coolant static temperature against postiion</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#cusfbamboo.plot.plot_coolant_density" title="cusfbamboo.plot.plot_coolant_density"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_coolant_density</span></code></a>(data_dict)</p></td>
+<td><p>Plot the cooling density against axial position.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#cusfbamboo.plot.plot_coolant_h" title="cusfbamboo.plot.plot_coolant_h"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_coolant_h</span></code></a>(data_dict)</p></td>
+<td><p>Plot convective heat transfer coefficient for the coolant side.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#cusfbamboo.plot.plot_coolant_velocity" title="cusfbamboo.plot.plot_coolant_velocity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_coolant_velocity</span></code></a>(data_dict)</p></td>
+<td><p>Given the output dictionary from a engine cooling analysis, plot the cooling velocity against axial position.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#cusfbamboo.plot.plot_p_coolant" title="cusfbamboo.plot.plot_p_coolant"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_p_coolant</span></code></a>(data_dict)</p></td>
+<td><p>Given the output dictionary from a engine cooling analysis, plot the cooling jacket static pressure against x position.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#cusfbamboo.plot.plot_q_per_area" title="cusfbamboo.plot.plot_q_per_area"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_q_per_area</span></code></a>(data_dict)</p></td>
+<td><p>Given the output dictionary from a engine cooling analysis, plot the heat flux against position.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#cusfbamboo.plot.plot_tangential_stress" title="cusfbamboo.plot.plot_tangential_stress"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_tangential_stress</span></code></a>(data_dict[, wall_index])</p></td>
+<td><p>Given the output dictionary from a engine cooling analysis, plot the thermal stress in the inner chamber wall, against position.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#cusfbamboo.plot.plot_temperatures" title="cusfbamboo.plot.plot_temperatures"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_temperatures</span></code></a>(data_dict[, only_indexes])</p></td>
+<td><p>Given the output dictionary from an engine cooling analysis, plot the temperatures against position.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#cusfbamboo.plot.plot_thermal_resistances" title="cusfbamboo.plot.plot_thermal_resistances"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_thermal_resistances</span></code></a>(data_dict[, …])</p></td>
+<td><p>Given the output dictionary from an engine cooling analysis, plot the local thermal resistances against position.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../index.html#cusfbamboo.plot.show" title="cusfbamboo.plot.show"><code class="xref py py-obj docutils literal notranslate"><span class="pre">show</span></code></a>()</p></td>
+<td><p>Show a plot.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="cusfbamboo.engine.html" class="btn btn-neutral float-left" title="cusfbamboo.engine" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="cusfbamboo.materials.html" class="btn btn-neutral float-right" title="cusfbamboo.materials" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Cambridge University Spaceflight.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

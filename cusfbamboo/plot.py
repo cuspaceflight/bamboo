@@ -15,7 +15,7 @@ def show():
 
 def plot_temperatures(data_dict, only_indexes = None):
     """Given the output dictionary from an engine cooling analysis, plot the temperatures against position. 
-    Note you will have to run matplotlib.pyplot.show() or bamboo.plot.show() to see the plot.
+    Note you will have to run matplotlib.pyplot.show() or cusfbamboo.plot.show() to see the plot.
 
     Args:
         data_dict (dict): Dictionary contaning the cooling analysis results.
@@ -74,7 +74,7 @@ def plot_temperatures(data_dict, only_indexes = None):
 
 def plot_p_coolant(data_dict):
     """Given the output dictionary from a engine cooling analysis, plot the cooling jacket static pressure against x position. 
-    Note you will have to run matplotlib.pyplot.show() or bamboo.plot.show() to see the plot.
+    Note you will have to run matplotlib.pyplot.show() or cusfbamboo.plot.show() to see the plot.
 
     Args:
         data_dict (dict): Dictionary contaning the cooling analysis results.
@@ -109,7 +109,7 @@ def plot_T_coolant(data_dict):
 
 def plot_q_per_area(data_dict):
     """Given the output dictionary from a engine cooling analysis, plot the heat flux against position. 
-    Note you will have to run matplotlib.pyplot.show() or bamboo.show() to see the plot.
+    Note you will have to run matplotlib.pyplot.show() or cusfbamboo.show() to see the plot.
 
     Args:
         data_dict (dict): Dictionary contaning the cooling analysis results.
@@ -150,7 +150,7 @@ def plot_tangential_stress(data_dict, wall_index = 0):
 
 def plot_coolant_velocity(data_dict):
     """Given the output dictionary from a engine cooling analysis, plot the cooling velocity against axial position. 
-    Note you will have to run matplotlib.pyplot.show() or bamboo.show() to see the plot.
+    Note you will have to run matplotlib.pyplot.show() or cusfbamboo.show() to see the plot.
 
     Args:
         data_dict (dict): Dictionary contaning the cooling analysis results.
@@ -167,7 +167,7 @@ def plot_coolant_velocity(data_dict):
 
 def plot_coolant_density(data_dict):
     """Plot the cooling density against axial position. 
-    Note you will have to run matplotlib.pyplot.show() or bamboo.show() to see the plot.
+    Note you will have to run matplotlib.pyplot.show() or cusfbamboo.show() to see the plot.
 
     Args:
         data_dict (dict): Dictionary contaning the cooling analysis results.
@@ -184,7 +184,7 @@ def plot_coolant_density(data_dict):
 
 def plot_thermal_resistances(data_dict, only_indexes = None):
     """Given the output dictionary from an engine cooling analysis, plot the local thermal resistances against position. 
-    Note you will have to run matplotlib.pyplot.show() or bamboo.plot.show() to see the plot.
+    Note you will have to run matplotlib.pyplot.show() or cusfbamboo.plot.show() to see the plot.
 
     Args:
         data_dict (dict): Dictionary contaning the cooling analysis results.

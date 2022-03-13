@@ -17,9 +17,7 @@
         <script src="../_static/doctools.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="bamboo.materials" href="bamboo.materials.html" />
-    <link rel="prev" title="bamboo.engine" href="bamboo.engine.html" /> 
+    <link rel="search" title="Search" href="../search.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -37,14 +35,14 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="bamboo.engine.html">bamboo.engine</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">bamboo.plot</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bamboo.materials.html">bamboo.materials</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bamboo.rao.html">bamboo.rao</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bamboo.isen.html">bamboo.isen</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bamboo.hx.html">bamboo.hx</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bamboo.circuit.html">bamboo.circuit</a></li>
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.engine.html">cusfbamboo.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.plot.html">cusfbamboo.plot</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.materials.html">cusfbamboo.materials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.rao.html">cusfbamboo.rao</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.isen.html">cusfbamboo.isen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.hx.html">cusfbamboo.hx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cusfbamboo.circuit.html">cusfbamboo.circuit</a></li>
 </ul>
 
         </div>
@@ -71,57 +69,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-bamboo.plot">
-<span id="bamboo-plot"></span><h1>bamboo.plot<a class="headerlink" href="#module-bamboo.plot" title="Permalink to this headline"></a></h1>
-<p>Module that provides plotting tools, to streamline the creation of plots.</p>
-<p class="rubric">Functions</p>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_T_coolant" title="bamboo.plot.plot_T_coolant"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_T_coolant</span></code></a>(data_dict)</p></td>
-<td><p>Given the output dictionary from a engine cooling analysis, plot the coolant static temperature against postiion</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_coolant_density" title="bamboo.plot.plot_coolant_density"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_coolant_density</span></code></a>(data_dict)</p></td>
-<td><p>Plot the cooling density against axial position.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_coolant_h" title="bamboo.plot.plot_coolant_h"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_coolant_h</span></code></a>(data_dict)</p></td>
-<td><p>Plot convective heat transfer coefficient for the coolant side.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_coolant_velocity" title="bamboo.plot.plot_coolant_velocity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_coolant_velocity</span></code></a>(data_dict)</p></td>
-<td><p>Given the output dictionary from a engine cooling analysis, plot the cooling velocity against axial position.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_p_coolant" title="bamboo.plot.plot_p_coolant"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_p_coolant</span></code></a>(data_dict)</p></td>
-<td><p>Given the output dictionary from a engine cooling analysis, plot the cooling jacket static pressure against x position.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_q_per_area" title="bamboo.plot.plot_q_per_area"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_q_per_area</span></code></a>(data_dict)</p></td>
-<td><p>Given the output dictionary from a engine cooling analysis, plot the heat flux against position.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_tangential_stress" title="bamboo.plot.plot_tangential_stress"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_tangential_stress</span></code></a>(data_dict[, wall_index])</p></td>
-<td><p>Given the output dictionary from a engine cooling analysis, plot the thermal stress in the inner chamber wall, against position.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_temperatures" title="bamboo.plot.plot_temperatures"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_temperatures</span></code></a>(data_dict[, only_indexes])</p></td>
-<td><p>Given the output dictionary from an engine cooling analysis, plot the temperatures against position.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../index.html#bamboo.plot.plot_thermal_resistances" title="bamboo.plot.plot_thermal_resistances"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_thermal_resistances</span></code></a>(data_dict[, …])</p></td>
-<td><p>Given the output dictionary from an engine cooling analysis, plot the local thermal resistances against position.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../index.html#bamboo.plot.show" title="bamboo.plot.show"><code class="xref py py-obj docutils literal notranslate"><span class="pre">show</span></code></a>()</p></td>
-<td><p>Show a plot.</p></td>
-</tr>
-</tbody>
-</table>
+  <section id="bamboo-plot">
+<h1>bamboo.plot<a class="headerlink" href="#bamboo-plot" title="Permalink to this headline"></a></h1>
 </section>
 
 
            </div>
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="bamboo.engine.html" class="btn btn-neutral float-left" title="bamboo.engine" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="bamboo.materials.html" class="btn btn-neutral float-right" title="bamboo.materials" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
+          <footer>
 
   <hr/>
 
