@@ -14,7 +14,7 @@ setup(
     name='cusfbamboo',
     author = 'Daniel Gibbons',                 
     author_email = 'daniel.u.gibbons@gmail.com',        
-    version = '0.2.2',
+    version = '0.2.3',
     license = '	gpl-3.0',
     packages = find_packages(),
     install_requires = ['numpy', 'matplotlib', 'scipy'],
