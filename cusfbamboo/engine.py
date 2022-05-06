@@ -1180,7 +1180,7 @@ class Engine:
         results["info"]["T_exhaust"] = "Exhaust temperature at each position (K). T_exhaust[i] is the value at x[i]. "
         results["info"]["dQ_dx"] = "Heat transfer rate per unit axial length (W/m). dQ_dx[i] is the value at x[i]."
         results["info"]["dQ_dLc"] = "Heat transfer rate per unit length along the cooling channel (W/m) - equal to dQ/dx for 'vertical' channels but not for 'spiral' channels. dQ_dx[i] is the value at x[i]."
-        results["info"]["dQ_dA"] = "Heat transfer rate per unit chamber area (W/m2). dQ_dA[i] is the value at x[i]."
+        results["info"]["dQ_dA"] = "Heat transfer rate per unit chamber area at the innermost wall (W/m2). dQ_dA[i] is the value at x[i]."
         results["info"]["Rdx"] = "Local thermal resistances at each position (K m/W), in the order coolant convection (index 0) --> exhaust convection. R_dx[i] a list of resistances at the value at x[i]"
         results["info"]["rho_coolant"] = "Density of coolant (kg/m3). rho_coolant[i] is the value at x[i]."
         results["info"]["p_coolant"] = "Static pressure of coolant (Pa). p_coolant[i] is the value at x[i]."
@@ -1239,7 +1239,9 @@ class Engine:
                 poisson = self.walls[j].material.poisson
                 t_w = self.walls[j].thickness(x)
 
-                results["sigma_t_thermal"][i][j] = E * alpha * results["dQ_dA"][i] * t_w / (2 * (1 - poisson) * k)
+                corrected_dQ_dA = results["dQ_dA"][i] * self.geometry.r(x = results["x"][i]) / (D/2)        # Need to get the actual dQ/dA at the local wall radius (the local radius increases as you move out for each wall)
+
+                results["sigma_t_thermal"][i][j] = E * alpha * corrected_dQ_dA * t_w / (2 * (1 - poisson) * k)      
 
                 # Pressure stress from Heister [9]
                 D += t_w / 2        # Average diameter
