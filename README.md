@@ -15,9 +15,11 @@ Bamboo can be installed via pip, with the following command:
 
 `pip install cusfbamboo`
 
-## Documentation
-Made using Sphinx, available at: 
+## Documentation and Paper
+Documentation available at: 
 https://cuspaceflight.github.io/bamboo/
+
+A paper on Bamboo was presented at the Space Propulsion 2022 conference, and can be found [here](https://www.researchgate.net/publication/361074094_Development_Of_An_Open_Source_Modelling_Package_For_Regeneratively_Cooled_Engines).
 
 ## Validation
 
