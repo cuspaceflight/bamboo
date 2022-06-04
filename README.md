@@ -15,7 +15,7 @@ Bamboo can be installed via pip, with the following command:
 
 `pip install cusfbamboo`
 
-## Documentation and Paper
+## Documentation and Conference Paper
 Documentation available at: 
 https://cuspaceflight.github.io/bamboo/
 
