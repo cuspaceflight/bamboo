@@ -920,8 +920,15 @@ class Engine:
 
         self.h_coolant = self.h_coolant * self.h_coolant_sf             # Multiply h_coolant by the scale factor given by the user.
         A_coolant = 2 * np.pi * (y + self.total_wall_thickness(x))      # Note, this is the area per unit axial length. We will multiply by 'dx' later in the cusfbamboo.hx.HXSolver
-        R_list.append(1.0 / (self.h_coolant * A_coolant))
+        if self.cooling_jacket.configuration == "vertical":
+            if len(self.walls)==1:
+                m= np.sqrt(self.h_coolant/ (self.walls.material.k*self.cooling_jacket.blockage_ratio(x)*(self.geometry.r(x) + self.total_wall_thickness(x))))
+                eta=np.tanh(m*self.cooling_jacket.channel_height(x))/(m*self.cooling_jacket.channel_height(x))
+                R_list.append(1.0/(self.cooling_jacket.number_of_channels*self.h_coolant*2*eta*self.cooling_jacket.channel_height(x)+ self.h_coolant*((1-self.cooling_jacket.blockage_ratio(x))*(self.geometry.r(x) + self.total_wall_thickness(x)))))
+        else:
+            R_list.append(1.0 / (self.h_coolant * A_coolant))
         
+            
         # -------------------------------- SOLID WALLS --------------------------------
         # Find the thermal resistance of the solid boundaries between the coolant and the gas - note our resistance list goes in the order [Cold --> Hot], but the walls are in the order [Hot --> Cold]
         for i in range(len(self.walls)):   
@@ -935,7 +942,7 @@ class Engine:
 
             r2 = r1 + reversed_walls[i].thickness(x)
 
-            R_list.append(np.log(r2/r1) / (2 * np.pi * reversed_walls[i].material.k))
+            R_list.append(np.log(r2/r1) / (2 * np.pi * reversed_walls[i].material.k)) #r'_cond
 
         # -------------------------------- EXHAUST GAS --------------------------------
         # Get the gas properties, and find the thermal resistance of the convection on the hot gas side
