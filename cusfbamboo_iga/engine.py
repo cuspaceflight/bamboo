@@ -590,7 +590,7 @@ class Engine:
                     for j in range(len(y_bottom)):
                         y_top[j] = y_bottom[j] + self.walls[i].thickness(xs[j])
 
-                last_plot = axs.fill_between(xs, y_bottom, y_top, label = f'Wall {i+1} (k = {self.walls[i].material.k:#.3g})')
+                last_plot = axs.fill_between(xs, y_bottom, y_top, label = f'Wall {i+1}')
                 axs.fill_between(xs, -y_bottom, -y_top, color = last_plot.get_facecolor())
 
                 y_bottom = y_top.copy()
@@ -920,17 +920,28 @@ class Engine:
 
         self.h_coolant = self.h_coolant * self.h_coolant_sf             # Multiply h_coolant by the scale factor given by the user.
         A_coolant = 2 * np.pi * (y + self.total_wall_thickness(x))      # Note, this is the area per unit axial length. We will multiply by 'dx' later in the cusfbamboo.hx.HXSolver
+        blockage_ratio=float(self.cooling_jacket.blockage_ratio(x))
+        
+        T_exhaust_wall = state["T_hw"]
+
+        T_internals = np.linspace(T_coolant_wall, T_exhaust_wall, 10)
+        list_walls=list(self.walls)
+        k_internals = [list_walls[0].material.k(T_internal) for T_internal in T_internals]
+        k_effective = np.average(k_internals)
         if self.cooling_jacket.configuration == "vertical":
             if len(self.walls)==1:
-                m= np.sqrt(self.h_coolant/ (self.walls.material.k*self.cooling_jacket.blockage_ratio(x)*(self.geometry.r(x) + self.total_wall_thickness(x))))
+                m=np.sqrt(float(self.h_coolant)/ (k_effective*blockage_ratio*y + (self.total_wall_thickness(x))))
+                
                 eta=np.tanh(m*self.cooling_jacket.channel_height(x))/(m*self.cooling_jacket.channel_height(x))
                 R_list.append(1.0/(self.cooling_jacket.number_of_channels*self.h_coolant*2*eta*self.cooling_jacket.channel_height(x)+ self.h_coolant*((1-self.cooling_jacket.blockage_ratio(x))*(self.geometry.r(x) + self.total_wall_thickness(x)))))
+                
         else:
             R_list.append(1.0 / (self.h_coolant * A_coolant))
-        
+            
             
         # -------------------------------- SOLID WALLS --------------------------------
         # Find the thermal resistance of the solid boundaries between the coolant and the gas - note our resistance list goes in the order [Cold --> Hot], but the walls are in the order [Hot --> Cold]
+        # Need exhaust wall temperature to evaluate average wall thermal conductivity
         for i in range(len(self.walls)):   
             # Work in reverse from the cold side to the hot side
             reversed_walls = list(reversed(self.walls))
@@ -941,14 +952,15 @@ class Engine:
                 r1 += self.walls[j].thickness(x)
 
             r2 = r1 + reversed_walls[i].thickness(x)
+            if i > 0:
+                raise NotImplementedError("Multiple walls with temperature dependent conductivity is not implemented.")
 
-            R_list.append(np.log(r2/r1) / (2 * np.pi * reversed_walls[i].material.k)) #r'_cond
+            R_list.append(np.log(r2/r1) / (2 * np.pi * k_effective))
 
         # -------------------------------- EXHAUST GAS --------------------------------
         # Get the gas properties, and find the thermal resistance of the convection on the hot gas side
         rho_exhaust = self.rho(x)
         T_exhaust = self.T(x)
-        T_exhaust_wall = state["T_hw"]
         p_exhaust = self.p(x)
         M_exhaust = self.M(x)
         V_exhaust = (self.perfect_gas.gamma * self.perfect_gas.R * T_exhaust)**0.5 * M_exhaust      # V = sqrt(gamma * R * T) * M, from speed of sound for an ideal gas
@@ -1240,9 +1252,12 @@ class Engine:
                 D += t_w
 
                 # Thermal stress from Heister [9]
+                T_wall_avg = (results["T"][i][j+1] + results["T"][i][j+2])/2
+
+
                 E = self.walls[j].material.E
                 alpha = self.walls[j].material.alpha
-                k = self.walls[j].material.k
+                k = self.walls[j].material.k(T_wall_avg)
                 poisson = self.walls[j].material.poisson
                 t_w = self.walls[j].thickness(x)
 
